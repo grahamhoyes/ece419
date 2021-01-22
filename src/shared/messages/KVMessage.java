@@ -31,7 +31,16 @@ public interface KVMessage {
 	 * response types and error types associated to the message.
 	 */
 	public StatusType getStatus();
-	
+
+	/**
+	* @return a string representing the entire message object
+	*/
+	public String serialize();
+
+	/**
+	 * @param str a string encoding of the message object
+	 */
+	public void deserialize(String str);
 }
 
 
