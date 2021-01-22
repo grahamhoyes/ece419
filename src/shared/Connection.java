@@ -1,6 +1,7 @@
 package shared;
 
 import org.apache.log4j.Logger;
+import shared.messages.JsonKVMessage;
 import shared.messages.KVMessage;
 
 import java.io.IOException;
@@ -27,13 +28,14 @@ public abstract class Connection {
 
     /**
      * Send a message using this connection's socket.
-     *
+     * <p>
      * Serialized message strings are decoded and sent as bytes. The packet
      * begins with a 16-byte header. The first byte indicates the protocol
      * version (here, 1). The next 4 bytes indicate the size of the message
      * body (little endian). The remaining 11 bytes are currently unused.
      *
      * @param message The message to send
+     * @throws IOException Exceptions to do with the output buffer
      */
     public void sendMessage(KVMessage message) throws IOException {
         String msgContent = message.serialize();
@@ -65,8 +67,49 @@ public abstract class Connection {
                 + msgContent + "'");
     }
 
-    public void receiveMessage() {
 
+    /**
+     * Receive a message from this connection's socket.
+     * <p>
+     * Follows the same semantics as sendMessage.
+     *
+     * @return JsonKVMessage of the message
+     * @throws IOException Exception to do with the input buffer
+     */
+    public JsonKVMessage receiveMessage() throws IOException {
+        byte[] headerBytes = new byte[16];
+
+        if (input.read(headerBytes, 0, HEADER_SIZE) != HEADER_SIZE) {
+            throw new IOException("Failed to read message header");
+        }
+
+        ByteBuffer headerBuffer = ByteBuffer.wrap(headerBytes);
+        headerBuffer.order(ByteOrder.LITTLE_ENDIAN);
+        byte protocolVersion = headerBuffer.get();
+
+        if (protocolVersion != PROTOCOL_VERSION) {
+            logger.warn("Received an invalid protocol version " + protocolVersion
+                    + ", behaviour may be undefined");
+        }
+
+        int messageLength = headerBuffer.getInt();
+
+        byte[] msgBytes = new byte[messageLength];
+
+        if (input.read(msgBytes, 0, messageLength) != messageLength) {
+            throw new IOException("Failed to read message body");
+        }
+
+        String msg = new String(msgBytes);
+
+        JsonKVMessage message = new JsonKVMessage(msg);
+
+        logger.info("RECEIVE \t<"
+                + socket.getInetAddress().getHostAddress() + ":"
+                + socket.getPort() + ">: "
+                + msg + "'");
+
+        return message;
     }
 
 }
