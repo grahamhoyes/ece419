@@ -1,42 +1,66 @@
 package app_kvServer;
 
-public class KVServer implements IKVServer {
+import java.io.IOException;
+import java.net.BindException;
+import java.net.ServerSocket;
+import java.net.Socket;
+
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
+import logger.LogSetup;
+
+public class KVServer implements IKVServer, Runnable {
+
+	private static final Logger logger = Logger.getRootLogger();
+
+	private final int port;
+	private final int cacheSize;
+	private CacheStrategy cacheStrategy;
+
+	private boolean running;
+	private ServerSocket serverSocket;
+
+
 	/**
 	 * Start KV Server at given port
 	 * @param port given port for storage server to operate
 	 * @param cacheSize specifies how many key-value pairs the server is allowed
 	 *           to keep in-memory
-	 * @param strategy specifies the cache replacement strategy in case the cache
+	 * @param cacheStrategy specifies the cache replacement strategy in case the cache
 	 *           is full and there is a GET- or PUT-request on a key that is
 	 *           currently not contained in the cache. Options are "FIFO", "LRU",
-	 *           and "LFU".
+	 *           and "LFU". As of Milestone 1, this is unused.
 	 */
-	public KVServer(int port, int cacheSize, String strategy) {
-		// TODO Auto-generated method stub
+	public KVServer(int port, int cacheSize, String cacheStrategy) {
+		this.port = port;
+		this.cacheSize = cacheSize;
+
+		try {
+			this.cacheStrategy = CacheStrategy.valueOf(cacheStrategy);
+		} catch (IllegalArgumentException e) {
+			this.cacheStrategy = CacheStrategy.None;
+		}
 	}
 	
 	@Override
 	public int getPort(){
-		// TODO Auto-generated method stub
-		return -1;
+		return port;
 	}
 
 	@Override
     public String getHostname(){
-		// TODO Auto-generated method stub
-		return null;
+		return serverSocket.getInetAddress().getHostName();
 	}
 
 	@Override
     public CacheStrategy getCacheStrategy(){
-		// TODO Auto-generated method stub
-		return IKVServer.CacheStrategy.None;
+		return cacheStrategy;
 	}
 
 	@Override
     public int getCacheSize(){
-		// TODO Auto-generated method stub
-		return -1;
+		return cacheSize;
 	}
 
 	@Override
@@ -72,18 +96,84 @@ public class KVServer implements IKVServer {
 		// TODO Auto-generated method stub
 	}
 
+	private boolean initializeServer() {
+		logger.info("Initializing server...");
+		try {
+			serverSocket = new ServerSocket(port);
+			logger.info("Server listening on port: " + serverSocket.getLocalPort());
+			return true;
+		} catch (IOException e) {
+			String errorMsg = "Error! Cannot open server socket";
+
+			if (e instanceof BindException) {
+				errorMsg += ": Port " + port + " is already bound.";
+			}
+
+			logger.error(errorMsg);
+		}
+
+		return false;
+	}
+
 	@Override
     public void run(){
-		// TODO Auto-generated method stub
+		running = initializeServer();
+
+		if (serverSocket != null) {
+			while (isRunning()) {
+				try {
+					Socket client = serverSocket.accept();
+
+					// TODO: Handle client connections
+				} catch (IOException e) {
+					logger.error("Error! Unable to establish connection. \n", e);
+				}
+			}
+		}
+
+		logger.info("Server stopped");
+	}
+
+	public boolean isRunning() {
+		return running;
 	}
 
 	@Override
-    public void kill(){
-		// TODO Auto-generated method stub
+    public void kill() {
+		// TODO: Kill client connection threads
+		running = false;
+		try {
+			serverSocket.close();
+		} catch (IOException e) {
+			logger.error("Error! Unable to close socket on port: " + port, e);
+		}
 	}
 
 	@Override
-    public void close(){
-		// TODO Auto-generated method stub
+    public void close() {
+		kill();
+	}
+
+	public static void main(String[] args) {
+		// TODO: Expand arg parsing for cache
+		try {
+			new LogSetup("logs/server.log", Level.ALL);
+
+			if (args.length != 1) {
+				System.err.println("Error! Invalid number of arguments");
+				System.err.println("Usage: KVServer <port>");
+				System.exit(1);
+			}
+
+			int port = Integer.parseInt(args[0]);
+			KVServer server = new KVServer(port, 0, "None");
+			new Thread(server).start();
+
+		} catch (IOException e) {
+			System.err.println("Error! Unable to initialize logger.");
+			e.printStackTrace();
+			System.exit(1);
+		}
+
 	}
 }
