@@ -75,8 +75,9 @@ public abstract class Connection {
      *
      * @return JsonKVMessage of the message
      * @throws IOException Exception to do with the input buffer
+     * @throws RuntimeException For issues decoding the message payload
      */
-    public JsonKVMessage receiveMessage() throws IOException {
+    public JsonKVMessage receiveMessage() throws IOException, RuntimeException {
         byte[] headerBytes = new byte[16];
 
         if (input.read(headerBytes, 0, HEADER_SIZE) != HEADER_SIZE) {

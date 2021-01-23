@@ -1,6 +1,7 @@
 package shared.messages;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 
 public class JsonKVMessage implements KVMessage {
     private StatusType status;
@@ -45,10 +46,15 @@ public class JsonKVMessage implements KVMessage {
         return new Gson().toJson(this);
     }
 
-    public void deserialize(String json) {
-        JsonKVMessage message = new Gson().fromJson(json, JsonKVMessage.class);
-        this.status = message.status;
-        this.key = message.key;
-        this.value = message.value;
+    public void deserialize(String json) throws RuntimeException {
+        try {
+            JsonKVMessage message = new Gson().fromJson(json, JsonKVMessage.class);
+            this.status = message.status;
+            this.key = message.key;
+            this.value = message.value;
+        } catch (JsonSyntaxException e) {
+            throw new RuntimeException("Failed to deserialize message: " + json);
+        }
+
     }
 }

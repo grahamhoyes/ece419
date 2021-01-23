@@ -30,8 +30,10 @@ public class ClientConnection extends Connection implements Runnable {
                     JsonKVMessage message = receiveMessage();
                     // TODO: Do something with the message
                     sendMessage(message);
+                } catch (RuntimeException e) {
+                    logger.error(e.getMessage());
                 } catch (IOException e) {
-                    logger.error("Error! Connection lost", e);
+                    logger.error(e);
                     isOpen = false;
                 }
 
