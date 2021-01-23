@@ -1,4 +1,4 @@
-package server;
+package store;
 
 public interface KVStore {
     public void put(String key, String value) throws Exception;
