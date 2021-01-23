@@ -27,3 +27,4 @@ hs_err_pid*
 .code/
 .vscode/
 project.iml
+*.MF
