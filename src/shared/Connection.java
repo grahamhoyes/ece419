@@ -1,6 +1,7 @@
 package shared;
 
 import org.apache.log4j.Logger;
+import shared.messages.DeserializationException;
 import shared.messages.JsonKVMessage;
 import shared.messages.KVMessage;
 
@@ -74,14 +75,15 @@ public abstract class Connection {
      * Follows the same semantics as sendMessage.
      *
      * @return JsonKVMessage of the message
-     * @throws IOException Exception to do with the input buffer
-     * @throws RuntimeException For issues decoding the message payload
+     * @throws IOException              Exception to do with the input buffer
+     * @throws DeserializationException For issues decoding the message payload
      */
-    public JsonKVMessage receiveMessage() throws IOException, RuntimeException {
+    public JsonKVMessage receiveMessage() throws IOException, DeserializationException {
         byte[] headerBytes = new byte[16];
 
         if (input.read(headerBytes, 0, HEADER_SIZE) != HEADER_SIZE) {
-            throw new IOException("Failed to read message header");
+            throw new IOException("Failed to read message header. "
+                    + "The connection may have closed unexpectedly");
         }
 
         ByteBuffer headerBuffer = ByteBuffer.wrap(headerBytes);

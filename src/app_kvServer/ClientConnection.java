@@ -1,6 +1,7 @@
 package app_kvServer;
 
 import shared.Connection;
+import shared.messages.DeserializationException;
 import shared.messages.JsonKVMessage;
 
 import java.io.IOException;
@@ -30,7 +31,7 @@ public class ClientConnection extends Connection implements Runnable {
                     JsonKVMessage message = receiveMessage();
                     // TODO: Do something with the message
                     sendMessage(message);
-                } catch (RuntimeException e) {
+                } catch (DeserializationException e) {
                     logger.error(e.getMessage());
                 } catch (IOException e) {
                     logger.error(e);

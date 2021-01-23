@@ -39,9 +39,9 @@ public interface KVMessage {
 
 	/**
 	 * @param str a string encoding of the message object
-	 * @throws RuntimeException when something went wrong with deserialization
+	 * @throws DeserializationException when something went wrong with deserialization
 	 */
-	public void deserialize(String str) throws RuntimeException;
+	public void deserialize(String str) throws DeserializationException;
 }
 
 

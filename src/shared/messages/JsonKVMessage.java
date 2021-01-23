@@ -9,7 +9,9 @@ public class JsonKVMessage implements KVMessage {
     private String value;
 
     /**
-     * Generate a JSON KV message from the provided status, key, and value
+     * Generate a JSON KV message from the provided status, key, and value.
+     *
+     * Used for PUT requests.
      *
      * @param status Message status
      * @param key Message key
@@ -22,11 +24,25 @@ public class JsonKVMessage implements KVMessage {
     }
 
     /**
+     * Generate a JSON KV message from the provided status and key.
+     *
+     * Used for GET and DELETE requests.
+     *
+     * @param status Message status
+     * @param key Message key
+     */
+    public JsonKVMessage(StatusType status, String key) {
+        this.status = status;
+        this.key = key;
+        this.value = null;
+    }
+
+    /**
      * Generate a JSON KV message from a JSON encoded message
      *
      * @param json JSON string of the message object
      */
-    public JsonKVMessage(String json) {
+    public JsonKVMessage(String json) throws DeserializationException {
         deserialize(json);
     }
 
@@ -46,14 +62,14 @@ public class JsonKVMessage implements KVMessage {
         return new Gson().toJson(this);
     }
 
-    public void deserialize(String json) throws RuntimeException {
+    public void deserialize(String json) throws DeserializationException {
         try {
             JsonKVMessage message = new Gson().fromJson(json, JsonKVMessage.class);
             this.status = message.status;
             this.key = message.key;
             this.value = message.value;
         } catch (JsonSyntaxException e) {
-            throw new RuntimeException("Failed to deserialize message: " + json);
+            throw new DeserializationException("Failed to deserialize message: " + json);
         }
 
     }
