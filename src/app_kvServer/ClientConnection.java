@@ -46,16 +46,7 @@ public class ClientConnection extends Connection implements Runnable {
             logger.error("Error! Connection could not be established");
             isOpen = false;
         } finally {
-
-            try {
-                if (socket != null) {
-                    input.close();
-                    output.close();
-                    socket.close();
-                }
-            } catch (IOException e) {
-                logger.error("Error! Unable to close connection", e);
-            }
+            disconnect();
 
             logger.info("Client connection to "
                     + hostname + ":" + port + " has been closed");

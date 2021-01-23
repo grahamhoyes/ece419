@@ -121,4 +121,17 @@ public abstract class Connection {
         return message;
     }
 
+    public void disconnect() {
+        try {
+            if (socket != null) {
+                input.close();
+                output.close();
+                socket.close();
+            }
+        } catch (IOException e) {
+            logger.error("Error! Unable to close connection: ", e);
+        }
+
+    }
+
 }

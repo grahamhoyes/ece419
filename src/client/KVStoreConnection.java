@@ -28,17 +28,6 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 	}
 
 	@Override
-	public void disconnect() {
-		try {
-			input.close();
-			output.close();
-			socket.close();
-		} catch (IOException e) {
-			logger.error("Error! Unable to close connection", e);
-		}
-	}
-
-	@Override
 	public KVMessage put(String key, String value) throws Exception {
 		JsonKVMessage req = new JsonKVMessage(KVMessage.StatusType.PUT, key, value);
 		JsonKVMessage res;
