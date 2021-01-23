@@ -18,6 +18,8 @@ public class ClientConnection extends Connection implements Runnable {
 
     public ClientConnection(Socket socket) {
         this.socket = socket;
+        this.hostname = socket.getInetAddress().getHostName();
+        this.port = socket.getPort();
         this.isOpen = true;
     }
 
@@ -54,6 +56,9 @@ public class ClientConnection extends Connection implements Runnable {
             } catch (IOException e) {
                 logger.error("Error! Unable to close connection", e);
             }
+
+            logger.info("Client connection to "
+                    + hostname + ":" + port + " has been closed");
 
         }
     }

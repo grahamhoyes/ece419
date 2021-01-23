@@ -23,6 +23,9 @@ public abstract class Connection {
     private static final int HEADER_SIZE = 16;
     private static final byte PROTOCOL_VERSION = 1;
 
+    protected String hostname;
+    protected int port;
+
     protected Socket socket;
     protected InputStream input;
     protected OutputStream output;
@@ -81,9 +84,12 @@ public abstract class Connection {
     public JsonKVMessage receiveMessage() throws IOException, DeserializationException {
         byte[] headerBytes = new byte[16];
 
-        if (input.read(headerBytes, 0, HEADER_SIZE) != HEADER_SIZE) {
-            throw new IOException("Failed to read message header. "
-                    + "The connection may have closed unexpectedly");
+        int headerLen = input.read(headerBytes, 0, HEADER_SIZE);
+
+        if (headerLen == -1) {
+            throw new IOException("Connection terminated by client");
+        } else if (headerLen != HEADER_SIZE) {
+            throw new IOException("Failed to read message header");
         }
 
         ByteBuffer headerBuffer = ByteBuffer.wrap(headerBytes);

@@ -10,22 +10,19 @@ import java.net.Socket;
 
 public class KVStoreConnection extends Connection implements KVCommInterface {
 
-	private final String address;
-	private final int port;
-
 	/**
 	 * Initialize KVStore with address and port of KVServer
-	 * @param address the address of the KVServer
+	 * @param hostname the address of the KVServer
 	 * @param port the port of the KVServer
 	 */
-	public KVStoreConnection(String address, int port) {
-		this.address = address;
+	public KVStoreConnection(String hostname, int port) {
+		this.hostname = hostname;
 		this.port = port;
 	}
 
 	@Override
 	public void connect() throws Exception {
-		socket = new Socket(address, port);
+		socket = new Socket(hostname, port);
 		input = socket.getInputStream();
 		output = socket.getOutputStream();
 	}
