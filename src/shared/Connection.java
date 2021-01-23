@@ -16,15 +16,15 @@ import java.nio.ByteOrder;
  * the client and server for communications purpose.
  */
 public abstract class Connection {
-    private static final Logger logger = Logger.getRootLogger();
+    protected static final Logger logger = Logger.getRootLogger();
 
     // Header size in bytes
     private static final int HEADER_SIZE = 16;
     private static final byte PROTOCOL_VERSION = 1;
 
-    private Socket socket;
-    private InputStream input;
-    private OutputStream output;
+    protected Socket socket;
+    protected InputStream input;
+    protected OutputStream output;
 
     /**
      * Send a message using this connection's socket.

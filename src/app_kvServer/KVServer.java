@@ -124,6 +124,12 @@ public class KVServer implements IKVServer, Runnable {
 				try {
 					Socket client = serverSocket.accept();
 
+					ClientConnection connection = new ClientConnection(client);
+					new Thread(connection).start();
+
+					logger.info("Connected to "
+							+ client.getInetAddress().getHostAddress()
+							+ ":" + client.getPort());
 					// TODO: Handle client connections
 				} catch (IOException e) {
 					logger.error("Error! Unable to establish connection. \n", e);
