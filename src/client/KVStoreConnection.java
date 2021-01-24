@@ -5,7 +5,6 @@ import shared.messages.DeserializationException;
 import shared.messages.JsonKVMessage;
 import shared.messages.KVMessage;
 
-import java.io.IOException;
 import java.net.Socket;
 
 public class KVStoreConnection extends Connection implements KVCommInterface {
@@ -35,8 +34,7 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 		try {
 			sendMessage(req);
 			res = receiveMessage();
-		} catch (RuntimeException e) {
-			// RuntimeException is caused by failed message deserialization
+		} catch (DeserializationException e) {
 			logger.error(e.getMessage());
 			res = new JsonKVMessage(KVMessage.StatusType.PUT_ERROR, key, value);
 		}
