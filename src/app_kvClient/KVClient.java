@@ -1,5 +1,6 @@
 package app_kvClient;
 
+import app_kvClient.cli.*;
 import client.KVCommInterface;
 import client.KVStoreConnection;
 import logger.LogSetup;
@@ -31,6 +32,14 @@ public class KVClient implements IKVClient, Runnable {
         }
     }
 
+    public void setRunning(boolean running) {
+        this.running = running;
+    }
+
+    public boolean isRunning() {
+        return running;
+    }
+
     @Override
     public void newConnection(String hostname, int port) throws Exception {
         if (this.storeConnection != null) {
@@ -42,6 +51,16 @@ public class KVClient implements IKVClient, Runnable {
     }
 
     @Override
+    public void closeConnection() throws Exception {
+        if (this.storeConnection == null) {
+            throw new Exception("No connection exists");
+        }
+        this.storeConnection.disconnect();
+        this.storeConnection = null;
+    }
+
+
+    @Override
     public KVCommInterface getStore() {
         return this.storeConnection;
     }
@@ -51,7 +70,7 @@ public class KVClient implements IKVClient, Runnable {
         //  Use this.storeConnection.connect/disconnect/get/put to interact
         //  with the server
 
-        System.out.println(cmdLine);
+        AbstractCommand command;
 
         // If there are spaces in the value, they'll need to be joined back
         // together
@@ -59,34 +78,21 @@ public class KVClient implements IKVClient, Runnable {
 
         if (tokens.length == 0) return;
 
-        switch (tokens[0]) {
-            case "quit":
-            case "q":
-                this.running = false;
-                System.out.println("Goodbye.");
-                break;
-            case "connect":
-                try {
-                    if (tokens.length != 3) {
-                        printError("Invalid number of arguments. Usage: connect <address> <port>");
-                        break;
-                    }
+        command = switch (tokens[0]) {
+            case "connect" -> new ConnectCommand();
+            case "disconnect" -> new DisconnectCommand();
+            case "put" -> new PutCommand();
+            case "get" -> new GetCommand();
+            case "logLevel" -> new LogLevelCommand();
+            case "help" -> new HelpCommand();
+            case "quit" -> new QuitCommand();
+            default -> new UnrecognizedCommand();
+        };
 
-                    String hostname = tokens[1];
-                    int port = Integer.parseInt(tokens[2]);
-                    newConnection(hostname, port);
-                } catch (NumberFormatException e) {
-                    printError("Not a valid address. Port must be an integer");
-                } catch (Exception e) {
-                    printError(e.getMessage());
-                }
-
-                System.out.println("Connection established");
-                break;
-        }
+        command.run(this, tokens);
     }
 
-    private void printError(String message) {
+    public void printError(String message) {
         System.err.println(message);
     }
 
@@ -109,7 +115,4 @@ public class KVClient implements IKVClient, Runnable {
         }
     }
 
-    public boolean isRunning() {
-        return running;
-    }
 }

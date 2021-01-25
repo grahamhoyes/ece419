@@ -10,6 +10,8 @@ public interface IKVClient {
      */
     public void newConnection(String hostname, int port) throws Exception;
 
+    public void closeConnection() throws Exception;
+
     /**
      * Get the current instance of the Store object
      * @return  instance of KVCommInterface
