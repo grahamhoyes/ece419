@@ -78,16 +78,32 @@ public class KVClient implements IKVClient, Runnable {
 
         if (tokens.length == 0) return;
 
-        command = switch (tokens[0]) {
-            case "connect" -> new ConnectCommand();
-            case "disconnect" -> new DisconnectCommand();
-            case "put" -> new PutCommand();
-            case "get" -> new GetCommand();
-            case "logLevel" -> new LogLevelCommand();
-            case "help" -> new HelpCommand();
-            case "quit" -> new QuitCommand();
-            default -> new UnrecognizedCommand();
-        };
+        switch (tokens[0]) {
+            case "connect":
+                command = new ConnectCommand();
+                break;
+            case "disconnect":
+                command = new DisconnectCommand();
+                break;
+            case "put":
+                command = new PutCommand();
+                break;
+            case "get":
+                command = new GetCommand();
+                break;
+            case "logLevel":
+                command = new LogLevelCommand();
+                break;
+            case "help":
+                command = new HelpCommand();
+                break;
+            case "quit":
+                command = new QuitCommand();
+                break;
+            default:
+                command = new UnrecognizedCommand();
+                break;
+        }
 
         command.run(this, tokens);
     }
