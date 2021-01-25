@@ -6,9 +6,9 @@ import client.KVCommInterface;
 public class HelpCommand extends AbstractCommand {
 
     private final static String commandName = "help";
-    private final static String commandDescription = "Shows the intended usage of the client application and describes its set of commands.";
+    private final static String commandDescription = "\tShows the intended usage of the client application and describes its set of commands.";
     private final static String commandParameters = "";
-    private final static String commandOutput = "help text: Shows the intended usage of the client application and describes its set of commands.";
+    private final static String commandOutput = "\t\thelp text: Shows the intended usage of the client application and describes its set of commands.";
 
     public HelpCommand() {
         super(commandName, commandDescription, commandParameters, commandOutput);
@@ -17,10 +17,14 @@ public class HelpCommand extends AbstractCommand {
     @Override
     public void run(KVClient client, String[] tokens) {
 
-        System.out.println(ConnectCommand.getCommandHelpDescription() + "\n");
-        System.out.println(DisconnectCommand.getCommandHelpDescription() + "\n");
-        System.out.println(PutCommand.getCommandHelpDescription() + "\n");
-        System.out.println(GetCommand.getCommandHelpDescription() + "\n");
+        System.out.println(new ConnectCommand().getCommandHelpDescription());
+        System.out.println(new DisconnectCommand().getCommandHelpDescription());
+        System.out.println(new PutCommand().getCommandHelpDescription());
+        System.out.println(new GetCommand().getCommandHelpDescription());
+        System.out.println(new LogLevelCommand().getCommandHelpDescription());
+        System.out.println(new HelpCommand().getCommandHelpDescription());
+        System.out.println(new QuitCommand().getCommandHelpDescription());
+        System.out.println(new UnrecognizedCommand().getCommandHelpDescription());
 
     }
 }

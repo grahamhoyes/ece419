@@ -6,11 +6,10 @@ import client.KVCommInterface;
 public class LogLevelCommand extends AbstractCommand {
 
     private final static String commandName = "logLevel <level>";
-    private final static String commandDescription = "Sets the logger to the specified log level";
-    private final static String commandParameters = "level: One of the following log4j log levels:\n" +
-            "\n" +
-            "(ALL | DEBUG | INFO | WARN | ERROR | FATAL | OFF)";
-    private final static String commandOutput = "status message: Print out current log status.";
+    private final static String commandDescription = "\tSets the logger to the specified log level";
+    private final static String commandParameters = "\t\tlevel: One of the following log4j log levels:\n" +
+            "\t\t\t(ALL | DEBUG | INFO | WARN | ERROR | FATAL | OFF)";
+    private final static String commandOutput = "\t\tstatus message: Print out current log status.";
 
     public LogLevelCommand() {
         super(commandName, commandDescription, commandParameters, commandOutput);

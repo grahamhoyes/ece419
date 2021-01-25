@@ -4,30 +4,30 @@ import app_kvClient.KVClient;
 
 public abstract class AbstractCommand {
 
-    protected static String commandName;
-    protected static String commandDescription;
-    protected static String commandParameters;
-    protected static String commandOutput;
+    protected String commandName;
+    protected String commandDescription;
+    protected String commandParameters;
+    protected String commandOutput;
 
     public AbstractCommand(String commandName, String commandDescription, String commandParameters, String commandOutput) {
-        AbstractCommand.commandName = commandName;
-        AbstractCommand.commandDescription = commandDescription;
-        AbstractCommand.commandParameters = commandParameters;
-        AbstractCommand.commandOutput = commandOutput;
+        this.commandName = commandName;
+        this.commandDescription = commandDescription;
+        this.commandParameters = commandParameters;
+        this.commandOutput = commandOutput;
     }
 
-    public static String getCommandHelpDescription() {
+    public String getCommandHelpDescription() {
         String helpDescription = "";
 
-        helpDescription += commandName + ":\n";
-        helpDescription += "\t" + commandDescription + "\n";
-        if (commandParameters.length() != 0) {
-            helpDescription += "\n\tParameters:\n";
-            helpDescription += "\t\t" + commandParameters + "\n";
+        helpDescription += this.commandName + ":\n";
+        helpDescription += this.commandDescription + "\n";
+        if (this.commandParameters.length() != 0) {
+            helpDescription += "\tParameters:\n";
+            helpDescription += this.commandParameters + "\n";
         }
 
-        helpDescription += "\n\tOutput:\n";
-        helpDescription += "\t\t" + commandOutput + "\n";
+        helpDescription += "\tOutput:\n";
+        helpDescription += this.commandOutput + "\n";
 
         return helpDescription;
     }
