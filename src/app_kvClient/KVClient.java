@@ -69,7 +69,7 @@ public class KVClient implements IKVClient, Runnable {
         return this.storeConnection;
     }
 
-    private void handleCommand(String cmdLine) {
+    private void handleCommand(String cmdLine){
         // TODO: Command handling. This is where all the magic happens.
         //  Use this.storeConnection.connect/disconnect/get/put to interact
         //  with the server
@@ -109,11 +109,23 @@ public class KVClient implements IKVClient, Runnable {
                 break;
         }
 
-        command.run(this, tokens);
+        try {
+            command.run(this, tokens);
+        } catch (Exception e) {
+            this.printError(e.getMessage());
+        }
+
     }
 
     public void printError(String message) {
         System.err.println(message);
+        // TODO this is horrible, but since the System.err and System.out are different streams,
+        //  printing error and printing PROMPT happen in the wrong order. Should find a way to fix this.
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

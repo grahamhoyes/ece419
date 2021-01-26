@@ -1,7 +1,6 @@
 package app_kvClient.cli;
 
 import app_kvClient.KVClient;
-import client.KVCommInterface;
 
 public class PutCommand extends AbstractCommand {
 
@@ -15,19 +14,19 @@ public class PutCommand extends AbstractCommand {
             "\t\tvalue: arbitrary String (max. length 120 kByte)";
     private final static String commandOutput = "" +
             "\t\tstatus message: provides a notification if the put- operation was successful (SUCCESS) or not (ERROR)";
+    protected final static int expectedArgNum = 2;
 
     public PutCommand() {
-        super(commandName, commandDescription, commandParameters, commandOutput);
+        super(commandName, commandDescription, commandParameters, commandOutput, expectedArgNum);
     }
 
     @Override
-    public void run(KVClient client, String[] tokens) {
-
+    public void run(KVClient client, String[] tokens) throws Exception {
         try {
+            super.run(client, tokens);
             client.getStore().put(tokens[1], tokens[2]);
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new Exception(e.getMessage());
         }
-
     }
 }

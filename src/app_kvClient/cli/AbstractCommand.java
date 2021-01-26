@@ -8,12 +8,14 @@ public abstract class AbstractCommand {
     protected String commandDescription;
     protected String commandParameters;
     protected String commandOutput;
+    protected int expectedArgNum;
 
-    public AbstractCommand(String commandName, String commandDescription, String commandParameters, String commandOutput) {
-        this.commandName = commandName;
-        this.commandDescription = commandDescription;
-        this.commandParameters = commandParameters;
-        this.commandOutput = commandOutput;
+    public AbstractCommand(String name, String desc, String params, String output, int num) {
+        this.commandName = name;
+        this.commandDescription = desc;
+        this.commandParameters = params;
+        this.commandOutput = output;
+        this.expectedArgNum = num;
     }
 
     public String getCommandHelpDescription() {
@@ -32,6 +34,10 @@ public abstract class AbstractCommand {
         return helpDescription;
     }
 
-    public abstract void run(KVClient client, String[] args);
+    public void run(KVClient client, String[] tokens) throws Exception {
+        if (tokens.length != (this.expectedArgNum + 1)) {
+            throw new Exception("Invalid number of arguments. Usage: " + commandName);
+        }
+    }
 
 }

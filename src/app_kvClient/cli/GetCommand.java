@@ -1,7 +1,6 @@
 package app_kvClient.cli;
 
 import app_kvClient.KVClient;
-import client.KVCommInterface;
 import shared.messages.KVMessage;
 
 public class GetCommand extends AbstractCommand {
@@ -13,19 +12,21 @@ public class GetCommand extends AbstractCommand {
             "\t\tkey: the key that indexes the desired value (max length 20 Bytes)";
     private final static String commandOutput = "" +
             "\t\tvalue: the value that is indexed by the given key if present at the storage server, or an error message if the value for the given key is not present.";
+    protected final static int expectedArgNum = 1;
+
 
     public GetCommand() {
-        super(commandName, commandDescription, commandParameters, commandOutput);
+        super(commandName, commandDescription, commandParameters, commandOutput, expectedArgNum);
     }
 
     @Override
-    public void run(KVClient client, String[] tokens) {
+    public void run(KVClient client, String[] tokens) throws Exception {
         try {
+            super.run(client, tokens);
             KVMessage message = client.getStore().get(tokens[1]);
             System.out.println(message.serialize());
-
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new Exception(e.getMessage());
         }
     }
 }

@@ -1,7 +1,6 @@
 package app_kvClient.cli;
 
 import app_kvClient.KVClient;
-import client.KVCommInterface;
 
 public class QuitCommand extends AbstractCommand {
 
@@ -11,14 +10,20 @@ public class QuitCommand extends AbstractCommand {
     private final static String commandParameters = "";
     private final static String commandOutput = "" +
             "\t\tstatus report: Notifies the user about the imminent program shutdown.";
+    protected final static int expectedArgNum = 2;
 
     public QuitCommand() {
-        super(commandName, commandDescription, commandParameters, commandOutput);
+        super(commandName, commandDescription, commandParameters, commandOutput, expectedArgNum);
     }
 
     @Override
-    public void run(KVClient client, String[] tokens) {
-        client.setRunning(false);
-        System.out.println("Goodbye.");
+    public void run(KVClient client, String[] tokens) throws Exception {
+        try {
+            super.run(client, tokens);
+            client.setRunning(false);
+            System.out.println("Goodbye.");
+        } catch (Exception e) {
+            throw new Exception(e.getMessage());
+        }
     }
 }

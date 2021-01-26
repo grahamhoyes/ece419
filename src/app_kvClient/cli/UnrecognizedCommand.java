@@ -1,7 +1,6 @@
 package app_kvClient.cli;
 
 import app_kvClient.KVClient;
-import client.KVCommInterface;
 
 public class UnrecognizedCommand extends AbstractCommand {
 
@@ -12,9 +11,11 @@ public class UnrecognizedCommand extends AbstractCommand {
             "\t\t<any>";
     private final static String commandOutput = "" +
             "\t\terror message: Unknown command";
+    protected final static int expectedArgNum = 0;
+
 
     public UnrecognizedCommand() {
-        super(commandName, commandDescription, commandParameters, commandOutput);
+        super(commandName, commandDescription, commandParameters, commandOutput, expectedArgNum);
     }
 
     @Override

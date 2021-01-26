@@ -12,19 +12,21 @@ public class LogLevelCommand extends AbstractCommand {
             "\t\tlevel: One of the following log4j log levels: (ALL | DEBUG | INFO | WARN | ERROR | FATAL | OFF)";
     private final static String commandOutput = "" +
             "\t\tstatus message: Print out current log status.";
+    protected final static int expectedArgNum = 1;
+
 
     public LogLevelCommand() {
-        super(commandName, commandDescription, commandParameters, commandOutput);
+        super(commandName, commandDescription, commandParameters, commandOutput, expectedArgNum);
     }
 
     @Override
-    public void run(KVClient client, String[] tokens) {
-        if (tokens.length != 2) {
-            client.printError("Invalid number of arguments. Usage: " + commandName);
-            return;
+    public void run(KVClient client, String[] tokens) throws Exception {
+        try {
+            super.run(client, tokens);
+            client.setLogLevel(Level.toLevel(tokens[1]));
+            System.out.println("Log level set to " + tokens[1]);
+        } catch (Exception e) {
+            throw new Exception(e.getMessage());
         }
-
-        client.setLogLevel(Level.toLevel(tokens[1]));
-        System.out.println("Log level set to " + tokens[1]);
     }
 }

@@ -12,28 +12,26 @@ public class ConnectCommand extends AbstractCommand {
             "\t\tport: The port of the storage service on the respective server.";
     protected final static String commandOutput = "" +
             "\t\tserver reply: Once the connection is established, the client program should give a status message to the user.";
+    protected final static int expectedArgNum = 2;
 
     public ConnectCommand() {
-        super(commandName, commandDescription, commandParameters, commandOutput);
+        super(commandName, commandDescription, commandParameters, commandOutput, expectedArgNum);
     }
 
     @Override
-    public void run(KVClient client, String[] tokens) {
+    public void run(KVClient client, String[] tokens) throws Exception {
         try {
-            if (tokens.length != 3) {
-                client.printError("Invalid number of arguments. Usage: connect <address> <port>");
-                return;
-            }
+            super.run(client, tokens);
 
             String hostname = tokens[1];
             int port = Integer.parseInt(tokens[2]);
             client.newConnection(hostname, port);
+            System.out.println("Connection established");
         } catch (NumberFormatException e) {
             client.printError("Not a valid address. Port must be an integer");
         } catch (Exception e) {
-            client.printError(e.getMessage());
+            throw new Exception(e.getMessage());
         }
 
-        System.out.println("Connection established");
     }
 }

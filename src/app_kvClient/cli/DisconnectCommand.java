@@ -11,18 +11,20 @@ public class DisconnectCommand extends AbstractCommand {
     private final static String commandParameters = "";
     private final static String commandOutput = "" +
             "\t\tstatus report: Once the client got disconnected from the server, it should provide a suitable notification to the user.";
+    protected final static int expectedArgNum = 0;
 
     public DisconnectCommand() {
-        super(commandName, commandDescription, commandParameters, commandOutput);
+        super(commandName, commandDescription, commandParameters, commandOutput, expectedArgNum);
     }
 
     @Override
-    public void run(KVClient client, String[] tokens) {
+    public void run(KVClient client, String[] tokens) throws Exception {
         try {
+            super.run(client, tokens);
             client.closeConnection();
+            System.out.println("Disconnected");
         } catch (Exception e) {
-            client.printError(e.getMessage());
+            throw new Exception(e.getMessage());
         }
-        System.out.println("Disconnected");
     }
 }

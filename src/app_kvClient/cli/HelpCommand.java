@@ -1,7 +1,6 @@
 package app_kvClient.cli;
 
 import app_kvClient.KVClient;
-import client.KVCommInterface;
 
 public class HelpCommand extends AbstractCommand {
 
@@ -11,22 +10,27 @@ public class HelpCommand extends AbstractCommand {
     private final static String commandParameters = "";
     private final static String commandOutput = "" +
             "\t\thelp text: Shows the intended usage of the client application and describes its set of commands.";
+    protected final static int expectedArgNum = 0;
+
 
     public HelpCommand() {
-        super(commandName, commandDescription, commandParameters, commandOutput);
+        super(commandName, commandDescription, commandParameters, commandOutput, expectedArgNum);
     }
 
     @Override
-    public void run(KVClient client, String[] tokens) {
-
-        System.out.println(new ConnectCommand().getCommandHelpDescription());
-        System.out.println(new DisconnectCommand().getCommandHelpDescription());
-        System.out.println(new PutCommand().getCommandHelpDescription());
-        System.out.println(new GetCommand().getCommandHelpDescription());
-        System.out.println(new LogLevelCommand().getCommandHelpDescription());
-        System.out.println(new HelpCommand().getCommandHelpDescription());
-        System.out.println(new QuitCommand().getCommandHelpDescription());
-        System.out.println(new UnrecognizedCommand().getCommandHelpDescription());
-
+    public void run(KVClient client, String[] tokens) throws Exception {
+        try {
+            super.run(client, tokens);
+            System.out.println(new ConnectCommand().getCommandHelpDescription());
+            System.out.println(new DisconnectCommand().getCommandHelpDescription());
+            System.out.println(new PutCommand().getCommandHelpDescription());
+            System.out.println(new GetCommand().getCommandHelpDescription());
+            System.out.println(new LogLevelCommand().getCommandHelpDescription());
+            System.out.println(new HelpCommand().getCommandHelpDescription());
+            System.out.println(new QuitCommand().getCommandHelpDescription());
+            System.out.println(new UnrecognizedCommand().getCommandHelpDescription());
+        } catch (Exception e) {
+            throw new Exception(e.getMessage());
+        }
     }
 }
