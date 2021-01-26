@@ -19,7 +19,7 @@ public class UnrecognizedCommand extends AbstractCommand {
     }
 
     @Override
-    public void run(KVClient client, String[] tokens) {
-
+    public void run(KVClient client, String[] tokens) throws Exception {
+        throw new Exception("Unknown command");
     }
 }
