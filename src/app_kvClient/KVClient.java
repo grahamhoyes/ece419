@@ -7,9 +7,7 @@ import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 
 public class KVClient implements IKVClient, Runnable {
 
@@ -119,13 +117,7 @@ public class KVClient implements IKVClient, Runnable {
 
     public void printError(String message) {
         System.err.println(message);
-        // TODO this is horrible, but since the System.err and System.out are different streams,
-        //  printing error and printing PROMPT happen in the wrong order. Should find a way to fix this.
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        System.out.println();
     }
 
     @Override
@@ -136,7 +128,6 @@ public class KVClient implements IKVClient, Runnable {
         while (isRunning()) {
             stdin = new BufferedReader(new InputStreamReader(System.in));
             System.out.print(PROMPT);
-
             try {
                 String cmdLine = stdin.readLine();
                 handleCommand(cmdLine);
