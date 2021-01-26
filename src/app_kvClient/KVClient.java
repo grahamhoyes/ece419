@@ -32,6 +32,10 @@ public class KVClient implements IKVClient, Runnable {
         }
     }
 
+    public void setLogLevel(Level level) {
+        logger.setLevel(level);
+    }
+
     public void setRunning(boolean running) {
         this.running = running;
     }
