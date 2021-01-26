@@ -28,10 +28,7 @@ public class ConnectCommand extends AbstractCommand {
             client.newConnection(hostname, port);
             System.out.println("Connection established");
         } catch (NumberFormatException e) {
-            client.printError("Not a valid address. Port must be an integer");
-        } catch (Exception e) {
-            throw new Exception(e.getMessage());
+            throw new Exception("Not a valid address. Port must be an integer");
         }
-
     }
 }

@@ -21,12 +21,8 @@ public class GetCommand extends AbstractCommand {
 
     @Override
     public void run(KVClient client, String[] tokens) throws Exception {
-        try {
-            super.run(client, tokens);
-            KVMessage message = client.getStore().get(tokens[1]);
-            System.out.println(message.serialize());
-        } catch (Exception e) {
-            throw new Exception(e.getMessage());
-        }
+        super.run(client, tokens);
+        KVMessage message = client.getStore().get(tokens[1]);
+        System.out.println(message.serialize());
     }
 }

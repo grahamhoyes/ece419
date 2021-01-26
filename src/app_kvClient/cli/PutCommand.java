@@ -22,11 +22,7 @@ public class PutCommand extends AbstractCommand {
 
     @Override
     public void run(KVClient client, String[] tokens) throws Exception {
-        try {
-            super.run(client, tokens);
-            client.getStore().put(tokens[1], tokens[2]);
-        } catch (Exception e) {
-            throw new Exception(e.getMessage());
-        }
+        super.run(client, tokens);
+        client.getStore().put(tokens[1], tokens[2]);
     }
 }
