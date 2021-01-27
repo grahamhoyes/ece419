@@ -1,8 +1,7 @@
 package store;
 
 import com.google.gson.Gson;
-import store.exceptions.GetKeyInvalidException;
-import store.exceptions.PutKeyInvalidException;
+import store.KeyInvalidException;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,7 +20,7 @@ public class KVSimpleStore implements KVStore{
         this.tempPath = "~temp" + this.fileName;
     }
 
-    public boolean find(String key) throws IOException{
+    private boolean find(String key) throws IOException{
         boolean exists = false;
         Gson gson = new Gson();
 
@@ -49,7 +48,7 @@ public class KVSimpleStore implements KVStore{
         return exists;
     }
 
-    public void deleteKeyValue() throws IOException{
+    private void deleteKeyValue() throws IOException{
         File temp = new File(tempPath);
 
         try(RandomAccessFile tempRAFile = new RandomAccessFile(tempPath, "rw");
@@ -66,7 +65,7 @@ public class KVSimpleStore implements KVStore{
         }
     }
 
-    public void updateKeyValue(String keyValue) throws  IOException{
+    private void updateKeyValue(String keyValue) throws  IOException{
         File temp = new File(tempPath);
 
         try(RandomAccessFile tempRAFile = new RandomAccessFile(tempPath, "rw");
@@ -88,24 +87,23 @@ public class KVSimpleStore implements KVStore{
 
     }
 
-    public String get(String key) throws GetKeyInvalidException, IOException {
+    public String get(String key) throws KeyInvalidException, IOException {
         boolean exists = find(key);
 
         if (exists){
             return this.value;
-        }
-        else{
-            throw new GetKeyInvalidException(key);
+        } else{
+            throw new KeyInvalidException(key);
         }
     }
 
-    public void put(String key, String value) throws PutKeyInvalidException, IOException{
+    public void put(String key, String value) throws KeyInvalidException, IOException{
         boolean exists = find(key);
         KeyValue keyValue = new KeyValue(key, value);
 
         if (!exists){
             if (value.equals("null")){
-                throw new PutKeyInvalidException(key);
+                throw new KeyInvalidException(key);
             }
             // Can add to end of file
             try (RandomAccessFile storageFile = new RandomAccessFile(fileName, "rw");){
@@ -113,12 +111,10 @@ public class KVSimpleStore implements KVStore{
                 storageFile.seek(storageFile.length());
                 storageFile.write(keyValue.getJsonKV().getBytes());
             }
-        }
-        else{
+        } else{
             if (value.equals("null")){
                 deleteKeyValue();
-            }
-            else{
+            } else{
                 Gson gson = new Gson();
                 updateKeyValue(keyValue.getJsonKV());
             }
