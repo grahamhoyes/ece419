@@ -6,11 +6,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
-import java.util.List;
 
 public class KVSimpleStore implements KVStore{
     private String fileName;
@@ -22,31 +17,31 @@ public class KVSimpleStore implements KVStore{
     public KVSimpleStore(String fileName){
         this.fileName = fileName;
         this.tempPath = "~temp" + this.fileName;
-
     }
 
     public boolean find(String key) throws IOException{
         boolean exists = false;
         Gson gson = new Gson();
 
-        RandomAccessFile storageFile = new RandomAccessFile(fileName, "r");
-        String str = null;
+        try(RandomAccessFile storageFile = new RandomAccessFile(fileName, "r");) {
+            String str = null;
 
-        long currPointer = storageFile.getFilePointer();
-        long prevPointer = currPointer;
-        while ((str = storageFile.readLine()) != null){
-            KeyValue keyValue = gson.fromJson(str, KeyValue.class);
-            currPointer = storageFile.getFilePointer();
-            String currKey = keyValue.getKey();
+            long currPointer = storageFile.getFilePointer();
+            long prevPointer = currPointer;
+            while ((str = storageFile.readLine()) != null) {
+                KeyValue keyValue = gson.fromJson(str, KeyValue.class);
+                currPointer = storageFile.getFilePointer();
+                String currKey = keyValue.getKey();
 
-            if (currKey.equals(key)){
-                this.startPosition = prevPointer;
-                this.endPosition = currPointer;
-                this.value = keyValue.getValue();
-                exists = true;
-                break;
+                if (currKey.equals(key)) {
+                    this.startPosition = prevPointer;
+                    this.endPosition = currPointer;
+                    this.value = keyValue.getValue();
+                    exists = true;
+                    break;
+                }
+                prevPointer = currPointer;
             }
-            prevPointer = currPointer;
         }
 
         return exists;
@@ -55,38 +50,40 @@ public class KVSimpleStore implements KVStore{
     public void deleteKeyValue() throws IOException{
         File temp = new File(tempPath);
 
-        RandomAccessFile tempRAFile = new RandomAccessFile(tempPath, "rw");
-        RandomAccessFile storageFile = new RandomAccessFile(this.fileName, "rw");
-        FileChannel fromChannel = storageFile.getChannel();
-        FileChannel toChannel = tempRAFile.getChannel();
+        try(RandomAccessFile tempRAFile = new RandomAccessFile(tempPath, "rw");
+            RandomAccessFile storageFile = new RandomAccessFile(this.fileName, "rw");){
+            FileChannel fromChannel = storageFile.getChannel();
+            FileChannel toChannel = tempRAFile.getChannel();
 
-        fromChannel.transferTo(this.endPosition, fromChannel.size(), toChannel);
-        storageFile.setLength(startPosition);
-        fromChannel.position(startPosition);
-        toChannel.transferTo(0, toChannel.size(), fromChannel);
+            fromChannel.transferTo(this.endPosition, fromChannel.size(), toChannel);
+            storageFile.setLength(startPosition);
+            fromChannel.position(startPosition);
+            toChannel.transferTo(0, toChannel.size(), fromChannel);
 
-        temp.delete();
-
+            temp.delete();
+        }
     }
 
     public void updateKeyValue(String keyValue) throws  IOException{
         File temp = new File(tempPath);
 
-        RandomAccessFile tempRAFile = new RandomAccessFile(tempPath, "rw");
-        RandomAccessFile storageFile = new RandomAccessFile(this.fileName, "rw");
-        FileChannel fromChannel = storageFile.getChannel();
-        FileChannel toChannel = tempRAFile.getChannel();
+        try(RandomAccessFile tempRAFile = new RandomAccessFile(tempPath, "rw");
+            RandomAccessFile storageFile = new RandomAccessFile(this.fileName, "rw");){
+            FileChannel fromChannel = storageFile.getChannel();
+            FileChannel toChannel = tempRAFile.getChannel();
 
-        fromChannel.transferTo(this.endPosition, fromChannel.size(), toChannel);
-        storageFile.setLength(startPosition);
+            fromChannel.transferTo(this.endPosition, fromChannel.size(), toChannel);
+            storageFile.setLength(startPosition);
 
-        storageFile.seek(startPosition);
-        storageFile.write(keyValue.getBytes());
-        fromChannel.position(storageFile.getFilePointer());
+            storageFile.seek(startPosition);
+            storageFile.write(keyValue.getBytes());
+            fromChannel.position(storageFile.getFilePointer());
 
-        toChannel.transferTo(0, toChannel.size(), fromChannel);
+            toChannel.transferTo(0, toChannel.size(), fromChannel);
 
-        temp.delete();
+            temp.delete();
+        }
+
     }
 
     public String get(String key) throws Exception {
@@ -138,40 +135,7 @@ public class KVSimpleStore implements KVStore{
         try(RandomAccessFile storageFile = new RandomAccessFile(this.fileName, "rw")){
             storageFile.setLength(0L);
         }
-        catch (IOException e){
-            e.printStackTrace();
-        }
     }
 
-    public void readMessages(){
-        try(RandomAccessFile storageFile = new RandomAccessFile(fileName, "r");){
-            String str = null;
-
-            while ((str = storageFile.readLine()) != null){
-                System.out.println(str);
-            }
-        }
-        catch (IOException e){
-            e.printStackTrace();
-        }
-    }
-
-    public void writeMessages(List<KeyValue> keyValues){
-        try {
-            for (KeyValue keyValue: keyValues){
-                String keyValueToWrite = keyValue.getJsonKV();
-                Files.writeString(
-                        Paths.get(fileName),
-                        keyValueToWrite,
-                        StandardCharsets.ISO_8859_1,
-                        StandardOpenOption.CREATE,
-                        StandardOpenOption.APPEND);
-            }
-        }
-        catch (IOException e){
-            System.out.println("failed to write");
-            e.printStackTrace();
-        }
-    }
 }
 
