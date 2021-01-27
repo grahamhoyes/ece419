@@ -5,62 +5,32 @@ import shared.messages.DeserializationException;
 import shared.messages.JsonKVMessage;
 import shared.messages.KVMessage;
 
-import java.io.IOException;
 import java.net.Socket;
 
 public class KVStoreConnection extends Connection implements KVCommInterface {
 
-	private final String address;
-	private final int port;
-
 	/**
 	 * Initialize KVStore with address and port of KVServer
-	 * @param address the address of the KVServer
+	 * @param hostname the address of the KVServer
 	 * @param port the port of the KVServer
 	 */
-	public KVStoreConnection(String address, int port) {
-		this.address = address;
+	public KVStoreConnection(String hostname, int port) {
+		this.hostname = hostname;
 		this.port = port;
 	}
 
 	@Override
 	public void connect() throws Exception {
-		socket = new Socket(address, port);
+		socket = new Socket(hostname, port);
 		input = socket.getInputStream();
 		output = socket.getOutputStream();
 	}
 
 	@Override
-	public void disconnect() {
-		try {
-			input.close();
-			output.close();
-			socket.close();
-		} catch (IOException e) {
-			logger.error("Error! Unable to close connection", e);
-		}
-	}
-
-	@Override
 	public KVMessage put(String key, String value) throws Exception {
-		JsonKVMessage req = new JsonKVMessage(KVMessage.StatusType.PUT, key, value);
-		JsonKVMessage res;
-
-		try {
-			sendMessage(req);
-			res = receiveMessage();
-		} catch (RuntimeException e) {
-			// RuntimeException is caused by failed message deserialization
-			logger.error(e.getMessage());
-			res = new JsonKVMessage(KVMessage.StatusType.PUT_ERROR, key, value);
-		}
-
-		return res;
-	}
-
-	@Override
-	public KVMessage get(String key) throws Exception {
-		JsonKVMessage req = new JsonKVMessage(KVMessage.StatusType.GET, key);
+		JsonKVMessage req = new JsonKVMessage(KVMessage.StatusType.PUT);
+		req.setKey(key);
+		req.setValue(value);
 		JsonKVMessage res;
 
 		try {
@@ -68,7 +38,29 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 			res = receiveMessage();
 		} catch (DeserializationException e) {
 			logger.error(e.getMessage());
-			res = new JsonKVMessage(KVMessage.StatusType.GET_ERROR, key);
+			res = new JsonKVMessage(KVMessage.StatusType.PUT_ERROR);
+			req.setKey(key);
+			req.setValue(value);
+			req.setMessage(e.getMessage());
+		}
+
+		return res;
+	}
+
+	@Override
+	public KVMessage get(String key) throws Exception {
+		JsonKVMessage req = new JsonKVMessage(KVMessage.StatusType.GET);
+		req.setKey(key);
+		JsonKVMessage res;
+
+		try {
+			sendMessage(req);
+			res = receiveMessage();
+		} catch (DeserializationException e) {
+			logger.error(e.getMessage());
+			res = new JsonKVMessage(KVMessage.StatusType.GET_ERROR);
+			res.setKey(key);
+			res.setMessage(e.getMessage());
 		}
 
 		return res;

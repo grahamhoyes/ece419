@@ -15,9 +15,13 @@ import java.net.Socket;
 public class ClientConnection extends Connection implements Runnable {
 
     private boolean isOpen;
+    private final IKVServer server;
 
-    public ClientConnection(Socket socket) {
+    public ClientConnection(Socket socket, IKVServer server) {
         this.socket = socket;
+        this.hostname = socket.getInetAddress().getHostName();
+        this.port = socket.getPort();
+        this.server = server;
         this.isOpen = true;
     }
 
@@ -44,16 +48,10 @@ public class ClientConnection extends Connection implements Runnable {
             logger.error("Error! Connection could not be established");
             isOpen = false;
         } finally {
+            disconnect();
 
-            try {
-                if (socket != null) {
-                    input.close();
-                    output.close();
-                    socket.close();
-                }
-            } catch (IOException e) {
-                logger.error("Error! Unable to close connection", e);
-            }
+            logger.info("Client connection to "
+                    + hostname + ":" + port + " has been closed");
 
         }
     }

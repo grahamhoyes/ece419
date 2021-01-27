@@ -7,34 +7,16 @@ public class JsonKVMessage implements KVMessage {
     private StatusType status;
     private String key;
     private String value;
+    private String message;
 
     /**
-     * Generate a JSON KV message from the provided status, key, and value.
+     * Generate a JSON KV message from the provided status.
      *
-     * Used for PUT requests.
-     *
-     * @param status Message status
-     * @param key Message key
-     * @param value Message value
-     */
-    public JsonKVMessage(StatusType status, String key, String value) {
-        this.status = status;
-        this.key = key;
-        this.value = value;
-    }
-
-    /**
-     * Generate a JSON KV message from the provided status and key.
-     *
-     * Used for GET and DELETE requests.
      *
      * @param status Message status
-     * @param key Message key
      */
-    public JsonKVMessage(StatusType status, String key) {
+    public JsonKVMessage(StatusType status) {
         this.status = status;
-        this.key = key;
-        this.value = null;
     }
 
     /**
@@ -46,6 +28,10 @@ public class JsonKVMessage implements KVMessage {
         deserialize(json);
     }
 
+    public StatusType getStatus() {
+        return status;
+    }
+
     public String getKey() {
         return key;
     }
@@ -54,9 +40,26 @@ public class JsonKVMessage implements KVMessage {
         return value;
     }
 
-    public StatusType getStatus() {
-        return status;
+    public String getMessage() {
+        return message;
     }
+
+    public void setStatus(StatusType status) {
+        this.status = status;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
 
     public String serialize() {
         return new Gson().toJson(this);
@@ -64,10 +67,11 @@ public class JsonKVMessage implements KVMessage {
 
     public void deserialize(String json) throws DeserializationException {
         try {
-            JsonKVMessage message = new Gson().fromJson(json, JsonKVMessage.class);
-            this.status = message.status;
-            this.key = message.key;
-            this.value = message.value;
+            JsonKVMessage kvMessage = new Gson().fromJson(json, JsonKVMessage.class);
+            this.status = kvMessage.status;
+            this.key = kvMessage.key;
+            this.value = kvMessage.value;
+            this.message = kvMessage.message;
         } catch (JsonSyntaxException e) {
             throw new DeserializationException("Failed to deserialize message: " + json);
         }
