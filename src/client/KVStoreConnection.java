@@ -28,7 +28,9 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 
 	@Override
 	public KVMessage put(String key, String value) throws Exception {
-		JsonKVMessage req = new JsonKVMessage(KVMessage.StatusType.PUT, key, value);
+		JsonKVMessage req = new JsonKVMessage(KVMessage.StatusType.PUT);
+		req.setKey(key);
+		req.setValue(value);
 		JsonKVMessage res;
 
 		try {
@@ -36,7 +38,10 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 			res = receiveMessage();
 		} catch (DeserializationException e) {
 			logger.error(e.getMessage());
-			res = new JsonKVMessage(KVMessage.StatusType.PUT_ERROR, key, value);
+			res = new JsonKVMessage(KVMessage.StatusType.PUT_ERROR);
+			req.setKey(key);
+			req.setValue(value);
+			req.setMessage(e.getMessage());
 		}
 
 		return res;
@@ -44,7 +49,8 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 
 	@Override
 	public KVMessage get(String key) throws Exception {
-		JsonKVMessage req = new JsonKVMessage(KVMessage.StatusType.GET, key);
+		JsonKVMessage req = new JsonKVMessage(KVMessage.StatusType.GET);
+		req.setKey(key);
 		JsonKVMessage res;
 
 		try {
@@ -52,7 +58,9 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 			res = receiveMessage();
 		} catch (DeserializationException e) {
 			logger.error(e.getMessage());
-			res = new JsonKVMessage(KVMessage.StatusType.GET_ERROR, key);
+			res = new JsonKVMessage(KVMessage.StatusType.GET_ERROR);
+			res.setKey(key);
+			res.setMessage(e.getMessage());
 		}
 
 		return res;
