@@ -1,6 +1,8 @@
 package store;
 
 import com.google.gson.Gson;
+import store.exceptions.GetKeyInvalidException;
+import store.exceptions.PutKeyInvalidException;
 
 import java.io.File;
 import java.io.IOException;
@@ -86,33 +88,30 @@ public class KVSimpleStore implements KVStore{
 
     }
 
-    public String get(String key) throws Exception {
+    public String get(String key) throws GetKeyInvalidException, IOException {
         boolean exists = find(key);
 
         if (exists){
             return this.value;
         }
         else{
-            throw new Exception();
+            throw new GetKeyInvalidException(key);
         }
     }
 
-    public void put(String key, String value) throws Exception{
+    public void put(String key, String value) throws PutKeyInvalidException, IOException{
         boolean exists = find(key);
         KeyValue keyValue = new KeyValue(key, value);
 
         if (!exists){
             if (value.equals("null")){
-                throw new IOException("Trying to delete key-value pair for non-existent key");
+                throw new PutKeyInvalidException(key);
             }
             // Can add to end of file
             try (RandomAccessFile storageFile = new RandomAccessFile(fileName, "rw");){
                 Gson gson = new Gson();
                 storageFile.seek(storageFile.length());
                 storageFile.write(keyValue.getJsonKV().getBytes());
-            }
-            catch (IOException e){
-                e.printStackTrace();
             }
         }
         else{
@@ -127,11 +126,11 @@ public class KVSimpleStore implements KVStore{
         }
     }
 
-    public boolean exists(String key) throws  Exception{
+    public boolean exists(String key) throws IOException{
         return find(key);
     }
 
-    public void clear() throws Exception{
+    public void clear() throws IOException{
         try(RandomAccessFile storageFile = new RandomAccessFile(this.fileName, "rw")){
             storageFile.setLength(0L);
         }
