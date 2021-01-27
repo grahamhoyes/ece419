@@ -15,11 +15,13 @@ import java.net.Socket;
 public class ClientConnection extends Connection implements Runnable {
 
     private boolean isOpen;
+    private final IKVServer server;
 
-    public ClientConnection(Socket socket) {
+    public ClientConnection(Socket socket, IKVServer server) {
         this.socket = socket;
         this.hostname = socket.getInetAddress().getHostName();
         this.port = socket.getPort();
+        this.server = server;
         this.isOpen = true;
     }
 

@@ -147,7 +147,7 @@ public class KVServer implements IKVServer, Runnable {
                 try {
                     Socket client = serverSocket.accept();
 
-                    ClientConnection connection = new ClientConnection(client);
+                    ClientConnection connection = new ClientConnection(client, this);
                     new Thread(connection).start();
 
                     logger.info("Connected to "
