@@ -77,6 +77,10 @@ public class JsonKVMessage implements KVMessage {
         try {
             JsonKVMessage kvMessage = new Gson().fromJson(json, JsonKVMessage.class);
             this.status = kvMessage.status;
+
+            if (this.status == null)
+                throw new DeserializationException("Failed to deserialize message: " + json);
+
             this.key = kvMessage.key;
             this.value = kvMessage.value;
             this.message = kvMessage.message;
