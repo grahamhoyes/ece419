@@ -41,7 +41,7 @@ public class PutCommand extends AbstractCommand {
             KVMessage message = client.getStore().put(tokens[1], tokens[2]);
             switch (message.getStatus()) {
                 case PUT_SUCCESS:
-                    System.out.println("Tuple was put successfully");
+                    System.out.println("Tuple was inserted successfully");
                     break;
                 case PUT_UPDATE:
                     System.out.println("Tuple was updated successfully");

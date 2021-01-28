@@ -44,10 +44,12 @@ public class ClientConnection extends Connection implements Runnable {
                                 res.setStatus(StatusType.GET_SUCCESS);
                                 res.setKey(req.getKey());
                                 res.setValue(value);
+                                logger.info("GET " + req.getKey() + " successful: " + res.getValue());
                             } catch (Exception e) {
                                 res.setStatus(StatusType.GET_ERROR);
                                 res.setKey(req.getKey());
                                 res.setMessage(e.getMessage());
+                                logger.warn("GET " + req.getKey() + " error:" + e.getMessage());
                             }
                             break;
                         case PUT:
@@ -58,29 +60,39 @@ public class ClientConnection extends Connection implements Runnable {
                                 try {
                                     server.deleteKV(req.getKey());
                                     res.setStatus(StatusType.DELETE_SUCCESS);
+                                    logger.info("DELETE " + req.getKey() + " successful");
                                 } catch (Exception e) {
                                     res.setStatus(StatusType.DELETE_ERROR);
                                     res.setKey(req.getKey());
                                     res.setMessage(e.getMessage());
+                                    logger.warn("DELETE " + req.getKey() + " error: " + e.getMessage());
                                 }
                             } else {
                                 try {
                                     boolean exists = server.putKV(req.getKey(), req.getValue());
-                                    if (exists)
-                                        res.setStatus(StatusType.PUT_SUCCESS);
-                                    else
+                                    if (exists) {
                                         res.setStatus(StatusType.PUT_UPDATE);
+                                        logger.info("PUT update " + req.getKey() + "="
+                                                + req.getValue() + " successful");
+                                    } else {
+                                        res.setStatus(StatusType.PUT_SUCCESS);
+                                        logger.info("PUT insert " + req.getKey() + "="
+                                                + req.getValue() + " successful");
+                                    }
                                     res.setKey(req.getKey());
                                 } catch (Exception e) {
                                     res.setStatus(StatusType.PUT_ERROR);
                                     res.setKey(req.getKey());
                                     res.setMessage(e.getMessage());
+                                    logger.warn("PUT " + req.getKey() + "="
+                                            + req.getValue() + " error: " + e.getMessage());
                                 }
                             }
                             break;
                         default:
                             res.setStatus(StatusType.BAD_REQUEST);
                             res.setMessage("Invalid status");
+                            logger.warn("Invalid request type");
                             break;
                     }
 
