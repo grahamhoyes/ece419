@@ -102,6 +102,8 @@ public class KVClient implements IKVClient, Runnable {
             case "help":
                 command = new HelpCommand();
                 break;
+            case "q":
+            case "exit":
             case "quit":
                 command = new QuitCommand();
                 break;
