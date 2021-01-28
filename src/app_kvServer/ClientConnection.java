@@ -52,8 +52,11 @@ public class ClientConnection extends Connection implements Runnable {
                             break;
                         case PUT:
                             try {
-                                server.putKV(req.getKey(), req.getValue());
-                                res.setStatus(StatusType.PUT_SUCCESS);
+                                boolean exists = server.putKV(req.getKey(), req.getValue());
+                                if (exists)
+                                    res.setStatus(StatusType.PUT_SUCCESS);
+                                else
+                                    res.setStatus(StatusType.PUT_UPDATE);
                                 res.setKey(req.getKey());
                             } catch (Exception e) {
                                 res.setStatus(StatusType.GET_ERROR);
