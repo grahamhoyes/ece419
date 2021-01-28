@@ -3,6 +3,8 @@ package app_kvClient.cli;
 import app_kvClient.KVClient;
 import shared.messages.KVMessage;
 
+import java.util.Arrays;
+
 public class PutCommand extends AbstractCommand {
 
     private final static String commandName = "put <key> <value>";
@@ -25,26 +27,26 @@ public class PutCommand extends AbstractCommand {
     public void run(KVClient client, String[] tokens) throws Exception {
 
         if (tokens.length == (expectedArgNum + 1)) {
-            KVMessage message = client.getStore().put(tokens[1], null);
+            KVMessage message = client.getStore().put(tokens[1], "null");
             switch (message.getStatus()) {
-                case PUT_SUCCESS:
-                case PUT_UPDATE:
-                    System.out.println("Tuple was deleted successfully");
+                case DELETE_SUCCESS:
+                    System.out.printf("Tuple with key \"%s\" was deleted successfully%n", message.getKey());
                     break;
-                case PUT_ERROR:
+                case DELETE_ERROR:
                     throw new Exception(message.getMessage());
                 default:
                     System.out.println("This should never happen?");
             }
         }
-        else if (tokens.length == (expectedArgNum + 2)) {
-            KVMessage message = client.getStore().put(tokens[1], tokens[2]);
+        else if (tokens.length >= (expectedArgNum + 2)) {
+            String v = String.join(" ", Arrays.copyOfRange(tokens, 2, tokens.length));
+            KVMessage message = client.getStore().put(tokens[1], v);
             switch (message.getStatus()) {
                 case PUT_SUCCESS:
-                    System.out.println("Tuple was inserted successfully");
+                    System.out.printf("Tuple {%s, %s} was inserted successfully%n", message.getKey(), message.getValue());
                     break;
                 case PUT_UPDATE:
-                    System.out.println("Tuple was updated successfully");
+                    System.out.printf("Tuple was updated successfully to {%s, %s}%n", message.getKey(), message.getValue());
                     break;
                 case PUT_ERROR:
                     throw new Exception(message.getMessage());
