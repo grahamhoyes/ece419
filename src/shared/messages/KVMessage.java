@@ -15,6 +15,16 @@ public interface KVMessage {
 		BAD_REQUEST,    /* Any - bad request */
 	}
 
+	public void setStatus(StatusType status);
+
+	public void setKey(String key);
+
+	public void setValue(String value);
+
+	public void setMessage(String message);
+
+	public String getMessage();
+
 	/**
 	 * @return the key that is associated with this message, 
 	 * 		null if not key is associated.

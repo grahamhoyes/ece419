@@ -1,6 +1,7 @@
 package app_kvClient.cli;
 
 import app_kvClient.KVClient;
+import shared.messages.KVMessage;
 
 public class PutCommand extends AbstractCommand {
 
@@ -14,7 +15,7 @@ public class PutCommand extends AbstractCommand {
             "\t\tvalue: arbitrary String (max. length 120 kByte)";
     private final static String commandOutput = "" +
             "\t\tstatus message: provides a notification if the put- operation was successful (SUCCESS) or not (ERROR)";
-    protected final static int expectedArgNum = 2;
+    protected final static int expectedArgNum = 1;
 
     public PutCommand() {
         super(commandName, commandDescription, commandParameters, commandOutput, expectedArgNum);
@@ -22,7 +23,36 @@ public class PutCommand extends AbstractCommand {
 
     @Override
     public void run(KVClient client, String[] tokens) throws Exception {
-        super.run(client, tokens);
-        client.getStore().put(tokens[1], tokens[2]);
+
+        if (tokens.length == (expectedArgNum + 1)) {
+            KVMessage message = client.getStore().put(tokens[1], null);
+            switch (message.getStatus()) {
+                case PUT_SUCCESS:
+                case PUT_UPDATE:
+                    System.out.println("Tuple was deleted successfully");
+                    break;
+                case PUT_ERROR:
+                    throw new Exception(message.getMessage());
+                default:
+                    System.out.println("This should never happen?");
+            }
+        }
+        else if (tokens.length == (expectedArgNum + 2)) {
+            KVMessage message = client.getStore().put(tokens[1], tokens[2]);
+            switch (message.getStatus()) {
+                case PUT_SUCCESS:
+                    System.out.println("Tuple was put successfully");
+                    break;
+                case PUT_UPDATE:
+                    System.out.println("Tuple was updated successfully");
+                    break;
+                case PUT_ERROR:
+                    throw new Exception(message.getMessage());
+                default:
+                    System.out.println("This should never happen?");
+            }
+        } else
+            throw new Exception("Invalid number of arguments. Usage: " + commandName);
     }
+
 }
