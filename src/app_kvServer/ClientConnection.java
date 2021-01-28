@@ -5,6 +5,7 @@ import shared.messages.DeserializationException;
 import shared.messages.JsonKVMessage;
 import shared.messages.KVMessage.StatusType;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.Socket;
 
@@ -47,6 +48,9 @@ public class ClientConnection extends Connection implements Runnable {
                                 res.setValue(value);
                                 logger.info("GET " + req.getKey() + " successful: " + res.getValue());
                             } catch (Exception e) {
+                                if (e instanceof FileNotFoundException){
+                                    throw (FileNotFoundException)e;
+                                }
                                 res.setStatus(StatusType.GET_ERROR);
                                 res.setMessage(e.getMessage());
                                 logger.warn("GET " + req.getKey() + " error:" + e.getMessage());
@@ -62,6 +66,9 @@ public class ClientConnection extends Connection implements Runnable {
                                     res.setStatus(StatusType.DELETE_SUCCESS);
                                     logger.info("DELETE " + req.getKey() + " successful");
                                 } catch (Exception e) {
+                                    if (e instanceof FileNotFoundException){
+                                        throw (FileNotFoundException)e;
+                                    }
                                     res.setStatus(StatusType.DELETE_ERROR);
                                     res.setMessage(e.getMessage());
                                     logger.warn("DELETE " + req.getKey() + " error: " + e.getMessage());
@@ -79,6 +86,9 @@ public class ClientConnection extends Connection implements Runnable {
                                                 + req.getValue() + " successful");
                                     }
                                 } catch (Exception e) {
+                                    if (e instanceof FileNotFoundException){
+                                        throw (FileNotFoundException)e;
+                                    }
                                     res.setStatus(StatusType.PUT_ERROR);
                                     res.setMessage(e.getMessage());
                                     logger.warn("PUT " + req.getKey() + "="
@@ -100,6 +110,12 @@ public class ClientConnection extends Connection implements Runnable {
                     res.setMessage(e.getMessage());
                     sendMessage(res);
                     logger.error(e.getMessage());
+                } catch (FileNotFoundException e){
+                    res.setStatus(StatusType.SERVER_ERROR);
+                    res.setMessage("Storage file not found");
+                    sendMessage(res);
+                    logger.fatal("Error: Storage file not found.");
+                    server.kill();
                 } catch (IOException e) {
                     // IOException indicates something wrong with the socket,
                     // so the connection is terminated
