@@ -1,7 +1,5 @@
 package testing;
 
-import java.io.IOException;
-
 import org.apache.log4j.Level;
 
 import app_kvServer.KVServer;
