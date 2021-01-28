@@ -37,7 +37,7 @@ public interface IKVServer {
      * NOTE: does not modify any other properties
      * @return  true if key in storage, false otherwise
      */
-    public boolean inStorage(String key);
+    public boolean inStorage(String key) throws  Exception;
 
     /**
      * Check if key is in storage.
@@ -59,7 +59,7 @@ public interface IKVServer {
      * @throws Exception
      *      when key not in the key range of the server
      */
-    public void putKV(String key, String value) throws Exception;
+    public boolean putKV(String key, String value) throws Exception;
 
     /**
      * Clear the local cache of the server
@@ -69,7 +69,7 @@ public interface IKVServer {
     /**
      * Clear the storage of the server
      */
-    public void clearStorage();
+    public void clearStorage() throws Exception;
 
     /**
      * Starts running the server

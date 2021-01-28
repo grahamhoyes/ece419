@@ -3,26 +3,27 @@ package app_kvServer;
 import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import store.KeyInvalidException;
+import store.KVSimpleStore;
+import store.KVStore;
 
 import java.io.IOException;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class KVServer implements IKVServer, Runnable {
 
     private static final Logger logger = Logger.getRootLogger();
 
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
+
     private final int port;
     private final int cacheSize;
+    private final KVStore kvStore;
     private CacheStrategy cacheStrategy;
-
     private boolean running;
     private ServerSocket serverSocket;
-
-    // TODO: This is just for testing, remove this
-    private String value;
 
 
     /**
@@ -36,9 +37,10 @@ public class KVServer implements IKVServer, Runnable {
      *                      currently not contained in the cache. Options are "FIFO", "LRU",
      *                      and "LFU". As of Milestone 1, this is unused.
      */
-    public KVServer(int port, int cacheSize, String cacheStrategy) {
+    public KVServer(int port, int cacheSize, String cacheStrategy) throws IOException{
         this.port = port;
         this.cacheSize = cacheSize;
+        this.kvStore = new KVSimpleStore(port + "_store.txt");
 
         try {
             this.cacheStrategy = CacheStrategy.valueOf(cacheStrategy);
@@ -51,7 +53,13 @@ public class KVServer implements IKVServer, Runnable {
         // TODO: Expand arg parsing for cache
         try {
             new LogSetup("logs/server.log", Level.ALL);
+        } catch (IOException e) {
+            System.err.println("Error! Unable to initialize logger.");
+            e.printStackTrace();
+            System.exit(1);
+        }
 
+        try{
             if (args.length != 1) {
                 System.err.println("Error! Invalid number of arguments");
                 System.err.println("Usage: KVServer <port>");
@@ -61,9 +69,8 @@ public class KVServer implements IKVServer, Runnable {
             int port = Integer.parseInt(args[0]);
             KVServer server = new KVServer(port, 0, "None");
             new Thread(server).start();
-
-        } catch (IOException e) {
-            System.err.println("Error! Unable to initialize logger.");
+        } catch (IOException e){
+            System.err.println("Error! Unable to initialize persistent storage file.");
             e.printStackTrace();
             System.exit(1);
         }
@@ -91,9 +98,15 @@ public class KVServer implements IKVServer, Runnable {
     }
 
     @Override
-    public boolean inStorage(String key) {
-        // TODO Auto-generated method stub
-        return false;
+    public boolean inStorage(String key) throws Exception {
+        boolean exists;
+        lock.readLock().lock();
+        try {
+            exists = this.kvStore.exists(key);
+        } finally {
+            lock.readLock().unlock();
+        }
+        return exists;
     }
 
     @Override
@@ -104,20 +117,26 @@ public class KVServer implements IKVServer, Runnable {
 
     @Override
     public String getKV(String key) throws Exception {
-        // TODO Auto-generated method stub
-        if (key.equals("bad")) {
-            throw new KeyInvalidException(key);
+        String value;
+        lock.readLock().lock();
+        try {
+            value = this.kvStore.get(key);
+        } finally {
+            lock.readLock().unlock();
         }
-        return this.value;
+        return value;
     }
 
     @Override
-    public void putKV(String key, String value) throws Exception {
-        if (key.equals("bad") && value == null) {
-            throw new KeyInvalidException(key);
+    public boolean putKV(String key, String value) throws Exception {
+        boolean exists;
+        lock.writeLock().lock();
+        try {
+            exists = this.kvStore.put(key, value);
+        } finally {
+            lock.writeLock().unlock();
         }
-
-        this.value = value;
+        return exists;
     }
 
     @Override
@@ -126,8 +145,14 @@ public class KVServer implements IKVServer, Runnable {
     }
 
     @Override
-    public void clearStorage() {
-        // TODO Auto-generated method stub
+    public void clearStorage() throws Exception {
+        lock.writeLock().lock();
+        try {
+            this.kvStore.clear();
+        } finally {
+            lock.writeLock().unlock();
+        }
+
     }
 
     private boolean initializeServer() {

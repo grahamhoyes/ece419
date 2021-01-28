@@ -1,6 +1,7 @@
 package store;
 
 import com.google.gson.Gson;
+import org.apache.log4j.Logger;
 import store.KeyInvalidException;
 
 import java.io.File;
@@ -9,15 +10,30 @@ import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 
 public class KVSimpleStore implements KVStore{
+    protected static final Logger logger = Logger.getRootLogger();
+
     private String fileName;
     private String tempPath;
+
     private String value = null;
     private long startPosition = 0;
     private long endPosition = 0;
 
-    public KVSimpleStore(String fileName){
+    public KVSimpleStore(String fileName) throws IOException{
         this.fileName = fileName;
         this.tempPath = "~temp" + this.fileName;
+
+        prepareFile();
+    }
+
+    private void prepareFile() throws IOException{
+        File storageFile = new File(this.fileName);
+        boolean fileCreated = storageFile.createNewFile();
+        if (fileCreated){
+            logger.info("KVSimpleStore: Storage file created.");
+        } else {
+            logger.info("KVSimpleStore: Storage file found.");
+        }
     }
 
     private boolean find(String key) throws IOException{
@@ -97,7 +113,7 @@ public class KVSimpleStore implements KVStore{
         }
     }
 
-    public void put(String key, String value) throws KeyInvalidException, IOException{
+    public boolean put(String key, String value) throws KeyInvalidException, IOException{
         boolean exists = find(key);
         KeyValue keyValue = new KeyValue(key, value);
 
@@ -120,9 +136,10 @@ public class KVSimpleStore implements KVStore{
             }
 
         }
+        return exists;
     }
 
-    public boolean exists(String key) throws IOException{
+    public boolean exists(String key) throws Exception{
         return find(key);
     }
 
