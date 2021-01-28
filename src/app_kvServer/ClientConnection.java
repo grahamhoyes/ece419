@@ -3,7 +3,7 @@ package app_kvServer;
 import shared.Connection;
 import shared.messages.DeserializationException;
 import shared.messages.JsonKVMessage;
-import shared.messages.KVMessage.*;
+import shared.messages.KVMessage.StatusType;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -15,8 +15,8 @@ import java.net.Socket;
  */
 public class ClientConnection extends Connection implements Runnable {
 
-    private boolean isOpen;
     private final IKVServer server;
+    private boolean isOpen;
 
     public ClientConnection(Socket socket, IKVServer server) {
         this.socket = socket;
@@ -51,17 +51,31 @@ public class ClientConnection extends Connection implements Runnable {
                             }
                             break;
                         case PUT:
-                            try {
-                                boolean exists = server.putKV(req.getKey(), req.getValue());
-                                if (exists)
-                                    res.setStatus(StatusType.PUT_SUCCESS);
-                                else
-                                    res.setStatus(StatusType.PUT_UPDATE);
-                                res.setKey(req.getKey());
-                            } catch (Exception e) {
-                                res.setStatus(StatusType.GET_ERROR);
-                                req.setKey(res.getKey());
-                                res.setMessage(e.getMessage());
+                            if (res.getValue().equals("null")) {
+                                // The value string "null" is used to trigger deletion,
+                                // because the spec is insane
+
+                                try {
+                                    server.deleteKV(req.getKey());
+                                    res.setStatus(StatusType.DELETE_SUCCESS);
+                                } catch (Exception e) {
+                                    res.setStatus(StatusType.DELETE_ERROR);
+                                    res.setKey(req.getKey());
+                                    res.setMessage(e.getMessage());
+                                }
+                            } else {
+                                try {
+                                    boolean exists = server.putKV(req.getKey(), req.getValue());
+                                    if (exists)
+                                        res.setStatus(StatusType.PUT_SUCCESS);
+                                    else
+                                        res.setStatus(StatusType.PUT_UPDATE);
+                                    res.setKey(req.getKey());
+                                } catch (Exception e) {
+                                    res.setStatus(StatusType.PUT_ERROR);
+                                    res.setKey(req.getKey());
+                                    res.setMessage(e.getMessage());
+                                }
                             }
                             break;
                         default:
