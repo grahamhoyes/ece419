@@ -20,8 +20,8 @@ public abstract class Connection {
     protected static final Logger logger = Logger.getRootLogger();
 
     // Header size in bytes
-    private static final int HEADER_SIZE = 16;
-    private static final byte PROTOCOL_VERSION = 1;
+    public static final int HEADER_SIZE = 16;
+    public static final byte PROTOCOL_VERSION = 1;
 
     protected String hostname;
     protected int port;

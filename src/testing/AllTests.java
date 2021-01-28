@@ -14,7 +14,8 @@ import org.junit.runners.Suite;
 		ConnectionTest.class,
 		InteractionTest.class,
 		JsonMessageTest.class,
-		KVStoreTest.class
+		KVStoreTest.class,
+		CommunicationProtocolTest.class
 })
 public class AllTests {
 
