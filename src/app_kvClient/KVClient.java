@@ -68,9 +68,6 @@ public class KVClient implements IKVClient, Runnable {
     }
 
     private void handleCommand(String cmdLine){
-        // TODO: Command handling. This is where all the magic happens.
-        //  Use this.storeConnection.connect/disconnect/get/put to interact
-        //  with the server
 
         AbstractCommand command;
 
