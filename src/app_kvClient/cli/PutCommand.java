@@ -48,7 +48,11 @@ public class PutCommand extends AbstractCommand {
                 case PUT_UPDATE:
                     System.out.printf("Tuple was updated successfully to {%s, %s}%n", message.getKey(), message.getValue());
                     break;
+                case DELETE_SUCCESS:
+                    System.out.printf("Tuple with key \"%s\" was deleted successfully%n", message.getKey());
+                    break;
                 case PUT_ERROR:
+                case DELETE_ERROR:
                     throw new Exception(message.getMessage());
                 default:
                     System.out.println("This should never happen?");
