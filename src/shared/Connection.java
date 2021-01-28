@@ -65,7 +65,7 @@ public abstract class Connection {
         output.write(msgBytes, 0, msgBytes.length);
         output.flush();
 
-        logger.info("SEND \t"
+        logger.info("SEND \t<"
                 + socket.getInetAddress().getHostName() + ":"
                 + socket.getPort() + ">: '"
                 + msgContent + "'");
@@ -87,7 +87,7 @@ public abstract class Connection {
         int headerLen = input.read(headerBytes, 0, HEADER_SIZE);
 
         if (headerLen == -1) {
-            throw new IOException("Connection terminated by client");
+            throw new IOException("Connection terminated");
         } else if (headerLen != HEADER_SIZE) {
             throw new IOException("Failed to read message header");
         }

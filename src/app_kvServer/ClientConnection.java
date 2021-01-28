@@ -49,11 +49,11 @@ public class ClientConnection extends Connection implements Runnable {
                             } catch (Exception e) {
                                 res.setStatus(StatusType.GET_ERROR);
                                 res.setMessage(e.getMessage());
-                                logger.warn("GET " + req.getKey() + " error:" + e.getMessage());
+                                logger.warn("GET " + req.getKey() + " error: " + e.getMessage());
                             }
                             break;
                         case PUT:
-                            if (req.getValue().equals("null")) {
+                            if (req.getValue() == null || req.getValue().equals("null")) {
                                 // The value string "null" is used to trigger deletion,
                                 // because the spec is insane
 
@@ -87,6 +87,7 @@ public class ClientConnection extends Connection implements Runnable {
                             }
                             break;
                         default:
+                            // TODO: Test this
                             res.setStatus(StatusType.BAD_REQUEST);
                             res.setMessage("Invalid status");
                             logger.warn("Invalid request type");
