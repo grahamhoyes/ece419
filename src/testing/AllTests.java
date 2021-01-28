@@ -13,7 +13,8 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
 		ConnectionTest.class,
 		InteractionTest.class,
-		JsonMessageTest.class
+		JsonMessageTest.class,
+		CommunicationProtocolTest.class
 })
 public class AllTests {
 
