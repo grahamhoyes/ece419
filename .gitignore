@@ -2,7 +2,7 @@
 *.class
 
 # Log file
-*.log
+**/*.log
 
 # BlueJ files
 *.ctxt
@@ -28,3 +28,6 @@ hs_err_pid*
 .vscode/
 *.MF
 *.iml
+
+# Server files
+*_store.txt
