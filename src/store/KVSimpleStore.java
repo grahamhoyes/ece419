@@ -103,6 +103,14 @@ public class KVSimpleStore implements KVStore{
 
     }
 
+    private void addKeyValue(String keyValue) throws IOException{
+        try (RandomAccessFile storageFile = new RandomAccessFile(fileName, "rw");){
+            storageFile.seek(storageFile.length());
+            storageFile.write(keyValue.getBytes());
+        }
+    }
+
+    @Override
     public String get(String key) throws KeyInvalidException, IOException {
         boolean exists = find(key);
 
@@ -113,39 +121,40 @@ public class KVSimpleStore implements KVStore{
         }
     }
 
+    @Override
     public boolean put(String key, String value) throws KeyInvalidException, IOException{
         boolean exists = find(key);
         KeyValue keyValue = new KeyValue(key, value);
 
         if (!exists){
-            if (value.equals("null")){
-                throw new KeyInvalidException(key);
-            }
             // Can add to end of file
-            try (RandomAccessFile storageFile = new RandomAccessFile(fileName, "rw");){
-                Gson gson = new Gson();
-                storageFile.seek(storageFile.length());
-                storageFile.write(keyValue.getJsonKV().getBytes());
-            }
+            addKeyValue(keyValue.getJsonKV());
         } else{
-            if (value.equals("null")){
-                deleteKeyValue();
-            } else{
-                Gson gson = new Gson();
-                updateKeyValue(keyValue.getJsonKV());
-            }
-
+            // Update existing key-value pair
+            updateKeyValue(keyValue.getJsonKV());
         }
         return exists;
     }
 
+    @Override
     public boolean exists(String key) throws Exception{
         return find(key);
     }
 
+    @Override
     public void clear() throws IOException{
         try(RandomAccessFile storageFile = new RandomAccessFile(this.fileName, "rw")){
             storageFile.setLength(0L);
+        }
+    }
+
+    @Override
+    public void delete(String key) throws Exception{
+        boolean exists = find(key);
+        if (exists){
+            deleteKeyValue();
+        }else{
+            throw new KeyInvalidException(key);
         }
     }
 

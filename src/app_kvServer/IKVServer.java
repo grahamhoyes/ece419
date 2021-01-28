@@ -62,6 +62,13 @@ public interface IKVServer {
     public boolean putKV(String key, String value) throws Exception;
 
     /**
+     * Delete the key-value pair in storage
+     * @throws Exception
+     *      when key not in the key range of the server
+     */
+    public void deleteKV(String key) throws Exception;
+
+    /**
      * Clear the local cache of the server
      */
     public void clearCache();

@@ -140,6 +140,16 @@ public class KVServer implements IKVServer, Runnable {
     }
 
     @Override
+    public void deleteKV(String key) throws Exception{
+        lock.writeLock().lock();
+        try{
+            this.kvStore.delete(key);
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    @Override
     public void clearCache() {
         // TODO Auto-generated method stub
     }
