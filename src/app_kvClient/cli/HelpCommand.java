@@ -17,9 +17,7 @@ public class HelpCommand extends AbstractCommand {
         super(commandName, commandDescription, commandParameters, commandOutput, expectedArgNum);
     }
 
-    @Override
-    public void run(KVClient client, String[] tokens) throws Exception {
-        super.run(client, tokens);
+    public static void printHelp() {
         System.out.println(new ConnectCommand().getCommandHelpDescription());
         System.out.println(new DisconnectCommand().getCommandHelpDescription());
         System.out.println(new PutCommand().getCommandHelpDescription());
@@ -28,5 +26,11 @@ public class HelpCommand extends AbstractCommand {
         System.out.println(new HelpCommand().getCommandHelpDescription());
         System.out.println(new QuitCommand().getCommandHelpDescription());
         System.out.println(new UnrecognizedCommand().getCommandHelpDescription());
+    }
+
+    @Override
+    public void run(KVClient client, String[] tokens) throws Exception {
+        super.run(client, tokens);
+        HelpCommand.printHelp();
     }
 }
