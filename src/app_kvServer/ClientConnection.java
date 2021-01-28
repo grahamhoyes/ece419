@@ -51,7 +51,7 @@ public class ClientConnection extends Connection implements Runnable {
                             }
                             break;
                         case PUT:
-                            if (res.getValue().equals("null")) {
+                            if (req.getValue().equals("null")) {
                                 // The value string "null" is used to trigger deletion,
                                 // because the spec is insane
 
