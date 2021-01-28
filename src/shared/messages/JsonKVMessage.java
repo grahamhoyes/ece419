@@ -10,8 +10,16 @@ public class JsonKVMessage implements KVMessage {
     private String message;
 
     /**
-     * Generate a JSON KV message from the provided status.
+     * Create a new JSON KV message
      *
+     * Attributes to be set via setters
+     */
+    public JsonKVMessage() {
+
+    }
+
+    /**
+     * Generate a JSON KV message from the provided status
      *
      * @param status Message status
      */
