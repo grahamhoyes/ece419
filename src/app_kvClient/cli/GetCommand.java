@@ -23,6 +23,15 @@ public class GetCommand extends AbstractCommand {
     public void run(KVClient client, String[] tokens) throws Exception {
         super.run(client, tokens);
         KVMessage message = client.getStore().get(tokens[1]);
-        System.out.println(message.serialize());
+
+        switch (message.getStatus()) {
+            case GET_SUCCESS:
+                System.out.println(message.getValue());
+                break;
+            case GET_ERROR:
+                throw new Exception(message.getMessage());
+            default:
+                System.out.println("This should never happen?");
+        }
     }
 }

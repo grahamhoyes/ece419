@@ -116,8 +116,7 @@ public class KVClient implements IKVClient, Runnable {
     }
 
     public void printError(String message) {
-        System.err.println(message);
-        System.out.println();
+        System.out.println(message);
     }
 
     @Override
