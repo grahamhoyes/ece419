@@ -6,6 +6,11 @@ import shared.messages.DeserializationException;
 import shared.messages.JsonKVMessage;
 import shared.messages.KVMessage.StatusType;
 
+/**
+ * Test for the JsonKVMessage Class
+ *
+ * Written by Graham Hoyes
+ */
 public class JsonMessageTest extends Assert {
 
     @Test

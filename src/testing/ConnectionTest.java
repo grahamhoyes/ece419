@@ -7,6 +7,13 @@ import client.KVStoreConnection;
 import junit.framework.TestCase;
 
 
+/**
+ * Tests for the connection to the KVStone
+ *
+ * Written by the course instructors, and reformatted to conform
+ * to Junit 4 standards. The poor conventions around exception
+ * handling are left as-is.
+ */
 public class ConnectionTest extends TestCase {
 
 	

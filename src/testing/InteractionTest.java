@@ -1,25 +1,36 @@
 package testing;
 
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import client.KVStoreConnection;
-import junit.framework.TestCase;
 import shared.messages.KVMessage;
 import shared.messages.KVMessage.StatusType;
 
 
-public class InteractionTest extends TestCase {
+/**
+ * Tests for interaction with the KVStore
+ *
+ * Written by the course instructors, and reformatted to conform
+ * to Junit 4 standards. The poor conventions around exception
+ * handling are left as-is.
+ */
+public class InteractionTest extends Assert {
 
 	private KVStoreConnection kvClient;
 	
+	@Before
 	public void setUp() {
 		kvClient = new KVStoreConnection("localhost", 50000);
 		try {
 			kvClient.connect();
-		} catch (Exception e) {
+		} catch (Exception ignored) {
 		}
 	}
 
+	@After
 	public void tearDown() {
 		kvClient.disconnect();
 	}
@@ -74,7 +85,7 @@ public class InteractionTest extends TestCase {
 			ex = e;
 		}
 
-		assertTrue(ex == null && response.getStatus() == StatusType.PUT_UPDATE
+		Assert.assertTrue(ex == null && response.getStatus() == StatusType.PUT_UPDATE
 				&& response.getValue().equals(updatedValue));
 	}
 	
