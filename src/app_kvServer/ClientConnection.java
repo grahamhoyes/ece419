@@ -36,18 +36,18 @@ public class ClientConnection extends Connection implements Runnable {
 
                 try {
                     JsonKVMessage req = receiveMessage();
+                    res.setKey(req.getKey());
+                    res.setValue(req.getValue());
 
                     switch (req.getStatus()) {
                         case GET:
                             try {
                                 String value = server.getKV(req.getKey());
                                 res.setStatus(StatusType.GET_SUCCESS);
-                                res.setKey(req.getKey());
                                 res.setValue(value);
                                 logger.info("GET " + req.getKey() + " successful: " + res.getValue());
                             } catch (Exception e) {
                                 res.setStatus(StatusType.GET_ERROR);
-                                res.setKey(req.getKey());
                                 res.setMessage(e.getMessage());
                                 logger.warn("GET " + req.getKey() + " error:" + e.getMessage());
                             }
@@ -63,7 +63,6 @@ public class ClientConnection extends Connection implements Runnable {
                                     logger.info("DELETE " + req.getKey() + " successful");
                                 } catch (Exception e) {
                                     res.setStatus(StatusType.DELETE_ERROR);
-                                    res.setKey(req.getKey());
                                     res.setMessage(e.getMessage());
                                     logger.warn("DELETE " + req.getKey() + " error: " + e.getMessage());
                                 }
@@ -79,10 +78,8 @@ public class ClientConnection extends Connection implements Runnable {
                                         logger.info("PUT insert " + req.getKey() + "="
                                                 + req.getValue() + " successful");
                                     }
-                                    res.setKey(req.getKey());
                                 } catch (Exception e) {
                                     res.setStatus(StatusType.PUT_ERROR);
-                                    res.setKey(req.getKey());
                                     res.setMessage(e.getMessage());
                                     logger.warn("PUT " + req.getKey() + "="
                                             + req.getValue() + " error: " + e.getMessage());
