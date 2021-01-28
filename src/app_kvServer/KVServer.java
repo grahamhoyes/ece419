@@ -3,6 +3,7 @@ package app_kvServer;
 import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import store.KeyInvalidException;
 
 import java.io.IOException;
 import java.net.BindException;
@@ -19,6 +20,9 @@ public class KVServer implements IKVServer, Runnable {
 
     private boolean running;
     private ServerSocket serverSocket;
+
+    // TODO: This is just for testing, remove this
+    private String value;
 
 
     /**
@@ -101,12 +105,19 @@ public class KVServer implements IKVServer, Runnable {
     @Override
     public String getKV(String key) throws Exception {
         // TODO Auto-generated method stub
-        return "";
+        if (key.equals("bad")) {
+            throw new KeyInvalidException(key);
+        }
+        return this.value;
     }
 
     @Override
     public void putKV(String key, String value) throws Exception {
-        // TODO Auto-generated method stub
+        if (key.equals("bad") && value == null) {
+            throw new KeyInvalidException(key);
+        }
+
+        this.value = value;
     }
 
     @Override
