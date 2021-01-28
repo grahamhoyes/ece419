@@ -1,6 +1,7 @@
 package store;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import org.apache.log4j.Logger;
 import store.KeyInvalidException;
 
@@ -36,7 +37,7 @@ public class KVSimpleStore implements KVStore{
         }
     }
 
-    private boolean find(String key) throws IOException{
+    private boolean find(String key) throws Exception{
         boolean exists = false;
         Gson gson = new Gson();
 
@@ -59,6 +60,8 @@ public class KVSimpleStore implements KVStore{
                 }
                 prevPointer = currPointer;
             }
+        } catch (JsonSyntaxException e){
+            throw new DataFormatException();
         }
 
         return exists;
@@ -111,7 +114,7 @@ public class KVSimpleStore implements KVStore{
     }
 
     @Override
-    public String get(String key) throws KeyInvalidException, IOException {
+    public String get(String key) throws Exception {
         boolean exists = find(key);
 
         if (exists){
@@ -122,7 +125,7 @@ public class KVSimpleStore implements KVStore{
     }
 
     @Override
-    public boolean put(String key, String value) throws KeyInvalidException, IOException{
+    public boolean put(String key, String value) throws Exception{
         boolean exists = find(key);
         KeyValue keyValue = new KeyValue(key, value);
 
