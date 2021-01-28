@@ -31,7 +31,7 @@ public class GetCommand extends AbstractCommand {
             case GET_ERROR:
                 throw new Exception(message.getMessage());
             default:
-                System.out.println("This should never happen?");
+                System.out.println("Something unexpected happened");
         }
     }
 }

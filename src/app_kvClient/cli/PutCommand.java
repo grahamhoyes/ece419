@@ -35,7 +35,7 @@ public class PutCommand extends AbstractCommand {
                 case DELETE_ERROR:
                     throw new Exception(message.getMessage());
                 default:
-                    System.out.println("This should never happen?");
+                    System.out.println("Something unexpected happened");
             }
         }
         else if (tokens.length >= (expectedArgNum + 2)) {
@@ -55,7 +55,7 @@ public class PutCommand extends AbstractCommand {
                 case DELETE_ERROR:
                     throw new Exception(message.getMessage());
                 default:
-                    System.out.println("This should never happen?");
+                    System.out.println("Something unexpected happened");
             }
         } else
             throw new Exception("Invalid number of arguments. Usage: " + commandName);
