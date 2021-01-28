@@ -13,6 +13,7 @@ public interface KVMessage {
 		DELETE_SUCCESS, /* Delete - request successful */
 		DELETE_ERROR,	/* Delete - request successful */
 		BAD_REQUEST,    /* Any - bad request */
+		SERVER_ERROR,   /* Server error closes connection */
 	}
 
 	public void setStatus(StatusType status);
