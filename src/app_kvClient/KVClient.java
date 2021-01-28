@@ -48,8 +48,14 @@ public class KVClient implements IKVClient, Runnable {
             throw new Exception("Connection already established");
         }
 
-        this.storeConnection = new KVStoreConnection(hostname, port);
-        this.storeConnection.connect();
+        try {
+            this.storeConnection = new KVStoreConnection(hostname, port);
+            this.storeConnection.connect();
+        } catch (IOException e) {
+            this.storeConnection = null;
+            throw e;
+        }
+
     }
 
     @Override
