@@ -1,10 +1,7 @@
 package testing;
 
 import app_kvServer.KVServer;
-import logger.LogSetup;
-import org.apache.log4j.Level;
 
-import java.io.IOException;
 import java.util.Random;
 
 public class PerformanceTest {
@@ -33,7 +30,7 @@ public class PerformanceTest {
         long start = System.nanoTime();
         try {
             server.putKV(key, "value");
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
         long end = System.nanoTime();
         totalTimePut += (end - start) / 1000;
@@ -44,7 +41,7 @@ public class PerformanceTest {
         long start = System.nanoTime();
         try {
             server.getKV(key);
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
         long end = System.nanoTime();
         totalTimeGet += (end - start) / 1000;
