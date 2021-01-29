@@ -53,6 +53,9 @@ public class PerformanceTest {
 
 
     public void runTest() {
+        System.out.println("Total number of requests sent per iteration: " + numRequests);
+        System.out.println("The unit for time is microseconds");
+        System.out.println();
         for (double ratio = 0.1; ratio<=0.9; ratio+=0.1) {
             long startPut = System.nanoTime();
             int numPutRequests = (int) (ratio * numRequests);
