@@ -110,6 +110,16 @@ public class CommunicationProtocolTest extends Assert {
         JsonKVMessage receivedMessage = conn.receiveMessage();
     }
 
+    @Test(expected = IOException.class)
+    public void testThrowsIOExceptionForBadMessageLength() throws IOException, DeserializationException {
+        //            version | |  length  |  |       unused header         |  | msg  |
+        byte[] inputBytes = {0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'h', 'i'};
+        ByteArrayInputStream input = new ByteArrayInputStream(inputBytes);
+
+        SampleConnection conn = new SampleConnection(input, null);
+        JsonKVMessage receivedMessage = conn.receiveMessage();
+    }
+
     private class SampleConnection extends Connection {
 
         public SampleConnection(InputStream input, OutputStream output) {
