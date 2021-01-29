@@ -9,8 +9,13 @@ import java.util.Random;
 
 public class PerformanceTest {
 
-    private static final int numRequests = 1000;
+    private static final int numRequests = 20000;
     private KVServer server;
+
+    long totalTimePut = 0;
+    long totalTimeGet = 0;
+    int numGetRequests = 0;
+    int numPutRequests = 0;
 
     Random r = new Random();
 
@@ -23,53 +28,49 @@ public class PerformanceTest {
         }
     }
 
-    public void sendPutRequests(int n) {
-        for (int i=0; i<n; i++) {
-            char c1 = (char) (r.nextInt(26) + 'a');
-            char c2 = (char) (r.nextInt(26) + 'a');
-            char c3 = (char) (r.nextInt(26) + 'a');
-            try {
-                String key = "" + c1 + c2 + c3;
-                server.putKV(key, "value");
-            } catch (Exception e) {
-            }
+
+    public void sendPutRequest(String key) {
+        long start = System.nanoTime();
+        try {
+            server.putKV(key, "value");
+        } catch (Exception e) {
         }
+        long end = System.nanoTime();
+        totalTimePut += (end - start) / 1000;
+        numPutRequests += 1;
     }
 
-
-    public void sendGetRequests(int n) {
-        for (int i=0; i<n; i++) {
-            char c1 = (char)(r.nextInt(26) + 'a');
-            char c2 = (char)(r.nextInt(26) + 'a');
-            char c3 = (char)(r.nextInt(26) + 'a');
-            try {
-                String key = "" + c1 + c2 + c3;
-                server.getKV(key);
-            }
-            catch (Exception e) {
-            }
+    public void sendGetRequest(String key) {
+        long start = System.nanoTime();
+        try {
+            server.getKV(key);
+        } catch (Exception e) {
         }
+        long end = System.nanoTime();
+        totalTimeGet += (end - start) / 1000;
+        numGetRequests += 1;
     }
-
 
     public void runTest() {
         System.out.println("Total number of requests sent per iteration: " + numRequests);
         System.out.println("The unit for time is microseconds");
         System.out.println();
         for (double ratio = 0.1; ratio<=0.9; ratio+=0.1) {
-            long startPut = System.nanoTime();
-            int numPutRequests = (int) (ratio * numRequests);
-            sendPutRequests(numPutRequests);
-            long endPut = System.nanoTime();
-            long totalTimePut = (endPut - startPut) / 1000;
 
-            long startGet = System.nanoTime();
-            int numGetRequests = (int) ((1 - ratio) * numRequests);
-            sendGetRequests(numGetRequests);
-            long endGet = System.nanoTime();
-            long totalTimeGet = (endGet - startGet) / 1000;
+            for (int i = 0; i<numRequests; i++) {
+                char c1 = (char) (r.nextInt(26) + 'a');
+                char c2 = (char) (r.nextInt(26) + 'a');
+                char c3 = (char) (r.nextInt(26) + 'a');
+                String key = "" + c1 + c2 + c3;
+                if (Math.random() < ratio)
+                    sendPutRequest(key);
+                else
+                    sendGetRequest(key);
+            }
 
-            System.out.println("Ratio of put requests to total: " + ratio);
+            System.out.println("Number of put requests: " + numPutRequests);
+            System.out.println("Number of get requests: " + numGetRequests);
+            System.out.println("Ratio of put requests to total: " + ((float) numPutRequests/numRequests));
             System.out.println("Total time taken: " + (totalTimeGet + totalTimePut));
             System.out.println("Total time for put requests: " + totalTimePut);
             System.out.println("Total time for get requests: " + totalTimeGet);
@@ -81,6 +82,10 @@ public class PerformanceTest {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            totalTimePut = 0;
+            totalTimeGet = 0;
+            numGetRequests = 0;
+            numPutRequests = 0;
         }
     }
 
