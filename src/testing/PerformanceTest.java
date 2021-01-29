@@ -6,13 +6,14 @@ import java.util.Random;
 
 public class PerformanceTest {
 
-    private static final int numRequests = 20000;
+    private static final int numRequests = 10000;
     private KVServer server;
 
     long totalTimePut = 0;
     long totalTimeGet = 0;
     int numGetRequests = 0;
-    int numPutRequests = 0;
+    int numPutUpdateRequests = 0;
+    int numPutInsertRequests = 0;
 
     Random r = new Random();
 
@@ -28,13 +29,17 @@ public class PerformanceTest {
 
     public void sendPutRequest(String key) {
         long start = System.nanoTime();
+        boolean updated = false;
         try {
-            server.putKV(key, "value");
+            updated = server.putKV(key, "value");
         } catch (Exception ignored) {
         }
         long end = System.nanoTime();
         totalTimePut += (end - start) / 1000;
-        numPutRequests += 1;
+        if (updated)
+            numPutUpdateRequests++;
+        else
+            numPutInsertRequests++;
     }
 
     public void sendGetRequest(String key) {
@@ -45,7 +50,7 @@ public class PerformanceTest {
         }
         long end = System.nanoTime();
         totalTimeGet += (end - start) / 1000;
-        numGetRequests += 1;
+        numGetRequests++;
     }
 
     public void runTest() {
@@ -57,7 +62,7 @@ public class PerformanceTest {
             for (int i = 0; i<numRequests; i++) {
                 char c1 = (char) (r.nextInt(26) + 'a');
                 char c2 = (char) (r.nextInt(26) + 'a');
-                char c3 = (char) (r.nextInt(26) + 'a');
+                char c3 = (char) (r.nextInt(4) + 'a');
                 String key = "" + c1 + c2 + c3;
                 if (Math.random() < ratio)
                     sendPutRequest(key);
@@ -65,7 +70,11 @@ public class PerformanceTest {
                     sendGetRequest(key);
             }
 
-            System.out.println("Number of put requests: " + numPutRequests);
+            int numPutRequests = numPutUpdateRequests + numPutInsertRequests;
+
+            System.out.println("Number of put insert requests: " + numPutInsertRequests);
+            System.out.println("Number of put update requests: " + numPutUpdateRequests);
+            System.out.println("Number of put requests total: " + numPutRequests);
             System.out.println("Number of get requests: " + numGetRequests);
             System.out.println("Ratio of put requests to total: " + ((float) numPutRequests/numRequests));
             System.out.println("Total time taken: " + (totalTimeGet + totalTimePut));
@@ -82,7 +91,8 @@ public class PerformanceTest {
             totalTimePut = 0;
             totalTimeGet = 0;
             numGetRequests = 0;
-            numPutRequests = 0;
+            numPutInsertRequests = 0;
+            numPutUpdateRequests = 0;
         }
     }
 
