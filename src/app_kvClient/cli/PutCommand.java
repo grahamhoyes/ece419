@@ -52,8 +52,11 @@ public class PutCommand extends AbstractCommand {
                     System.out.printf("Tuple with key \"%s\" was deleted successfully%n", message.getKey());
                     break;
                 case PUT_ERROR:
+                    System.out.println("Error: put failed");
+                    break;
                 case DELETE_ERROR:
-                    throw new Exception(message.getMessage());
+                    System.out.printf("Error: key does not exist: %s", message.getKey());
+                    break;
                 default:
                     System.out.println("Something unexpected happened");
             }
