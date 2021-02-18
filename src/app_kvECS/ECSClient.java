@@ -3,10 +3,8 @@ package app_kvECS;
 import cli.AbstractCommand;
 import cli.UnrecognizedCommand;
 import cli.cli_ecsClient.*;
-import client.KVCommInterface;
 import ecs.ECS;
-import ecs.ECSInterface;
-import ecs.IECSNode;
+import ecs.IECS;
 import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -20,7 +18,7 @@ public class ECSClient implements IECSClient, Runnable {
     private static final Logger logger = Logger.getRootLogger();
     private static final String PROMPT = "> ";
 
-    private ECSInterface ecs;
+    private IECS ecs;
 
     private boolean running;
 
@@ -45,7 +43,7 @@ public class ECSClient implements IECSClient, Runnable {
     }
 
     @Override
-    public ECSInterface getECS() {
+    public IECS getECS() {
         return this.ecs;
     }
 

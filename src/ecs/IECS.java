@@ -3,7 +3,7 @@ package ecs;
 import java.util.Collection;
 import java.util.Map;
 
-public interface ECSInterface {
+public interface IECS {
     /**
      * Starts the storage service by calling start() on all KVServer instances that participate in the service.\
      * @throws Exception    some meaningfull exception on failure

@@ -3,7 +3,7 @@ package ecs;
 import java.util.Collection;
 import java.util.Map;
 
-public class ECS implements ECSInterface {
+public class ECS implements IECS {
 
     private static final String cacheStrategy = "";
     private static final int cacheSize = 0;

@@ -1,8 +1,8 @@
 package app_kvECS;
 
 
-import ecs.ECSInterface;
+import ecs.IECS;
 
 public interface IECSClient {
-    public ECSInterface getECS();
+    public IECS getECS();
 }
