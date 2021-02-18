@@ -1,6 +1,9 @@
 package cli.cli_ecsClient;
 
+import app_kvECS.ECSClient;
 import cli.AbstractCommand;
+import ecs.IECSNode;
+import shared.messages.KVMessage;
 
 public class AddNodeCommand extends AbstractCommand {
 
@@ -14,5 +17,12 @@ public class AddNodeCommand extends AbstractCommand {
 
     public AddNodeCommand() {
         super(commandName, commandDescription, commandParameters, commandOutput, expectedArgNum);
+    }
+
+    @Override
+    public void run(Object client, String[] tokens) throws Exception {
+        super.run(client, tokens);
+        IECSNode node = ((ECSClient) client).addNode();
+        System.out.println("Node added.");
     }
 }

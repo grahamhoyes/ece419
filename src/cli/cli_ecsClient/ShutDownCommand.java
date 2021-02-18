@@ -1,5 +1,6 @@
 package cli.cli_ecsClient;
 
+import app_kvECS.ECSClient;
 import cli.AbstractCommand;
 
 public class ShutDownCommand extends AbstractCommand {
@@ -14,5 +15,12 @@ public class ShutDownCommand extends AbstractCommand {
 
     public ShutDownCommand() {
         super(commandName, commandDescription, commandParameters, commandOutput, expectedArgNum);
+    }
+
+    @Override
+    public void run(Object client, String[] tokens) throws Exception {
+        super.run(client, tokens);
+        ((ECSClient) client).shutdown();
+        System.out.println("Process exited.");
     }
 }

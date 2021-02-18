@@ -2,6 +2,7 @@ package cli.cli_ecsClient;
 
 import cli.AbstractCommand;
 import cli.UnrecognizedCommand;
+import cli.cli_kvClient.HelpKVClientCommand;
 
 public class HelpECSClientCommand extends AbstractCommand {
 
@@ -26,5 +27,11 @@ public class HelpECSClientCommand extends AbstractCommand {
         System.out.println(new RemoveNodeCommand().getCommandHelpDescription());
         System.out.println(new HelpECSClientCommand().getCommandHelpDescription());
         System.out.println(new UnrecognizedCommand().getCommandHelpDescription());
+    }
+
+    @Override
+    public void run(Object client, String[] tokens) throws Exception {
+        super.run(client, tokens);
+        HelpKVClientCommand.printHelp();
     }
 }

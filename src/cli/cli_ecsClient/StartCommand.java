@@ -1,5 +1,6 @@
 package cli.cli_ecsClient;
 
+import app_kvECS.ECSClient;
 import cli.AbstractCommand;
 
 public class StartCommand extends AbstractCommand {
@@ -14,5 +15,12 @@ public class StartCommand extends AbstractCommand {
 
     public StartCommand() {
         super(commandName, commandDescription, commandParameters, commandOutput, expectedArgNum);
+    }
+
+    @Override
+    public void run(Object client, String[] tokens) throws Exception {
+        super.run(client, tokens);
+        ((ECSClient) client).start();
+        System.out.println("Servers started.");
     }
 }
