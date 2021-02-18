@@ -1,6 +1,8 @@
 package app_kvClient;
 
-import app_kvClient.cli.*;
+import cli.AbstractCommand;
+import cli.UnrecognizedCommand;
+import cli.cli_kvClient.*;
 import client.KVCommInterface;
 import client.KVStoreConnection;
 import logger.LogSetup;
@@ -100,7 +102,7 @@ public class KVClient implements IKVClient, Runnable {
                 command = new LogLevelCommand();
                 break;
             case "help":
-                command = new HelpCommand();
+                command = new HelpKVClientCommand();
                 break;
             case "q":
             case "exit":

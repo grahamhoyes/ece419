@@ -1,6 +1,7 @@
-package app_kvClient.cli;
+package cli.cli_kvClient;
 
 import app_kvClient.KVClient;
+import cli.AbstractCommand;
 
 public class QuitCommand extends AbstractCommand {
 
@@ -17,9 +18,9 @@ public class QuitCommand extends AbstractCommand {
     }
 
     @Override
-    public void run(KVClient client, String[] tokens) throws Exception {
+    public void run(Object client, String[] tokens) throws Exception {
         super.run(client, tokens);
-        client.setRunning(false);
+        ((KVClient) client).setRunning(false);
         System.out.println("Goodbye.");
     }
 }

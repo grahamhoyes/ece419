@@ -1,4 +1,4 @@
-package app_kvClient.cli;
+package cli;
 
 import app_kvClient.KVClient;
 
@@ -34,7 +34,7 @@ public abstract class AbstractCommand {
         return helpDescription;
     }
 
-    public void run(KVClient client, String[] tokens) throws Exception {
+    public void run(Object client, String[] tokens) throws Exception {
         if (tokens.length != (this.expectedArgNum + 1)) {
             throw new Exception("Invalid number of arguments. Usage: " + commandName);
         }

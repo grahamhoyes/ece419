@@ -1,6 +1,7 @@
-package app_kvClient.cli;
+package cli.cli_kvClient;
 
 import app_kvClient.KVClient;
+import cli.AbstractCommand;
 
 public class ConnectCommand extends AbstractCommand {
 
@@ -19,13 +20,13 @@ public class ConnectCommand extends AbstractCommand {
     }
 
     @Override
-    public void run(KVClient client, String[] tokens) throws Exception {
+    public void run(Object client, String[] tokens) throws Exception {
         try {
             super.run(client, tokens);
 
             String hostname = tokens[1];
             int port = Integer.parseInt(tokens[2]);
-            client.newConnection(hostname, port);
+            ((KVClient) client).newConnection(hostname, port);
             System.out.println("Connection established");
         } catch (NumberFormatException e) {
             throw new Exception("Not a valid address. Port must be an integer");
