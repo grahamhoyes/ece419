@@ -1,9 +1,9 @@
 package cli.cli_kvClient;
 
-import app_kvClient.KVClient;
 import cli.AbstractCommand;
+import cli.UnrecognizedCommand;
 
-public class HelpCommand extends AbstractCommand {
+public class HelpKVClientCommand extends AbstractCommand {
 
     private final static String commandName = "help";
     private final static String commandDescription = "" +
@@ -14,7 +14,7 @@ public class HelpCommand extends AbstractCommand {
     protected final static int expectedArgNum = 0;
 
 
-    public HelpCommand() {
+    public HelpKVClientCommand() {
         super(commandName, commandDescription, commandParameters, commandOutput, expectedArgNum);
     }
 
@@ -24,14 +24,14 @@ public class HelpCommand extends AbstractCommand {
         System.out.println(new PutCommand().getCommandHelpDescription());
         System.out.println(new GetCommand().getCommandHelpDescription());
         System.out.println(new LogLevelCommand().getCommandHelpDescription());
-        System.out.println(new HelpCommand().getCommandHelpDescription());
+        System.out.println(new HelpKVClientCommand().getCommandHelpDescription());
         System.out.println(new QuitCommand().getCommandHelpDescription());
         System.out.println(new UnrecognizedCommand().getCommandHelpDescription());
     }
 
     @Override
-    public void run(KVClient client, String[] tokens) throws Exception {
+    public void run(Object client, String[] tokens) throws Exception {
         super.run(client, tokens);
-        HelpCommand.printHelp();
+        HelpKVClientCommand.printHelp();
     }
 }

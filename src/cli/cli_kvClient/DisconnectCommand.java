@@ -19,9 +19,9 @@ public class DisconnectCommand extends AbstractCommand {
     }
 
     @Override
-    public void run(KVClient client, String[] tokens) throws Exception {
+    public void run(Object client, String[] tokens) throws Exception {
         super.run(client, tokens);
-        client.closeConnection();
+        ((KVClient) client).closeConnection();
         System.out.println("Disconnected");
     }
 }

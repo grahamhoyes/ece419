@@ -25,10 +25,10 @@ public class PutCommand extends AbstractCommand {
     }
 
     @Override
-    public void run(KVClient client, String[] tokens) throws Exception {
+    public void run(Object client, String[] tokens) throws Exception {
 
         if (tokens.length == (expectedArgNum + 1)) {
-            KVMessage message = client.getStore().put(tokens[1], "null");
+            KVMessage message = ((KVClient) client).getStore().put(tokens[1], "null");
             switch (message.getStatus()) {
                 case DELETE_SUCCESS:
                     System.out.printf("Tuple with key \"%s\" was deleted successfully%n", message.getKey());
@@ -41,7 +41,7 @@ public class PutCommand extends AbstractCommand {
         }
         else if (tokens.length >= (expectedArgNum + 2)) {
             String v = String.join(" ", Arrays.copyOfRange(tokens, 2, tokens.length));
-            KVMessage message = client.getStore().put(tokens[1], v);
+            KVMessage message = ((KVClient) client).getStore().put(tokens[1], v);
             switch (message.getStatus()) {
                 case PUT_SUCCESS:
                     System.out.printf("Tuple {%s, %s} was inserted successfully%n", message.getKey(), message.getValue());

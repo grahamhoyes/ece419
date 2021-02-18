@@ -1,7 +1,9 @@
-package cli.cli_kvClient;
+package cli;
 
 import app_kvClient.KVClient;
-import cli.AbstractCommand;
+import app_kvECS.ECSClient;
+import cli.cli_ecsClient.HelpECSClientCommand;
+import cli.cli_kvClient.HelpKVClientCommand;
 
 public class UnrecognizedCommand extends AbstractCommand {
 
@@ -20,8 +22,13 @@ public class UnrecognizedCommand extends AbstractCommand {
     }
 
     @Override
-    public void run(KVClient client, String[] tokens) throws Exception {
-        HelpCommand.printHelp();
+    public void run(Object client, String[] tokens) throws Exception {
+        if (client instanceof KVClient) {
+            HelpKVClientCommand.printHelp();
+        }
+        else if (client instanceof ECSClient) {
+            HelpECSClientCommand.printHelp();
+        }
         throw new Exception("Unknown command");
     }
 }
