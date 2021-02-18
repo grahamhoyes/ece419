@@ -1,6 +1,7 @@
 package app_kvClient;
 
-import app_kvClient.cli.*;
+import cli.AbstractCommand;
+import cli.cli_kvClient.*;
 import client.KVCommInterface;
 import client.KVStoreConnection;
 import logger.LogSetup;

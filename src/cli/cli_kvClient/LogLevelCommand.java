@@ -1,6 +1,7 @@
-package app_kvClient.cli;
+package cli.cli_kvClient;
 
 import app_kvClient.KVClient;
+import cli.AbstractCommand;
 import org.apache.log4j.Level;
 
 public class LogLevelCommand extends AbstractCommand {

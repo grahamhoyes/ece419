@@ -1,4 +1,4 @@
-package app_kvClient.cli;
+package cli;
 
 import app_kvClient.KVClient;
 

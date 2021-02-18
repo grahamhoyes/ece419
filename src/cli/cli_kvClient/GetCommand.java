@@ -1,6 +1,7 @@
-package app_kvClient.cli;
+package cli.cli_kvClient;
 
 import app_kvClient.KVClient;
+import cli.AbstractCommand;
 import shared.messages.KVMessage;
 
 public class GetCommand extends AbstractCommand {
