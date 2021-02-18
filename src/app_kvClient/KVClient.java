@@ -116,6 +116,9 @@ public class KVClient implements IKVClient, Runnable {
             command.run(this, tokens);
         } catch (Exception e) {
             this.printError(e.getMessage());
+            if (e instanceof  IOException) {
+                this.storeConnection = null;
+            }
         }
 
     }
