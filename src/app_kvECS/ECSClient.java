@@ -3,6 +3,9 @@ package app_kvECS;
 import cli.AbstractCommand;
 import cli.UnrecognizedCommand;
 import cli.cli_ecsClient.*;
+import client.KVCommInterface;
+import ecs.ECS;
+import ecs.ECSInterface;
 import ecs.IECSNode;
 import logger.LogSetup;
 import org.apache.log4j.Level;
@@ -11,22 +14,18 @@ import org.apache.log4j.Logger;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.Collection;
-import java.util.Map;
 
 public class ECSClient implements IECSClient, Runnable {
-
 
     private static final Logger logger = Logger.getRootLogger();
     private static final String PROMPT = "> ";
 
-    private static final String cacheStrategy = "";
-    private static final int cacheSize = 0;
+    private ECSInterface ecs;
 
     private boolean running;
 
     public ECSClient(String configFileName) throws IOException {
-//        ecs = new ECS(configFileName);
+        ecs = new ECS(configFileName);
     }
 
     public static void main(String[] args) {
@@ -45,8 +44,9 @@ public class ECSClient implements IECSClient, Runnable {
         }
     }
 
-    public void setLogLevel(Level level) {
-        logger.setLevel(level);
+    @Override
+    public ECSInterface getECS() {
+        return this.ecs;
     }
 
     public void setRunning(boolean running) {
@@ -55,74 +55,6 @@ public class ECSClient implements IECSClient, Runnable {
 
     public boolean isRunning() {
         return running;
-    }
-
-    @Override
-    public boolean start() {
-        // TODO
-        return false;
-    }
-
-    @Override
-    public boolean stop() {
-        // TODO
-        return false;
-    }
-
-    @Override
-    public boolean shutdown() {
-        // TODO
-        return false;
-    }
-
-    public IECSNode addNode() {
-        return addNode(cacheStrategy, cacheSize);
-    }
-
-    @Override
-    public IECSNode addNode(String cacheStrategy, int cacheSize) {
-        // TODO
-        return null;
-    }
-
-    public Collection<IECSNode> addNodes(int count) {
-        return addNodes(count, cacheStrategy, cacheSize);
-    }
-
-    @Override
-    public Collection<IECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
-        // TODO
-        return null;
-    }
-
-    @Override
-    public Collection<IECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
-        // TODO
-        return null;
-    }
-
-    @Override
-    public boolean awaitNodes(int count, int timeout) throws Exception {
-        // TODO
-        return false;
-    }
-
-    @Override
-    public boolean removeNodes(Collection<String> nodeNames) {
-        // TODO
-        return false;
-    }
-
-    @Override
-    public Map<String, IECSNode> getNodes() {
-        // TODO
-        return null;
-    }
-
-    @Override
-    public IECSNode getNodeByKey(String Key) {
-        // TODO
-        return null;
     }
 
     private void handleCommand(String cmdLine){
@@ -189,4 +121,5 @@ public class ECSClient implements IECSClient, Runnable {
             }
         }
     }
+
 }

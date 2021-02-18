@@ -20,7 +20,7 @@ public class StopCommand extends AbstractCommand {
     @Override
     public void run(Object client, String[] tokens) throws Exception {
         super.run(client, tokens);
-        ((ECSClient) client).stop();
+        ((ECSClient) client).getECS().stop();
         System.out.println("Servers stopped.");
     }
 }

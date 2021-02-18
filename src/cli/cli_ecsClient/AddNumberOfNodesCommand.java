@@ -27,7 +27,7 @@ public class AddNumberOfNodesCommand extends AbstractCommand {
     public void run(Object client, String[] tokens) throws Exception {
         super.run(client, tokens);
         int numberOfNodes = Integer.parseInt(tokens[1]);
-        Collection<IECSNode> nodes = ((ECSClient) client).addNodes(numberOfNodes);
+        Collection<IECSNode> nodes = ((ECSClient) client).getECS().addNodes(numberOfNodes);
         System.out.println("Nodes added.");
     }
 }

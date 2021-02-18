@@ -22,7 +22,7 @@ public class AddNodeCommand extends AbstractCommand {
     @Override
     public void run(Object client, String[] tokens) throws Exception {
         super.run(client, tokens);
-        IECSNode node = ((ECSClient) client).addNode();
+        IECSNode node = ((ECSClient) client).getECS().addNode();
         System.out.println("Node added.");
     }
 }
