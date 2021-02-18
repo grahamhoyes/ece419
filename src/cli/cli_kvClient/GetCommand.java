@@ -1,6 +1,7 @@
-package app_kvClient.cli;
+package cli.cli_kvClient;
 
 import app_kvClient.KVClient;
+import cli.AbstractCommand;
 import shared.messages.KVMessage;
 
 public class GetCommand extends AbstractCommand {
@@ -20,9 +21,9 @@ public class GetCommand extends AbstractCommand {
     }
 
     @Override
-    public void run(KVClient client, String[] tokens) throws Exception {
+    public void run(Object client, String[] tokens) throws Exception {
         super.run(client, tokens);
-        KVMessage message = client.getStore().get(tokens[1]);
+        KVMessage message = ((KVClient) client).getStore().get(tokens[1]);
 
         switch (message.getStatus()) {
             case GET_SUCCESS:

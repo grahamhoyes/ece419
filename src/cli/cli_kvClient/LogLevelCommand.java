@@ -1,6 +1,7 @@
-package app_kvClient.cli;
+package cli.cli_kvClient;
 
 import app_kvClient.KVClient;
+import cli.AbstractCommand;
 import org.apache.log4j.Level;
 
 public class LogLevelCommand extends AbstractCommand {
@@ -41,13 +42,13 @@ public class LogLevelCommand extends AbstractCommand {
     }
 
     @Override
-    public void run(KVClient client, String[] tokens) throws Exception {
+    public void run(Object client, String[] tokens) throws Exception {
         super.run(client, tokens);
         Level level = getLevel(tokens[1]);
         if (level == null) {
             throw new Exception("Invalid log level, must be one of: (ALL | DEBUG | INFO | WARN | ERROR | FATAL | OFF)");
         }
-        client.setLogLevel(level);
+        ((KVClient) client).setLogLevel(level);
         System.out.println("Log level set to " + tokens[1]);
     }
 }
