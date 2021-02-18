@@ -19,7 +19,7 @@ public class PerformanceTest {
 
     public PerformanceTest() {
         try {
-            server = new KVServer(50000, 10, "FIFO");
+            server = new KVServer(50000, "127.0.0.1:50000", "127.0.0.1", 2181);
             server.clearStorage();
         } catch (Exception e) {
             e.printStackTrace();

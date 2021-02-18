@@ -1,8 +1,13 @@
 package app_kvServer;
 
+import ecs.ZooKeeperConnection;
 import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.data.Stat;
 import store.KVSimpleStore;
 import store.KVStore;
 
@@ -21,60 +26,101 @@ public class KVServer implements IKVServer, Runnable {
     private final int port;
     private final int cacheSize;
     private final KVStore kvStore;
-    private CacheStrategy cacheStrategy;
+    private final CacheStrategy cacheStrategy;
     private boolean running;
     private ServerSocket serverSocket;
+
+    private ZooKeeperConnection zkConnection;
+    private ZooKeeper zk;
+    private final String zkHost;
+    private final int zkPort;
+    private String serverName;
+    private final String zkPath;
+
+    private ServerStatus status;
 
 
     /**
      * Start KV Server at given port
      *
-     * @param port          given port for storage server to operate
-     * @param cacheSize     specifies how many key-value pairs the server is allowed
-     *                      to keep in-memory
-     * @param cacheStrategy specifies the cache replacement strategy in case the cache
-     *                      is full and there is a GET- or PUT-request on a key that is
-     *                      currently not contained in the cache. Options are "FIFO", "LRU",
-     *                      and "LFU". As of Milestone 1, this is unused.
+     * @param port    given port for storage server to operate
+     * @param zkHost  ZooKeeper host
+     * @param serverName Server name
+     * @param zkPort  ZooKeeper port
      */
-    public KVServer(int port, int cacheSize, String cacheStrategy) throws IOException{
+    public KVServer(int port, String serverName, String zkHost, int zkPort) throws IOException {
         this.port = port;
-        this.cacheSize = cacheSize;
         this.kvStore = new KVSimpleStore(port + "_store.txt");
+        this.status = ServerStatus.STOPPED;
+        this.serverName = serverName;
+        this.zkPath = ZooKeeperConnection.ZK_SERVER_ROOT + "/" + serverName;
+        this.zkHost = zkHost;
+        this.zkPort = zkPort;
 
-        try {
-            this.cacheStrategy = CacheStrategy.valueOf(cacheStrategy);
-        } catch (IllegalArgumentException e) {
-            this.cacheStrategy = CacheStrategy.None;
-        }
+        this.cacheSize = 0;
+        this.cacheStrategy = CacheStrategy.None;
+
+        initializeZooKeeper();
     }
 
-    public static void main(String[] args) {
-        // TODO: Expand arg parsing for cache
+    public void initializeZooKeeper() {
+        // Connect to the ZooKeeper instance
+        zkConnection = new ZooKeeperConnection();
+
         try {
-            new LogSetup("logs/server.log", Level.ALL);
-        } catch (IOException e) {
-            System.err.println("Error! Unable to initialize logger.");
+            zk = zkConnection.connect(zkHost, zkPort);
+        } catch (InterruptedException | IOException e) {
+            logger.fatal("Failed to establish a connection to ZooKeeper");
             e.printStackTrace();
             System.exit(1);
         }
 
-        try{
-            if (args.length != 1) {
-                System.err.println("Error! Invalid number of arguments");
-                System.err.println("Usage: KVServer <port>");
+        // Check that the ZooKeeper servers root node has been setup
+        try {
+            Stat stat = zk.exists(ZooKeeperConnection.ZK_SERVER_ROOT, false);
+
+            if (stat == null) {
+                logger.error("ZooKeeper has not been initialized");
                 System.exit(1);
             }
 
-            int port = Integer.parseInt(args[0]);
-            KVServer server = new KVServer(port, 0, "None");
-            new Thread(server).start();
-        } catch (IOException e){
-            System.err.println("Error! Unable to initialize persistent storage file.");
+        } catch (KeeperException | InterruptedException e) {
+            logger.fatal("Unable to check for ECS root node");
             e.printStackTrace();
             System.exit(1);
         }
 
+        // Create an ephemeral ZNode for this instance. Retry up to 5 times, in case the previous
+        // ephemeral node has not been cleaned up yet
+        boolean created = false;
+        for (int i = 0; i < 5; i++) {
+            try {
+                zkConnection.create(this.zkPath, "hi", CreateMode.EPHEMERAL);
+                created = true;
+                break;
+            } catch (KeeperException e) {
+                logger.info("Failed to create ZNode, retrying " + (5 - i) + " more times...");
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                }
+
+            } catch (InterruptedException e) {
+                logger.fatal("Unable to create ECS Znode");
+                e.printStackTrace();
+                System.exit(1);
+            }
+        }
+
+        if (!created) {
+            logger.fatal("Unable to create ECS ZNode");
+            System.exit(1);
+        }
+
+        logger.info("ZNode crated at " + zkPath);
+
+        // Fetch the metadata from zookeeper
     }
 
     @Override
@@ -227,5 +273,36 @@ public class KVServer implements IKVServer, Runnable {
     @Override
     public void close() {
         kill();
+    }
+
+    public static void main(String[] args) {
+        try {
+            new LogSetup("logs/server.log", Level.ALL);
+        } catch (IOException e) {
+            System.err.println("Error! Unable to initialize logger.");
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        try{
+            if (args.length != 4) {
+                System.err.println("Error! Invalid number of arguments");
+                System.err.println("Usage: KVServer <port> <server name> <zkHost> <zkPort>");
+                System.exit(1);
+            }
+
+            int port = Integer.parseInt(args[0]);
+            String serverName = args[1];
+            String zkHost = args[2];
+            int zkPort = Integer.parseInt(args[3]);
+
+            KVServer server = new KVServer(port, serverName, zkHost, zkPort);
+            new Thread(server).start();
+        } catch (IOException e){
+            System.err.println("Error! Unable to initialize persistent storage file.");
+            e.printStackTrace();
+            System.exit(1);
+        }
+
     }
 }

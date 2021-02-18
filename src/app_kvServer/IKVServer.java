@@ -8,6 +8,12 @@ public interface IKVServer {
         FIFO
     };
 
+    public enum ServerStatus {
+        STOPPED,        // Not accepting connections
+        OPEN,           // Accepting connections
+        WRITE_LOCKED,   // Not accepting write requests
+    }
+
     /**
      * Get the port number of the server
      * @return  port number
