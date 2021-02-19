@@ -72,6 +72,35 @@ public class KVServer implements IKVServer, Runnable {
     }
 
     @Override
+    public ServerStatus getStatus() {
+        return this.status;
+    }
+
+    @Override
+    public void start() {
+        this.status = ServerStatus.OPEN;
+        logger.info("ServerStatus set to: OPEN");
+    }
+
+    @Override
+    public void stop() {
+        this.status = ServerStatus.STOPPED;
+        logger.info("ServerStatus set to: STOPPED");
+    }
+
+    @Override
+    public void lockWrite() {
+        this.status = ServerStatus.WRITE_LOCKED;
+        logger.info("ServerStatus set to: WRITE_LOCKED");
+    }
+
+    @Override
+    public void unlockWrite() {
+        this.status = ServerStatus.OPEN;
+        logger.info("ServerStatus set to: OPEN");
+    }
+
+    @Override
     public boolean inStorage(String key) throws Exception {
         boolean exists;
         lock.readLock().lock();
