@@ -11,6 +11,8 @@ public class ECSNode implements IECSNode, Comparable<ECSNode> {
     private final String nodeHash;
     private String predecessorHash;
 
+    // TODO: Add status?
+
     public ECSNode(String hostname, int port) {
         this.hostname = hostname;
         this.port = port;

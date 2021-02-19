@@ -71,6 +71,14 @@ public class KVServer implements IKVServer, Runnable {
         return cacheSize;
     }
 
+    public ServerStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ServerStatus status) {
+        this.status = status;
+    }
+
     @Override
     public boolean inStorage(String key) throws Exception {
         boolean exists;

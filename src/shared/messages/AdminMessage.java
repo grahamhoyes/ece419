@@ -14,13 +14,15 @@ public class AdminMessage implements Serializable{
         WRITE_UNLOCK,     // Unlock the KVServer for write requests
         MOVE_DATA,        // Move a subset of data to another KVServer
         RECEIVE_DATA,     // Receive data from another KVServer
-        UPDATE_METADATA,  // Update the metadata on a KVServer
+        SET_METADATA,     // Sets the metadata for a particular KVServer. Broadcast metadata
+                          // updates are done by updating the metadata ZNode afterwards
         ACK,              // Acknowledge success
         ERROR,            // Action failed
     }
 
-    private Action action;     // Required for all messages
-    private String message;    // only required for errors
+    private Action action;         // Required for all messages
+    private String message;        // Only required for errors
+    private ECSNode nodeMetadata;  // Required only for UPDATE_METADATA
 
     /* Required for move/receive messages
      * The sender and receiver nodes have no guarantee about having
@@ -29,8 +31,16 @@ public class AdminMessage implements Serializable{
     private ECSNode receiver;
     private String[] range;    // Range of hashes to move, inclusive on both ends
 
+    public AdminMessage() {
+
+    }
+
     public AdminMessage(Action action) {
         this.action = action;
+    }
+
+    public AdminMessage(String json) {
+        deserialize(json);
     }
 
     public Action getAction() {
@@ -39,6 +49,10 @@ public class AdminMessage implements Serializable{
 
     public String getMessage() {
         return message;
+    }
+
+    public ECSNode getNodeMetadata() {
+        return nodeMetadata;
     }
 
     public ECSNode getSender() {
@@ -59,6 +73,10 @@ public class AdminMessage implements Serializable{
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public void setNodeMetadata(ECSNode node) {
+        this.nodeMetadata = node;
     }
 
     public void setSender(ECSNode sender) {
@@ -82,6 +100,7 @@ public class AdminMessage implements Serializable{
 
         this.action = adminMessage.action;
         this.message = adminMessage.message;
+        this.nodeMetadata = adminMessage.nodeMetadata;
         this.sender = adminMessage.sender;
         this.receiver = adminMessage.receiver;
         this.range = adminMessage.range;

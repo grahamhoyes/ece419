@@ -1,10 +1,12 @@
 package app_kvServer;
 
+import ecs.ECSNode;
 import ecs.HashRing;
 import ecs.ZooKeeperConnection;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.Stat;
+import shared.messages.AdminMessage;
 
 import java.io.IOException;
 import java.util.List;
@@ -17,7 +19,8 @@ public class ECSConnection {
     private ZooKeeper zk;
     private final String serverName;
     private final String nodePath;
-    private HashRing hashRing;
+    private ECSNode nodeMetadata;  // Metadata for this node only
+    private HashRing hashRing;     // Metadata for all nodes
 
     public ECSConnection(String host, int port, String serverName, KVServer kvServer) {
         this.kvServer = kvServer;
@@ -140,12 +143,57 @@ public class ECSConnection {
 
             try {
                 byte[] data = zk.getData(adminPath, false, null);
+                AdminMessage message = new AdminMessage(new String(data));
 
-                // TODO: Admin messaging format
+                AdminMessage response = new AdminMessage();
+                boolean success = true;
+
+                switch (message.getAction()) {
+                    case INIT:
+                        kvServer.setStatus(IKVServer.ServerStatus.STOPPED);
+                        nodeMetadata = message.getNodeMetadata();
+
+                        // At this point, the node is not aware of the metadata of any other
+                        // nodes in the ring, and they are not aware that this node has been
+                        // added. Global metadata updates are caught by  MetadataWatcher
+
+                        break;
+                    case START:
+                        break;
+                    case STOP:
+                        break;
+                    case SHUT_DOWN:
+                        break;
+                    case WRITE_LOCK:
+                        break;
+                    case WRITE_UNLOCK:
+                        break;
+                    case MOVE_DATA:
+                        break;
+                    case RECEIVE_DATA:
+                        break;
+                    case SET_METADATA:
+                        // Sets only the current node's metadata, without updating
+                        // the hash ring. MetadataWatcher handles that
+                        nodeMetadata = message.getNodeMetadata();
+                        break;
+                    default:
+                        success = false;
+                        response.setMessage("Invalid action");
+                }
+
+                if (success) {
+                    response.setAction(AdminMessage.Action.ACK);
+                } else {
+                    // Messages is expected to be set above
+                    response.setAction(AdminMessage.Action.ERROR);
+                }
+
+                // Send the response back on the same ZNode, which the ECS
+                // listens to with a watcher
+                zkConnection.setData(adminPath, response.serialize());
 
                 // Re-register the watch so it can be triggered again
-                // TODO: If nothing in here changes the ZNode, then just set the
-                //  watcher to this in the zk.getData above
                 zk.exists(adminPath, this);
             } catch (KeeperException | InterruptedException e) {
                 logger.warn("Unable to process Admin watch event");
