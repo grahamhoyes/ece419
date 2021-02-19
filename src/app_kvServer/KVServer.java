@@ -1,13 +1,8 @@
 package app_kvServer;
 
-import ecs.ZooKeeperConnection;
 import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.data.Stat;
 import store.KVSimpleStore;
 import store.KVStore;
 
@@ -30,8 +25,8 @@ public class KVServer implements IKVServer, Runnable {
     private boolean running;
     private ServerSocket serverSocket;
 
-    private String serverName;
-    private ECSConnection ecsConnection;
+    private final String serverName;
+    private final ECSConnection ecsConnection;
 
     private ServerStatus status;
 

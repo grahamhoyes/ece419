@@ -13,9 +13,9 @@ public class ECSConnection {
     private static final Logger logger = Logger.getRootLogger();
 
     private final KVServer kvServer;
-    private ZooKeeperConnection zkConnection;
+    private final ZooKeeperConnection zkConnection;
     private ZooKeeper zk;
-    private String serverName;
+    private final String serverName;
     private final String nodePath;
     private HashRing hashRing;
 
@@ -51,24 +51,26 @@ public class ECSConnection {
             System.exit(1);
         }
 
-        // Create a ZNode for this instance. Because we use child nodes, the node cannot
-        // be persistent.
-        // TODO: Delete this node when the server is stopped
-        //  How will the ECS know if this server disconnects now?
-
         try {
+            // Create a ZNode for this instance. Because we use child nodes, the node cannot
+            // be persistent.
             Stat stat = zk.exists(this.nodePath, false);
 
             if (stat == null) {
-                zkConnection.create(this.nodePath, "hi", CreateMode.PERSISTENT);
+                zkConnection.create(this.nodePath, "STARTING", CreateMode.PERSISTENT);
             } else {
                 // Delete all children and reset the node
                 List<String> children = zk.getChildren(this.nodePath, false, null);
                 for (String child : children) {
                     zk.delete(child, -1);
                 }
-                zkConnection.setData(this.nodePath, "hi");
+                zkConnection.setData(this.nodePath, "STARTING");
             }
+
+            // Create an ephemeral heartbeat node. This is used by the ECS to detect
+            // disconnects
+            String heartbeatPath = ZooKeeperConnection.ZK_HEARTBEAT_ROOT + "/" + this.serverName;
+            zkConnection.create(heartbeatPath, "heartbeat", CreateMode.EPHEMERAL);
 
         } catch (KeeperException | InterruptedException e) {
             logger.fatal("Unable to create ZNode");
