@@ -19,8 +19,6 @@ public class ECSConnection {
     private final String nodePath;
     private HashRing hashRing;
 
-    // TODO: Make this a watcher
-
     public ECSConnection(String host, int port, String serverName, KVServer kvServer) {
         this.kvServer = kvServer;
         this.serverName = serverName;
@@ -62,7 +60,7 @@ public class ECSConnection {
                 // Delete all children and reset the node
                 List<String> children = zk.getChildren(this.nodePath, false, null);
                 for (String child : children) {
-                    zk.delete(child, -1);
+                    zkConnection.delete(child);
                 }
                 zkConnection.setData(this.nodePath, "STARTING");
             }

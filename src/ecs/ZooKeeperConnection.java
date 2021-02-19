@@ -48,6 +48,10 @@ public class ZooKeeperConnection {
         }
     }
 
+    public void delete(String path) throws KeeperException, InterruptedException {
+        zk.delete(path, -1);
+    }
+
     public void close() throws InterruptedException {
         zk.close();
     }
