@@ -60,7 +60,7 @@ public class ECSConnection {
                 // Delete all children and reset the node
                 List<String> children = zk.getChildren(this.nodePath, false, null);
                 for (String child : children) {
-                    zkConnection.delete(child);
+                    zkConnection.delete(this.nodePath + "/" + child);
                 }
                 zkConnection.setData(this.nodePath, "STARTING");
             }
@@ -80,19 +80,7 @@ public class ECSConnection {
 
         // Fetch the metadata from zookeeper
         try {
-            byte[] metadata = zk.getData(ZooKeeperConnection.ZK_METADATA_PATH, new Watcher() {
-                @Override
-                public void process(WatchedEvent event) {
-                    // TODO: if (!running) return;
-                    try {
-                        byte[] metadata = zk.getData(ZooKeeperConnection.ZK_METADATA_PATH, this, null);
-                        hashRing = new HashRing(new String(metadata));
-                    } catch (InterruptedException | KeeperException e) {
-                        logger.error("Failed to fetch matadata");
-                    }
-                }
-            }, null);
-
+            byte[] metadata = zk.getData(ZooKeeperConnection.ZK_METADATA_PATH, new MetadataWatcher(), null);
             hashRing = new HashRing(new String(metadata));
         } catch (InterruptedException | KeeperException e) {
             logger.fatal("Failed to fetch matadata");
@@ -111,7 +99,30 @@ public class ECSConnection {
     }
 
     /**
-     * Watcher for admin messages coming over ZooKeeper.
+     * Watcher for metadata changes coming over ZooKeeper
+     *
+     * Updates the local metadata store (hashRing)
+     * // TODO: is there anything else to do when metadata changes?
+     *
+     * Metadata is at /servers/metadata
+     */
+    private class MetadataWatcher implements Watcher {
+        @Override
+        public void process(WatchedEvent event) {
+            if (!kvServer.isRunning()) return;
+
+            try {
+                byte[] metadata = zk.getData(ZooKeeperConnection.ZK_METADATA_PATH, this, null);
+                hashRing = new HashRing(new String(metadata));
+            } catch (InterruptedException | KeeperException e) {
+                logger.error("Failed to fetch metadata");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Watcher for admin messages coming over ZooKeeper
      *
      * Admin messages come to /servers/<server>/admin
      *
@@ -119,7 +130,6 @@ public class ECSConnection {
      * TODO: How should the KVServer inform the ECS of errors?
      */
     private class AdminWatcher implements Watcher {
-
         @Override
         public void process(WatchedEvent event) {
             if (!kvServer.isRunning()) return;
@@ -132,6 +142,11 @@ public class ECSConnection {
                 byte[] data = zk.getData(adminPath, false, null);
 
                 // TODO: Admin messaging format
+
+                // Re-register the watch so it can be triggered again
+                // TODO: If nothing in here changes the ZNode, then just set the
+                //  watcher to this in the zk.getData above
+                zk.exists(adminPath, this);
             } catch (KeeperException | InterruptedException e) {
                 logger.warn("Unable to process Admin watch event");
                 e.printStackTrace();
