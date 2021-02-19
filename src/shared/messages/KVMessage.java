@@ -14,6 +14,7 @@ public interface KVMessage {
 		DELETE_ERROR,	/* Delete - request successful */
 		BAD_REQUEST,    /* Any - bad request */
 		SERVER_ERROR,   /* Server error closes connection */
+		SERVER_WRITE_LOCKED, /* Server locked for write, only get possible */
 	}
 
 	public void setStatus(StatusType status);

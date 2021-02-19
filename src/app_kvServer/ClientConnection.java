@@ -57,6 +57,14 @@ public class ClientConnection extends Connection implements Runnable {
                             }
                             break;
                         case PUT:
+
+                            if (server.getStatus() == IKVServer.ServerStatus.WRITE_LOCKED) {
+                                res.setStatus(StatusType.SERVER_WRITE_LOCKED);
+                                res.setMessage("Server locked for write");
+                                logger.warn("Server locked for write");
+                                break;
+                            }
+
                             if (req.getValue() == null || req.getValue().equals("null")) {
                                 // The value string "null" is used to trigger deletion,
                                 // because the spec is insane
