@@ -1,9 +1,11 @@
 package ecs;
 
+import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 public class ECSNode implements IECSNode, Comparable<ECSNode> {
+    public static BigInteger HASH_MAX = new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16);
     private final String hostname;
     private final int port;
     private final String nodeHash;
@@ -54,22 +56,26 @@ public class ECSNode implements IECSNode, Comparable<ECSNode> {
     /**
      * Return an array of hashes this node is responsible for.
      *
-     * A node is responsible for all hash values between it (inclusive)
-     * and its predecessor (exclusive). A check of if the hash of a key
-     * falls in this node would look something like:
-     *   if (hashRange[0] < hash(key) <= hashRange[1]) { ... }
-     * Except this is Java, so we can't do something scandalous like compare
-     * strings with < or <= operators
-     *
-     * @return Array of two strings representing the lower bound / predecessor (**exclusive**)
-     *         and upper bound / this node hash (**inclusive**) that this node is responsible for
+     * @return Array of two strings representing the lower bound and upper bound hashes
+     * that this node is responsible for, both inclusive
      */
     public String[] getNodeHashRange() {
         if (predecessorHash == null) {
             return null;
         }
 
-        return new String[] { predecessorHash, this.getNodeHash() };
+        BigInteger startingHashValue = new BigInteger(predecessorHash, 16)
+                .add(BigInteger.ONE)
+                .mod(HASH_MAX);
+
+        StringBuilder startingHash = new StringBuilder(startingHashValue.toString(16));
+
+        while (startingHash.length() < 32) {
+            startingHash.insert(0, "0");
+        }
+
+
+        return new String[] { startingHash.toString(), this.getNodeHash() };
     }
 
     public boolean isNodeResponsible(String key) {
@@ -82,8 +88,8 @@ public class ECSNode implements IECSNode, Comparable<ECSNode> {
 
         String thisHash = this.getNodeHash();
 
-        // Handle the special case where we loop over the ring boundary
-        if (predecessorHash.compareTo(thisHash) < 0) {
+        if (predecessorHash.compareTo(thisHash) > 0) {  // TODO: Is this correct?
+            // Handle the special case where we loop over the ring boundary
             return predecessorHash.compareTo(keyHash) < 0 || keyHash.compareTo(thisHash) <= 0;
         } else {
             return predecessorHash.compareTo(keyHash) < 0 && keyHash.compareTo(thisHash) <= 0;
