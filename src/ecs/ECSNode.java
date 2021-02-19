@@ -3,14 +3,17 @@ package ecs;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public class ECSNode implements IECSNode {
+public class ECSNode implements IECSNode, Comparable<ECSNode> {
     private final String hostname;
     private final int port;
-    private ECSNode predecessor;
+    private final String nodeHash;
+    private String predecessorHash;
 
     public ECSNode(String hostname, int port) {
         this.hostname = hostname;
         this.port = port;
+
+        this.nodeHash = md5Hash(getNodeName());
     }
 
     public String getNodeName() {
@@ -25,7 +28,7 @@ public class ECSNode implements IECSNode {
         return port;
     }
 
-    public String md5Hash(String data) {
+    public static String md5Hash(String data) {
         try {
             MessageDigest md5 = MessageDigest.getInstance("MD5");
             md5.update(data.getBytes());
@@ -40,12 +43,12 @@ public class ECSNode implements IECSNode {
 
         } catch (NoSuchAlgorithmException e) {
             // This will never happen since MD5 is hard-coded, but welcome to Java
-            return null;
+            return "00000000000000000000000000000000";
         }
     }
 
     public String getNodeHash() {
-        return md5Hash(getNodeName());
+        return this.nodeHash;
     }
 
     /**
@@ -62,22 +65,21 @@ public class ECSNode implements IECSNode {
      *         and upper bound / this node hash (**inclusive**) that this node is responsible for
      */
     public String[] getNodeHashRange() {
-        if (predecessor == null) {
+        if (predecessorHash == null) {
             return null;
         }
 
-        return new String[] { predecessor.getNodeHash(), this.getNodeHash() };
+        return new String[] { predecessorHash, this.getNodeHash() };
     }
 
     public boolean isNodeResponsible(String key) {
         String keyHash = md5Hash(key);
 
-        if (predecessor == null) {
+        if (predecessorHash == null) {
             // This is the only server
             return true;
         }
 
-        String predecessorHash = predecessor.getNodeHash();
         String thisHash = this.getNodeHash();
 
         // Handle the special case where we loop over the ring boundary
@@ -88,7 +90,12 @@ public class ECSNode implements IECSNode {
         }
     }
 
-    public void setPredecessor(ECSNode predecessor) {
-        this.predecessor = predecessor;
+    public void setPredecessor(String predecessorHash) {
+        this.predecessorHash = predecessorHash;
+    }
+
+    @Override
+    public int compareTo(ECSNode other) {
+        return this.getNodeHash().compareTo(other.getNodeHash());
     }
 }

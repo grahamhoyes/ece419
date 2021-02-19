@@ -30,12 +30,8 @@ public class KVServer implements IKVServer, Runnable {
     private boolean running;
     private ServerSocket serverSocket;
 
-    private ZooKeeperConnection zkConnection;
-    private ZooKeeper zk;
-    private final String zkHost;
-    private final int zkPort;
     private String serverName;
-    private final String zkPath;
+    private ECSConnection ecsConnection;
 
     private ServerStatus status;
 
@@ -53,74 +49,11 @@ public class KVServer implements IKVServer, Runnable {
         this.kvStore = new KVSimpleStore(port + "_store.txt");
         this.status = ServerStatus.STOPPED;
         this.serverName = serverName;
-        this.zkPath = ZooKeeperConnection.ZK_SERVER_ROOT + "/" + serverName;
-        this.zkHost = zkHost;
-        this.zkPort = zkPort;
 
         this.cacheSize = 0;
         this.cacheStrategy = CacheStrategy.None;
 
-        initializeZooKeeper();
-    }
-
-    public void initializeZooKeeper() {
-        // Connect to the ZooKeeper instance
-        zkConnection = new ZooKeeperConnection();
-
-        try {
-            zk = zkConnection.connect(zkHost, zkPort);
-        } catch (InterruptedException | IOException e) {
-            logger.fatal("Failed to establish a connection to ZooKeeper");
-            e.printStackTrace();
-            System.exit(1);
-        }
-
-        // Check that the ZooKeeper servers root node has been setup
-        try {
-            Stat stat = zk.exists(ZooKeeperConnection.ZK_SERVER_ROOT, false);
-
-            if (stat == null) {
-                logger.error("ZooKeeper has not been initialized");
-                System.exit(1);
-            }
-
-        } catch (KeeperException | InterruptedException e) {
-            logger.fatal("Unable to check for ECS root node");
-            e.printStackTrace();
-            System.exit(1);
-        }
-
-        // Create an ephemeral ZNode for this instance. Retry up to 5 times, in case the previous
-        // ephemeral node has not been cleaned up yet
-        boolean created = false;
-        for (int i = 0; i < 5; i++) {
-            try {
-                zkConnection.create(this.zkPath, "hi", CreateMode.EPHEMERAL);
-                created = true;
-                break;
-            } catch (KeeperException e) {
-                logger.info("Failed to create ZNode, retrying " + (5 - i) + " more times...");
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException ex) {
-                    Thread.currentThread().interrupt();
-                }
-
-            } catch (InterruptedException e) {
-                logger.fatal("Unable to create ECS Znode");
-                e.printStackTrace();
-                System.exit(1);
-            }
-        }
-
-        if (!created) {
-            logger.fatal("Unable to create ECS ZNode");
-            System.exit(1);
-        }
-
-        logger.info("ZNode crated at " + zkPath);
-
-        // Fetch the metadata from zookeeper
+        this.ecsConnection = new ECSConnection(zkHost, zkPort, serverName, this);
     }
 
     @Override

@@ -32,6 +32,10 @@ public class ZooKeeperConnection {
         zk.create(path, data.getBytes(StandardCharsets.UTF_8), ZooDefs.Ids.OPEN_ACL_UNSAFE, mode);
     }
 
+    public void setData(String path, String data) throws KeeperException, InterruptedException {
+        zk.setData(path, data.getBytes(StandardCharsets.UTF_8), -1);
+    }
+
     public void close() throws InterruptedException {
         zk.close();
     }
