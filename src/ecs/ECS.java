@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public class ECS implements IECS {
     private static final Logger logger = Logger.getRootLogger();
@@ -103,7 +104,8 @@ public class ECS implements IECS {
             System.exit(1);
         }
 
-        addNodes(1);
+        // TODO: Hook this into commands instead of hard-code
+        addNodes(2);
 
     }
 
@@ -132,8 +134,8 @@ public class ECS implements IECS {
 
     @Override
     public ECSNode addNode(String cacheStrategy, int cacheSize) {
-        // TODO
-        return null;
+        List<ECSNode> nodes = (List<ECSNode>) addNodes(1, cacheStrategy, cacheSize);
+        return nodes.get(0);
     }
 
     @Override
@@ -146,6 +148,8 @@ public class ECS implements IECS {
         Collection<ECSNode> nodes = setupNodes(count, cacheStrategy, cacheSize);
         if (nodes == null) return null;
 
+        Collection<ECSNode> launchedNodes = new ArrayList<>();
+
         for (ECSNode node : nodes) {
             String javaCmd = String.join(" ",
                     "java -jar",
@@ -156,6 +160,23 @@ public class ECS implements IECS {
                     String.valueOf(ZK_PORT));
 
             boolean isLocal = node.getNodeHost().equals("127.0.0.1") || node.getNodeHost().equals("localhost");
+
+            // Before bringing up the node, create ZNodes for it. We don't care
+            // if these stick around if the node fails to launch for some reason
+            String zkNodePath = ZooKeeperConnection.ZK_SERVER_ROOT + "/" + node.getNodeName();
+            String zkHeartbeatPath = ZooKeeperConnection.ZK_HEARTBEAT_ROOT + "/" + node.getNodeName();
+            String zkAdminPath = zkNodePath + "/admin";
+
+            AdminMessage adminMessage = new AdminMessage(AdminMessage.Action.NOP);
+            adminMessage.setNodeMetadata(node);
+
+            try {
+                zkConnection.createOrReset(zkNodePath, "hi", CreateMode.PERSISTENT);
+                zkConnection.createOrReset(zkAdminPath, adminMessage.serialize(), CreateMode.PERSISTENT);
+            } catch (KeeperException | InterruptedException e) {
+                logger.error("Failed to create KVServer and admin ZNodes", e);
+                continue;
+            }
 
             String cmd;
 
@@ -172,7 +193,6 @@ public class ECS implements IECS {
             }
 
             try {
-                System.out.println(cmd);
                 Process p = Runtime.getRuntime().exec(cmd);
 
                 if (isLocal) {
@@ -182,86 +202,66 @@ public class ECS implements IECS {
                 }
             } catch (IOException e) {
                 logger.error("Unable to launch node " + node.getNodeName() + " on host " + node.getNodeHost(), e);
-                nodes.remove(node);
                 continue;
             }
-
-            // After initialization, nodes should create their ZNodes.
-            // Watch for the heartbeat to come online.
 
             // Signal for successful connections, to synchronize otherwise async watchers
             CountDownLatch sig = new CountDownLatch(1);
 
-            String zkPath = ZooKeeperConnection.ZK_SERVER_ROOT + "/" + node.getNodeName();
-            String zkAdminPath = zkPath + "/admin";
-
+            // Watch for the heartbeat to come online.
             try {
-                zk.exists(zkAdminPath, event -> sig.countDown());
+                zk.exists(zkHeartbeatPath, event -> sig.countDown());
 
                 boolean success = sig.await(5000, TimeUnit.MILLISECONDS);
 
                 if (!success) {
                     logger.error("Timeout while waiting to start server " + node.getNodeName());
-                    nodes.remove(node);
                     continue;
                 }
 
             } catch (KeeperException | InterruptedException e) {
                 logger.error("Error waiting for heartbeat thread for server " + node.getNodeName());
-                nodes.remove(node);
                 continue;
             }
 
             logger.info("Server " + node.getNodeName() + " has been started");
 
             // Initialize the server
-            AdminMessage adminMessage = new AdminMessage(AdminMessage.Action.INIT);
-            adminMessage.setNodeMetadata(node);
-
-            CountDownLatch adminWait = new CountDownLatch(1);
+            adminMessage.setAction(AdminMessage.Action.INIT);
 
             try {
-                zkConnection.createOrReset(zkAdminPath, adminMessage.serialize(), CreateMode.PERSISTENT);
+                AdminMessage response = zkConnection.sendAdminMessage(
+                        node.getNodeName(), adminMessage, 10000
+                );
 
-                // Server will respond by setting an ack status on its ZNode
-                zk.getData(zkPath, event -> {
-                    try {
-                        byte[] data = zk.getData(zkPath, false, null);
-                        AdminMessage message = new AdminMessage(new String(data));
-
-                        if (message.getAction() == AdminMessage.Action.ACK) {
-                            logger.info("Server " + node.getNodeName() + " initialized");
-                        } else {
-                            logger.error("Server " + node.getNodeName() + " failed to initialize");
-                            logger.debug(message.getMessage());
-                        }
-
-                        adminWait.countDown();
-                    } catch (KeeperException | InterruptedException e) {
-                        logger.error("Failed to receive admin message", e);
-                    }
-                }, null);
-
-                boolean success = adminWait.await(10000, TimeUnit.MILLISECONDS);
-
-                if (!success) {
-                    logger.error("Timeout waiting to initialize node " + node.getNodeName());
-                    nodes.remove(node);
+                if (response.getAction() == AdminMessage.Action.ACK) {
+                    logger.info("Server " + node.getNodeName() + " initialized");
+                } else {
+                    logger.error("Server " + node.getNodeName() + " failed to initialize");
+                    logger.debug(response.getMessage());
+                    continue;
                 }
-
             } catch (KeeperException | InterruptedException e) {
                 logger.error("Failed to send admin message", e);
-                nodes.remove(node);
+                continue;
+            } catch (TimeoutException e) {
+                logger.error("Timeout while trying to send admin message");
+                continue;
             }
+
+            launchedNodes.add(node);
 
         }
 
         // nodes is now everything that was successfully initialized
-        for (ECSNode node: nodes) {
+        for (ECSNode node: launchedNodes) {
             hashRing.addNode(node);
         }
 
-        return nodes;
+        logger.info("Successfully launched " + launchedNodes.size() + " nodes, "
+                + (count - launchedNodes.size()) + " failures");
+
+        return launchedNodes;
     }
 
     @Override
@@ -275,7 +275,6 @@ public class ECS implements IECS {
             node.setStatus(IKVServer.ServerStatus.STOPPED);
             nodes.add(node);
         }
-        // Setting up ZNodes is handled by the client
 
         // Metadata (informing all nodes of all others) isn't set until after
         // nodes have been successfully added

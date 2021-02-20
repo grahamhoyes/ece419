@@ -9,7 +9,6 @@ import org.apache.zookeeper.data.Stat;
 import shared.messages.AdminMessage;
 
 import java.io.IOException;
-import java.util.List;
 
 public class ECSConnection {
     private static final Logger logger = Logger.getRootLogger();
@@ -47,29 +46,23 @@ public class ECSConnection {
             }
 
         } catch (KeeperException | InterruptedException e) {
-            logger.fatal("Unable to check for ECS root node");
-            e.printStackTrace();
+            logger.fatal("Unable to check for ECS root node", e);
             System.exit(1);
         }
 
+        // Check that the ECS has initialized the server and admin ZNodes
         try {
-            // Create a ZNode for this instance. Because we use child nodes, the node cannot
-            // be persistent.
-            Stat stat = zk.exists(this.nodePath, false);
-
-            if (stat == null) {
-                zkConnection.create(this.nodePath, "STARTING", CreateMode.PERSISTENT);
-            } else {
-                // Delete all children and reset the node
-                List<String> children = zk.getChildren(this.nodePath, false, null);
-                for (String child : children) {
-                    zkConnection.delete(this.nodePath + "/" + child);
-                }
-                zkConnection.setData(this.nodePath, "STARTING");
+            if ((zk.exists(this.nodePath, false)) == null) {
+                logger.fatal("Server ZNode has not been created");
+                System.exit(1);
             }
 
+            if ((zk.exists(this.nodePath + "/admin", false)) == null ) {
+                logger.fatal("Admin ZNode has not been created");
+                System.exit(1);
+            }
         } catch (KeeperException | InterruptedException e) {
-            logger.fatal("Unable to create server ZNode", e);
+            logger.fatal("Unable to check for ECS Znodes", e);
             System.exit(1);
         }
 
@@ -82,7 +75,10 @@ public class ECSConnection {
             System.exit(1);
         }
 
-        // Fetch the metadata from zookeeper
+        // Fetch the metadata from zookeeper and set the watcher
+        // On first initialization, this will be incorrect. The node will be informed of
+        // its own metadata by an admin message, and after all nodes have been added
+        // global metadata will be broadcasted and updated by the watcher.
         try {
             byte[] metadata = zk.getData(ZooKeeperConnection.ZK_METADATA_PATH, new MetadataWatcher(), null);
             hashRing = new HashRing(new String(metadata));
@@ -123,8 +119,7 @@ public class ECSConnection {
                 byte[] metadata = zk.getData(ZooKeeperConnection.ZK_METADATA_PATH, this, null);
                 hashRing = new HashRing(new String(metadata));
             } catch (InterruptedException | KeeperException e) {
-                logger.error("Failed to fetch metadata");
-                e.printStackTrace();
+                logger.error("Failed to fetch metadata", e);
             }
         }
     }
@@ -152,21 +147,20 @@ public class ECSConnection {
                 AdminMessage message = new AdminMessage(new String(data));
 
                 AdminMessage response = new AdminMessage();
-                boolean success = true;
 
                 switch (message.getAction()) {
+                    case NOP:
+                        break;
                     case INIT:
                         kvServer.setStatus(IKVServer.ServerStatus.STOPPED);
                         nodeMetadata = message.getNodeMetadata();
-
-                        logger.info("Server initialized");
 
                         // At this point, the node is not aware of the metadata of any other
                         // nodes in the ring, and they are not aware that this node has been
                         // added. Global metadata updates are caught by  MetadataWatcher
 
                         response.setAction(AdminMessage.Action.ACK);
-                        zkConnection.setData(nodePath, response.serialize());
+                        logger.info("Server initialized");
 
                         break;
                     case START:
@@ -189,20 +183,13 @@ public class ECSConnection {
                         nodeMetadata = message.getNodeMetadata();
                         break;
                     default:
-                        success = false;
+                        response.setAction(AdminMessage.Action.ERROR);
                         response.setMessage("Invalid action");
                 }
 
-                if (success) {
-                    response.setAction(AdminMessage.Action.ACK);
-                } else {
-                    // Messages is expected to be set above
-                    response.setAction(AdminMessage.Action.ERROR);
-                }
-
-                // Send the response back on the same ZNode, which the ECS
-                // listens to with a watcher
-                zkConnection.setData(adminPath, response.serialize());
+                // Send the response back at the node's ZNode, which the ECS
+                // has a watcher for
+                zkConnection.setData(nodePath, response.serialize());
 
                 // Re-register the watch so it can be triggered again
                 zk.exists(adminPath, this);

@@ -6,6 +6,7 @@ import ecs.ECSNode;
 public class AdminMessage implements Serializable {
 
     public enum Action {
+        NOP,              // Do nothing
         INIT,             // Initialize the KVServer
         START,            // Start accepting requests
         STOP,             // Stop accepting requests
