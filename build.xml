@@ -3,25 +3,25 @@
 
   <property environment="env"/>
   <property name="debuglevel" value="source,lines,vars"/>
-  <property name="target" value="1.7"/>
-  <property name="source" value="1.7"/>
+  <property name="target" value="11"/>
+  <property name="source" value="11"/>
 
   <property name="build.dir"     value="bin"/>
   <property name="src.dir"       value="src"/>
   <property name="lib.dir"       value="libs"/>
 
   <!-- Configuration for client application -->
-  <property name="clientjar.file"      value="m2-client.jar"/>
+  <property name="clientjar.file"      value="KVClient.jar"/>
   <property name="clientmanifest.file" value="CLIENT_MANIFEST.MF"/>
   <property name="clientmain.class" value="app_kvClient.KVClient"/>
 
   <!-- Configuration for server application -->
-  <property name="serverjar.file"      value="m2-server.jar"/>
+  <property name="serverjar.file"      value="KVServer.jar"/>
   <property name="servermanifest.file" value="SERVER_MANIFEST.MF"/>
   <property name="servermain.class" value="app_kvServer.KVServer"/>
 
   <!-- Configuration for ecs application -->
-  <property name="ecsjar.file"      value="m2-ecs.jar"/>
+  <property name="ecsjar.file"      value="ECS.jar"/>
   <property name="ecsmanifest.file" value="ECS_MANIFEST.MF"/>
   <property name="ecsmain.class" value="app_kvECS.ECSClient"/>
 
