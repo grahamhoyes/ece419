@@ -1,5 +1,6 @@
 package app_kvServer;
 
+import ecs.HashRing;
 import shared.Connection;
 import shared.messages.DeserializationException;
 import shared.messages.JsonKVMessage;
@@ -40,6 +41,16 @@ public class ClientConnection extends Connection implements Runnable {
                     res.setKey(req.getKey());
                     res.setValue(req.getValue());
 
+                    if (!server.isNodeResponsible(req.getKey())) {
+                        res.setStatus(StatusType.SERVER_NOT_RESPONSIBLE);
+                        res.setMessage("Server is not responsible for the given key");
+
+                        HashRing metadata = server.getMetadata();
+                        res.setMetadata(metadata);
+                        sendMessage(res);
+                        continue;
+                    }
+
                     switch (req.getStatus()) {
                         case GET:
                             try {
@@ -57,11 +68,10 @@ public class ClientConnection extends Connection implements Runnable {
                             }
                             break;
                         case PUT:
-
                             if (server.getStatus() == IKVServer.ServerStatus.WRITE_LOCKED) {
-                                res.setStatus(StatusType.SERVER_WRITE_LOCKED);
+                                res.setStatus(StatusType.SERVER_WRITE_LOCK);
                                 res.setMessage("Server locked for write");
-                                logger.warn("Server locked for write");
+                                logger.warn("Could not process PUT request, server write locked");
                                 break;
                             }
 

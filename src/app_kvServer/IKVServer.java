@@ -1,5 +1,7 @@
 package app_kvServer;
 
+import ecs.HashRing;
+
 public interface IKVServer {
     public enum CacheStrategy {
         None,
@@ -101,13 +103,35 @@ public interface IKVServer {
      */
     public void close();
 
+    /**
+     * Allow the server to start receiving requests
+     */
     public void start();
 
+    /**
+     * Stop the server from receiving requests
+     */
     public void stop();
 
+    /**
+     * Lock the server from receiving write requests
+     */
     public void lockWrite();
 
+    /**
+     * Remove the write lock
+     */
     public void unlockWrite();
+
+    /**
+     * Determine if the given key falls within this server's range
+     */
+    public boolean isNodeResponsible(String key);
+
+    /*
+     * Get metadata of the cluster
+     */
+    public HashRing getMetadata();
 
     public ServerStatus getStatus();
 }

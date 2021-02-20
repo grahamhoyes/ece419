@@ -1,5 +1,6 @@
 package app_kvServer;
 
+import ecs.HashRing;
 import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -78,6 +79,16 @@ public class KVServer implements IKVServer, Runnable {
     @Override
     public ServerStatus getStatus() {
         return this.status;
+    }
+
+    @Override
+    public boolean isNodeResponsible(String key) {
+        return ecsConnection.isNodeResponsible(key);
+    }
+
+    @Override
+    public HashRing getMetadata() {
+        return ecsConnection.getHashRing();
     }
 
     @Override

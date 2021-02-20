@@ -125,6 +125,20 @@ public class ECSConnection {
     }
 
     /**
+     * Check if this node is responsible for the given key
+     */
+    public boolean isNodeResponsible(String key) {
+        return this.nodeMetadata.isNodeResponsible(key);
+    }
+
+    /**
+     * Get the hash ring
+     */
+    public HashRing getHashRing() {
+        return this.hashRing;
+    }
+
+    /**
      * Watcher for admin messages coming over ZooKeeper
      *
      * Admin messages come to /servers/<server>/admin

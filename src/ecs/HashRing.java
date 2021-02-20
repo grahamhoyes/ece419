@@ -53,7 +53,7 @@ public class HashRing {
         successor.setPredecessor(successor.getNodeHash());
     }
 
-    ECSNode removeNode(int index) {
+    public ECSNode removeNode(int index) {
         ECSNode node = ecsNodes.get(index);
 
         int predecessorIdx = index == 0 ? ecsNodes.size() - 1 : index - 1;
@@ -68,7 +68,7 @@ public class HashRing {
         return node;
     }
 
-    ECSNode removeNode(String nodeName) {
+    public ECSNode removeNode(String nodeName) {
         int idx = -1;
 
         for (int i = 0; i < ecsNodes.size(); i++) {
@@ -79,6 +79,16 @@ public class HashRing {
         }
 
         return removeNode(idx);
+    }
+
+    public ECSNode getNodeForKey(String key) {
+        for (ECSNode node : ecsNodes) {
+            if (node.isNodeResponsible(key)) {
+                return node;
+            }
+        }
+
+        return null;
     }
 
     public String serialize() {

@@ -2,12 +2,14 @@ package shared.messages;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import ecs.HashRing;
 
 public class JsonKVMessage implements KVMessage, Serializable {
     private StatusType status;
     private String key;
     private String value;
     private String message;
+    private HashRing metadata;
 
     /**
      * Create a new JSON KV message
@@ -52,6 +54,10 @@ public class JsonKVMessage implements KVMessage, Serializable {
         return message;
     }
 
+    public HashRing getMetadata() {
+        return metadata;
+    }
+
     public void setStatus(StatusType status) {
         this.status = status;
     }
@@ -68,6 +74,9 @@ public class JsonKVMessage implements KVMessage, Serializable {
         this.message = message;
     }
 
+    public void setMetadata(HashRing hashRing) {
+        this.metadata = hashRing;
+    }
 
     public String serialize() {
         return new Gson().toJson(this);
@@ -84,6 +93,7 @@ public class JsonKVMessage implements KVMessage, Serializable {
             this.key = kvMessage.key;
             this.value = kvMessage.value;
             this.message = kvMessage.message;
+            this.metadata = kvMessage.metadata;
         } catch (JsonSyntaxException e) {
             throw new DeserializationException("Failed to deserialize message: " + json);
         }
