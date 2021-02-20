@@ -22,17 +22,25 @@ public class ECSClient implements IECSClient, Runnable {
 
     private boolean running;
 
-    public ECSClient(String configFileName) throws IOException {
-        ecs = new ECS(configFileName);
+    public ECSClient(String configFileName, String remotePath) throws IOException {
+        ecs = new ECS(configFileName, remotePath);
     }
 
     public static void main(String[] args) {
         try {
             new LogSetup("logs/ecs.log", Level.ALL);
-            if (args.length == 0) {
-                System.err.println("ECS needs to be initialized with a configuration file: `java -jar ECS.jar ecs.config`");
+            if (args.length == 0 || args.length > 2) {
+                System.err.println("Usage: ECS.jar ecs.config [remote path]");
             } else {
-                ECSClient client = new ECSClient(args[0]);
+                String remotePath;
+
+                if (args.length >= 2) {
+                    remotePath = args[1];
+                } else {
+                    remotePath = System.getProperty("user.home") + "/ece419/";
+                }
+
+                ECSClient client = new ECSClient(args[0], remotePath);
                 new Thread(client).start();
             }
         } catch (IOException e) {

@@ -1,13 +1,14 @@
 package app_kvServer;
 
+import ecs.ECSNode;
 import ecs.HashRing;
 import ecs.ZooKeeperConnection;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.Stat;
+import shared.messages.AdminMessage;
 
 import java.io.IOException;
-import java.util.List;
 
 public class ECSConnection {
     private static final Logger logger = Logger.getRootLogger();
@@ -17,7 +18,8 @@ public class ECSConnection {
     private ZooKeeper zk;
     private final String serverName;
     private final String nodePath;
-    private HashRing hashRing;
+    private ECSNode nodeMetadata;  // Metadata for this node only
+    private HashRing hashRing;     // Metadata for all nodes
 
     public ECSConnection(String host, int port, String serverName, KVServer kvServer) {
         this.kvServer = kvServer;
@@ -44,47 +46,23 @@ public class ECSConnection {
             }
 
         } catch (KeeperException | InterruptedException e) {
-            logger.fatal("Unable to check for ECS root node");
-            e.printStackTrace();
+            logger.fatal("Unable to check for ECS root node", e);
             System.exit(1);
         }
 
+        // Check that the ECS has initialized the server and admin ZNodes
         try {
-            // Create a ZNode for this instance. Because we use child nodes, the node cannot
-            // be persistent.
-            Stat stat = zk.exists(this.nodePath, false);
-
-            if (stat == null) {
-                zkConnection.create(this.nodePath, "STARTING", CreateMode.PERSISTENT);
-            } else {
-                // Delete all children and reset the node
-                List<String> children = zk.getChildren(this.nodePath, false, null);
-                for (String child : children) {
-                    zkConnection.delete(this.nodePath + "/" + child);
-                }
-                zkConnection.setData(this.nodePath, "STARTING");
+            if ((zk.exists(this.nodePath, false)) == null) {
+                logger.fatal("Server ZNode has not been created");
+                System.exit(1);
             }
 
-            // Create an ephemeral heartbeat node. This is used by the ECS to detect
-            // disconnects
-            String heartbeatPath = ZooKeeperConnection.ZK_HEARTBEAT_ROOT + "/" + this.serverName;
-            zkConnection.create(heartbeatPath, "heartbeat", CreateMode.EPHEMERAL);
-
+            if ((zk.exists(this.nodePath + "/admin", false)) == null ) {
+                logger.fatal("Admin ZNode has not been created");
+                System.exit(1);
+            }
         } catch (KeeperException | InterruptedException e) {
-            logger.fatal("Unable to create ZNode");
-            e.printStackTrace();
-            System.exit(1);
-        }
-
-        logger.info("ZNode crated at " + nodePath);
-
-        // Fetch the metadata from zookeeper
-        try {
-            byte[] metadata = zk.getData(ZooKeeperConnection.ZK_METADATA_PATH, new MetadataWatcher(), null);
-            hashRing = new HashRing(new String(metadata));
-        } catch (InterruptedException | KeeperException e) {
-            logger.fatal("Failed to fetch matadata");
-            e.printStackTrace();
+            logger.fatal("Unable to check for ECS Znodes", e);
             System.exit(1);
         }
 
@@ -96,6 +74,32 @@ public class ECSConnection {
             e.printStackTrace();
             System.exit(1);
         }
+
+        // Fetch the metadata from zookeeper and set the watcher
+        // On first initialization, this will be incorrect. The node will be informed of
+        // its own metadata by an admin message, and after all nodes have been added
+        // global metadata will be broadcasted and updated by the watcher.
+        try {
+            byte[] metadata = zk.getData(ZooKeeperConnection.ZK_METADATA_PATH, new MetadataWatcher(), null);
+            hashRing = new HashRing(new String(metadata));
+        } catch (InterruptedException | KeeperException e) {
+            logger.fatal("Failed to fetch matadata");
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        try {
+            // Create an ephemeral heartbeat node. This is used by the ECS to detect
+            // disconnects, and to indicate that the node is up
+            String heartbeatPath = ZooKeeperConnection.ZK_HEARTBEAT_ROOT + "/" + this.serverName;
+            zkConnection.create(heartbeatPath, "heartbeat", CreateMode.EPHEMERAL, 7);
+        } catch (KeeperException | InterruptedException e) {
+            logger.fatal("Unable to create heartbeat ZNode", e);
+            System.exit(1);
+        }
+
+        logger.info("ZNode crated at " + nodePath);
+
     }
 
     /**
@@ -115,8 +119,7 @@ public class ECSConnection {
                 byte[] metadata = zk.getData(ZooKeeperConnection.ZK_METADATA_PATH, this, null);
                 hashRing = new HashRing(new String(metadata));
             } catch (InterruptedException | KeeperException e) {
-                logger.error("Failed to fetch metadata");
-                e.printStackTrace();
+                logger.error("Failed to fetch metadata", e);
             }
         }
     }
@@ -132,20 +135,63 @@ public class ECSConnection {
     private class AdminWatcher implements Watcher {
         @Override
         public void process(WatchedEvent event) {
-            if (!kvServer.isRunning()) return;
+             // TODO: Should this be here?
+//            if (!kvServer.isRunning()) return;
 
             String adminPath = nodePath + "/admin";
 
-            System.out.println("Watcher triggered");
+            logger.info("Watcher triggered");
 
             try {
                 byte[] data = zk.getData(adminPath, false, null);
+                AdminMessage message = new AdminMessage(new String(data));
 
-                // TODO: Admin messaging format
+                AdminMessage response = new AdminMessage();
+
+                switch (message.getAction()) {
+                    case NOP:
+                        break;
+                    case INIT:
+                        kvServer.setStatus(IKVServer.ServerStatus.STOPPED);
+                        nodeMetadata = message.getNodeMetadata();
+
+                        // At this point, the node is not aware of the metadata of any other
+                        // nodes in the ring, and they are not aware that this node has been
+                        // added. Global metadata updates are caught by  MetadataWatcher
+
+                        response.setAction(AdminMessage.Action.ACK);
+                        logger.info("Server initialized");
+
+                        break;
+                    case START:
+                        break;
+                    case STOP:
+                        break;
+                    case SHUT_DOWN:
+                        break;
+                    case WRITE_LOCK:
+                        break;
+                    case WRITE_UNLOCK:
+                        break;
+                    case MOVE_DATA:
+                        break;
+                    case RECEIVE_DATA:
+                        break;
+                    case SET_METADATA:
+                        // Sets only the current node's metadata, without updating
+                        // the hash ring. MetadataWatcher handles that
+                        nodeMetadata = message.getNodeMetadata();
+                        break;
+                    default:
+                        response.setAction(AdminMessage.Action.ERROR);
+                        response.setMessage("Invalid action");
+                }
+
+                // Send the response back at the node's ZNode, which the ECS
+                // has a watcher for
+                zkConnection.setData(nodePath, response.serialize());
 
                 // Re-register the watch so it can be triggered again
-                // TODO: If nothing in here changes the ZNode, then just set the
-                //  watcher to this in the zk.getData above
                 zk.exists(adminPath, this);
             } catch (KeeperException | InterruptedException e) {
                 logger.warn("Unable to process Admin watch event");

@@ -3,7 +3,7 @@ package shared.messages;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
-public class JsonKVMessage implements KVMessage {
+public class JsonKVMessage implements KVMessage, Serializable {
     private StatusType status;
     private String key;
     private String value;
