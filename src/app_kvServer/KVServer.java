@@ -122,7 +122,7 @@ public class KVServer implements IKVServer, Runnable {
     }
 
     @Override
-    public void deleteKV(String key) throws Exception{
+    public void deleteKV(String key) throws Exception {
         lock.writeLock().lock();
         try{
             this.kvStore.delete(key);
@@ -212,14 +212,6 @@ public class KVServer implements IKVServer, Runnable {
     }
 
     public static void main(String[] args) {
-        try {
-            new LogSetup("logs/server.log", Level.ALL);
-        } catch (IOException e) {
-            System.err.println("Error! Unable to initialize logger.");
-            e.printStackTrace();
-            System.exit(1);
-        }
-
         try{
             if (args.length != 4) {
                 System.err.println("Error! Invalid number of arguments");
@@ -231,6 +223,14 @@ public class KVServer implements IKVServer, Runnable {
             String serverName = args[1];
             String zkHost = args[2];
             int zkPort = Integer.parseInt(args[3]);
+
+            try {
+                new LogSetup("logs/server_" + serverName + ".log", Level.ALL);
+            } catch (IOException e) {
+                System.err.println("Error! Unable to initialize logger.");
+                e.printStackTrace();
+                System.exit(1);
+            }
 
             KVServer server = new KVServer(port, serverName, zkHost, zkPort);
             new Thread(server).start();

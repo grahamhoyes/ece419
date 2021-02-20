@@ -1,27 +1,31 @@
 package ecs;
 
+import app_kvServer.IKVServer;
+
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 public class ECSNode implements IECSNode, Comparable<ECSNode> {
     public static BigInteger HASH_MAX = new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16);
+    private final String name;
     private final String hostname;
     private final int port;
     private final String nodeHash;
     private String predecessorHash;
+    IKVServer.ServerStatus status;
 
-    // TODO: Add status?
-
-    public ECSNode(String hostname, int port) {
+    public ECSNode(String name, String hostname, int port) {
+        this.name = name;
         this.hostname = hostname;
         this.port = port;
+        this.status = IKVServer.ServerStatus.OFFLINE;
 
         this.nodeHash = md5Hash(getNodeName());
     }
 
     public String getNodeName() {
-        return hostname + ":" + port;
+        return this.name;
     }
 
     public String getNodeHost() {
@@ -31,6 +35,23 @@ public class ECSNode implements IECSNode, Comparable<ECSNode> {
     public int getNodePort() {
         return port;
     }
+
+    public String getPredecessorHash() {
+        return this.predecessorHash;
+    }
+
+    public IKVServer.ServerStatus getStatus() {
+        return status;
+    }
+
+    public void setPredecessor(String predecessorHash) {
+        this.predecessorHash = predecessorHash;
+    }
+
+    public void setStatus(IKVServer.ServerStatus status) {
+        this.status = status;
+    }
+
 
     public static String md5Hash(String data) {
         try {
@@ -96,10 +117,6 @@ public class ECSNode implements IECSNode, Comparable<ECSNode> {
         } else {
             return predecessorHash.compareTo(keyHash) < 0 && keyHash.compareTo(thisHash) <= 0;
         }
-    }
-
-    public void setPredecessor(String predecessorHash) {
-        this.predecessorHash = predecessorHash;
     }
 
     @Override

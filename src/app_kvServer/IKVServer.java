@@ -9,8 +9,9 @@ public interface IKVServer {
     };
 
     public enum ServerStatus {
+        OFFLINE,        // Not started yet
         STOPPED,        // Not accepting connections
-        OPEN,           // Accepting connections
+        ACTIVE,         // Accepting connections
         WRITE_LOCKED,   // Not accepting write requests
     }
 

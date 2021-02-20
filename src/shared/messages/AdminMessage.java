@@ -3,7 +3,7 @@ package shared.messages;
 import com.google.gson.Gson;
 import ecs.ECSNode;
 
-public class AdminMessage implements Serializable{
+public class AdminMessage implements Serializable {
 
     public enum Action {
         INIT,             // Initialize the KVServer

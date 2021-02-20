@@ -13,6 +13,16 @@ public class HashRing {
     public HashRing(ECSNode[] nodes) {
         Collections.addAll(ecsNodes, nodes);
         Collections.sort(ecsNodes);
+
+        // Link the nodes together
+        ECSNode lastNode = ecsNodes.get(ecsNodes.size() - 1);
+        ecsNodes.get(0).setPredecessor(lastNode.getNodeHash());
+
+        for (int i = 1; i < ecsNodes.size(); i++) {
+            ECSNode prev = ecsNodes.get(i-1);
+            ECSNode cur = ecsNodes.get(i);
+            cur.setPredecessor(prev.getNodeHash());
+        }
     }
 
     public HashRing(String json) {
@@ -56,6 +66,19 @@ public class HashRing {
         successor.setPredecessor(predecessor.getNodeHash());
 
         return node;
+    }
+
+    ECSNode removeNode(String nodeName) {
+        int idx = -1;
+
+        for (int i = 0; i < ecsNodes.size(); i++) {
+            if (ecsNodes.get(i).getNodeName().equals(nodeName)) {
+                idx = i;
+                break;
+            }
+        }
+
+        return removeNode(idx);
     }
 
     public String serialize() {

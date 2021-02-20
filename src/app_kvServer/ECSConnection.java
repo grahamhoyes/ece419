@@ -68,26 +68,8 @@ public class ECSConnection {
                 zkConnection.setData(this.nodePath, "STARTING");
             }
 
-            // Create an ephemeral heartbeat node. This is used by the ECS to detect
-            // disconnects
-            String heartbeatPath = ZooKeeperConnection.ZK_HEARTBEAT_ROOT + "/" + this.serverName;
-            zkConnection.create(heartbeatPath, "heartbeat", CreateMode.EPHEMERAL);
-
         } catch (KeeperException | InterruptedException e) {
-            logger.fatal("Unable to create ZNode");
-            e.printStackTrace();
-            System.exit(1);
-        }
-
-        logger.info("ZNode crated at " + nodePath);
-
-        // Fetch the metadata from zookeeper
-        try {
-            byte[] metadata = zk.getData(ZooKeeperConnection.ZK_METADATA_PATH, new MetadataWatcher(), null);
-            hashRing = new HashRing(new String(metadata));
-        } catch (InterruptedException | KeeperException e) {
-            logger.fatal("Failed to fetch matadata");
-            e.printStackTrace();
+            logger.fatal("Unable to create server ZNode", e);
             System.exit(1);
         }
 
@@ -99,6 +81,29 @@ public class ECSConnection {
             e.printStackTrace();
             System.exit(1);
         }
+
+        // Fetch the metadata from zookeeper
+        try {
+            byte[] metadata = zk.getData(ZooKeeperConnection.ZK_METADATA_PATH, new MetadataWatcher(), null);
+            hashRing = new HashRing(new String(metadata));
+        } catch (InterruptedException | KeeperException e) {
+            logger.fatal("Failed to fetch matadata");
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+        try {
+            // Create an ephemeral heartbeat node. This is used by the ECS to detect
+            // disconnects, and to indicate that the node is up
+            String heartbeatPath = ZooKeeperConnection.ZK_HEARTBEAT_ROOT + "/" + this.serverName;
+            zkConnection.create(heartbeatPath, "heartbeat", CreateMode.EPHEMERAL, 7);
+        } catch (KeeperException | InterruptedException e) {
+            logger.fatal("Unable to create heartbeat ZNode", e);
+            System.exit(1);
+        }
+
+        logger.info("ZNode crated at " + nodePath);
+
     }
 
     /**
@@ -135,11 +140,12 @@ public class ECSConnection {
     private class AdminWatcher implements Watcher {
         @Override
         public void process(WatchedEvent event) {
-            if (!kvServer.isRunning()) return;
+             // TODO: Should this be here?
+//            if (!kvServer.isRunning()) return;
 
             String adminPath = nodePath + "/admin";
 
-            System.out.println("Watcher triggered");
+            logger.info("Watcher triggered");
 
             try {
                 byte[] data = zk.getData(adminPath, false, null);
@@ -153,9 +159,14 @@ public class ECSConnection {
                         kvServer.setStatus(IKVServer.ServerStatus.STOPPED);
                         nodeMetadata = message.getNodeMetadata();
 
+                        logger.info("Server initialized");
+
                         // At this point, the node is not aware of the metadata of any other
                         // nodes in the ring, and they are not aware that this node has been
                         // added. Global metadata updates are caught by  MetadataWatcher
+
+                        response.setAction(AdminMessage.Action.ACK);
+                        zkConnection.setData(nodePath, response.serialize());
 
                         break;
                     case START:
