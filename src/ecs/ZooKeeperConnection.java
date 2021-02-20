@@ -22,12 +22,9 @@ public class ZooKeeperConnection {
     public ZooKeeper connect(String host, int port) throws InterruptedException, IOException {
         CountDownLatch connectionLatch = new CountDownLatch(1);
 
-        zk = new ZooKeeper(host, port, new Watcher() {
-            @Override
-            public void process(WatchedEvent event) {
-                if (event.getState() == Event.KeeperState.SyncConnected) {
-                    connectionLatch.countDown();
-                }
+        zk = new ZooKeeper(host, port, event -> {
+            if (event.getState() == Watcher.Event.KeeperState.SyncConnected) {
+                connectionLatch.countDown();
             }
         });
 
