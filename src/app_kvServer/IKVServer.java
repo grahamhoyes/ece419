@@ -38,6 +38,13 @@ public interface IKVServer {
      */
     public int getCacheSize();
 
+
+    /**
+     * Return the storage file name.
+     * @return storage file
+     */
+    public String getStorageFile();
+
     /**
      * Check if key is in storage.
      * NOTE: does not modify any other properties

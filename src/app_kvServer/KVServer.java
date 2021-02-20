@@ -6,6 +6,9 @@ import org.apache.log4j.Logger;
 import store.KVSimpleStore;
 import store.KVStore;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.ServerSocket;
@@ -15,6 +18,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class KVServer implements IKVServer, Runnable {
 
     private static final Logger logger = Logger.getRootLogger();
+    public static final Integer BUFFER_SIZE = 1024;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
 
@@ -69,6 +73,11 @@ public class KVServer implements IKVServer, Runnable {
     @Override
     public int getCacheSize() {
         return cacheSize;
+    }
+
+    @Override
+    public String getStorageFile(){
+        return port + "_store.txt";
     }
 
     @Override
@@ -137,6 +146,17 @@ public class KVServer implements IKVServer, Runnable {
             lock.writeLock().unlock();
         }
 
+    }
+
+    private void mergeNewData(){
+        lock.writeLock().lock();
+        try{
+            this.kvStore.mergeData("~" + getStorageFile());
+        } catch (IOException e){
+            logger.error("");
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     private boolean initializeServer() {
@@ -233,4 +253,46 @@ public class KVServer implements IKVServer, Runnable {
         }
 
     }
+
+    private class KVDataReceiver implements Runnable{
+        private ServerSocket receiverSocket;
+        private IKVServer ikvServer;
+
+        public KVDataReceiver(IKVServer ikvServer, ServerSocket receiverSocket){
+            this.receiverSocket = receiverSocket;
+            this.ikvServer = ikvServer;
+        }
+
+        @Override
+        public void run() {
+            try{
+                Socket client = receiverSocket.accept();
+
+                byte[] buffer = new byte[KVServer.BUFFER_SIZE];
+
+                String tempFileName = "~" + ikvServer.getStorageFile();
+                BufferedInputStream input = new BufferedInputStream(client.getInputStream());
+                BufferedOutputStream output = new BufferedOutputStream(new FileOutputStream(tempFileName));
+
+                int size = 0;
+                while ((size = input.read(buffer)) > 0){
+                    output.write(buffer, 0, size);
+                }
+
+                output.flush();
+
+                input.close();
+                output.close();
+                client.close();
+                receiverSocket.close();
+
+                mergeNewData();
+            } catch (IOException e) {
+                logger.error("Receiving data failed: unable to connect with sender", e);
+            }
+        }
+
+    }
+
 }
+
