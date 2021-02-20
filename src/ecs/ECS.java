@@ -92,7 +92,7 @@ public class ECS implements IECS {
             System.exit(1);
         }
 
-        // Create the server root heartbeat, and metadata nodes if they don't exist
+        // Create the server root, heartbeat, and metadata nodes if they don't exist
         try {
             zkConnection.createOrReset(ZooKeeperConnection.ZK_SERVER_ROOT, "root", CreateMode.PERSISTENT);
             zkConnection.createOrReset(ZooKeeperConnection.ZK_HEARTBEAT_ROOT, "heartbeat", CreateMode.PERSISTENT);
@@ -181,9 +181,9 @@ public class ECS implements IECS {
                     logger.info("Remote KVServer started on " + node.getNodeHost() + ":" + node.getNodePort());
                 }
             } catch (IOException e) {
-                logger.error("Unable to launch node " + node.getNodeName() + " on host " + node.getNodeHost());
-                hashRing.removeNode(node.getNodeName());
-                e.printStackTrace();
+                logger.error("Unable to launch node " + node.getNodeName() + " on host " + node.getNodeHost(), e);
+                nodes.remove(node);
+                continue;
             }
 
             // After initialization, nodes should create their ZNodes.
@@ -202,10 +202,14 @@ public class ECS implements IECS {
 
                 if (!success) {
                     logger.error("Timeout while waiting to start server " + node.getNodeName());
+                    nodes.remove(node);
+                    continue;
                 }
 
             } catch (KeeperException | InterruptedException e) {
                 logger.error("Error waiting for heartbeat thread for server " + node.getNodeName());
+                nodes.remove(node);
+                continue;
             }
 
             logger.info("Server " + node.getNodeName() + " has been started");
@@ -242,13 +246,19 @@ public class ECS implements IECS {
 
                 if (!success) {
                     logger.error("Timeout waiting to initialize node " + node.getNodeName());
+                    nodes.remove(node);
                 }
 
             } catch (KeeperException | InterruptedException e) {
-                logger.error("Failed to send admin message");
-                e.printStackTrace();
+                logger.error("Failed to send admin message", e);
+                nodes.remove(node);
             }
 
+        }
+
+        // nodes is now everything that was successfully initialized
+        for (ECSNode node: nodes) {
+            hashRing.addNode(node);
         }
 
         return nodes;
@@ -261,13 +271,10 @@ public class ECS implements IECS {
         List<ECSNode> nodes = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             ECSNode node = nodePool.poll();
+            assert node != null;
             node.setStatus(IKVServer.ServerStatus.STOPPED);
             nodes.add(node);
         }
-
-        // Setup the hash ring
-        hashRing = new HashRing(nodes.toArray(new ECSNode[0]));
-
         // Setting up ZNodes is handled by the client
 
         // Metadata (informing all nodes of all others) isn't set until after
