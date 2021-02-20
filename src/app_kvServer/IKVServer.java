@@ -100,4 +100,14 @@ public interface IKVServer {
      * Gracefully stop the server, can perform any additional actions
      */
     public void close();
+
+    public void start();
+
+    public void stop();
+
+    public void lockWrite();
+
+    public void unlockWrite();
+
+    public ServerStatus getStatus();
 }

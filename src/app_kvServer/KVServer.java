@@ -71,12 +71,37 @@ public class KVServer implements IKVServer, Runnable {
         return cacheSize;
     }
 
-    public ServerStatus getStatus() {
-        return status;
-    }
-
     public void setStatus(ServerStatus status) {
         this.status = status;
+    }
+
+    @Override
+    public ServerStatus getStatus() {
+        return this.status;
+    }
+
+    @Override
+    public void start() {
+        this.status = ServerStatus.ACTIVE;
+        logger.info("ServerStatus set to: ACTIVE");
+    }
+
+    @Override
+    public void stop() {
+        this.status = ServerStatus.STOPPED;
+        logger.info("ServerStatus set to: STOPPED");
+    }
+
+    @Override
+    public void lockWrite() {
+        this.status = ServerStatus.WRITE_LOCKED;
+        logger.info("ServerStatus set to: WRITE_LOCKED");
+    }
+
+    @Override
+    public void unlockWrite() {
+        this.status = ServerStatus.ACTIVE;
+        logger.info("ServerStatus set to: ACTIVE");
     }
 
     @Override
