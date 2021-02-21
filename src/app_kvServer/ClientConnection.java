@@ -38,6 +38,15 @@ public class ClientConnection extends Connection implements Runnable {
 
                 try {
                     JsonKVMessage req = receiveMessage();
+
+                    if (server.getStatus() == IKVServer.ServerStatus.STOPPED) {
+                        res.setStatus(StatusType.SERVER_STOPPED);
+                        res.setMessage("Server is stopped");
+                        sendMessage(res);
+                        continue;
+                    }
+
+
                     res.setKey(req.getKey());
                     res.setValue(req.getValue());
 
