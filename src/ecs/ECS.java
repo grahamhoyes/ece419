@@ -228,10 +228,10 @@ public class ECS implements IECS {
                     continue;
                 }
             } catch (KeeperException | InterruptedException e) {
-                logger.error("Failed to send admin message", e);
+                logger.error("Failed to send admin message to initialize " + node.getNodeName(), e);
                 continue;
             } catch (TimeoutException e) {
-                logger.error("Timeout while trying to send admin message");
+                logger.error("Timeout while trying to send admin message to initialize " + node.getNodeName());
                 continue;
             }
 
@@ -243,7 +243,7 @@ public class ECS implements IECS {
         // Set the metadata for the added nodes
         for (ECSNode node : hashRing.getNodes()) {
             AdminMessage message = new AdminMessage(AdminMessage.Action.SET_METADATA);
-            message.setNodeMetadata(node);
+            message.setMetadata(hashRing);
 
             try {
                 AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 10000);
@@ -253,11 +253,12 @@ public class ECS implements IECS {
                 } else {
                     logger.error("Could not set metadata for server " + node.getNodeName());
                 }
+            // TODO: These errors should do something to the hash ring probably
             } catch (KeeperException | InterruptedException e) {
-                logger.error("Failed to send admin message", e);
+                logger.error("Failed to send admin message to set metadata for " + node.getNodeName(), e);
                 launchedNodes.remove(node);
             } catch (TimeoutException e) {
-                logger.error("Timeout while trying to send admin message");
+                logger.error("Timeout while trying to send admin message to set metadata for " + node.getNodeName());
                 launchedNodes.remove(node);
             }
 
@@ -285,7 +286,6 @@ public class ECS implements IECS {
             String zkAdminPath = zkNodePath + "/admin";
 
             AdminMessage adminMessage = new AdminMessage(AdminMessage.Action.NOP);
-            adminMessage.setNodeMetadata(node);
 
             try {
                 zkConnection.createOrReset(zkNodePath, "hi", CreateMode.PERSISTENT);

@@ -2,6 +2,7 @@ package shared.messages;
 
 import com.google.gson.Gson;
 import ecs.ECSNode;
+import ecs.HashRing;
 
 public class AdminMessage implements Serializable {
 
@@ -23,7 +24,7 @@ public class AdminMessage implements Serializable {
 
     private Action action;         // Required for all messages
     private String message;        // Only required for errors
-    private ECSNode nodeMetadata;  // Required only for UPDATE_METADATA
+    private HashRing hashRing;     // Used by UPDATE_METADATA
 
     /* Required for move/receive messages
      * The sender and receiver nodes have no guarantee about having
@@ -52,10 +53,6 @@ public class AdminMessage implements Serializable {
         return message;
     }
 
-    public ECSNode getNodeMetadata() {
-        return nodeMetadata;
-    }
-
     public ECSNode getSender() {
         return sender;
     }
@@ -68,6 +65,10 @@ public class AdminMessage implements Serializable {
         return range;
     }
 
+    public HashRing getMetadata() {
+        return this.hashRing;
+    }
+
     public void setAction(Action action) {
         this.action = action;
     }
@@ -76,8 +77,8 @@ public class AdminMessage implements Serializable {
         this.message = message;
     }
 
-    public void setNodeMetadata(ECSNode node) {
-        this.nodeMetadata = node;
+    public void setMetadata(HashRing hashRing) {
+        this.hashRing = hashRing;
     }
 
     public void setSender(ECSNode sender) {
@@ -101,7 +102,7 @@ public class AdminMessage implements Serializable {
 
         this.action = adminMessage.action;
         this.message = adminMessage.message;
-        this.nodeMetadata = adminMessage.nodeMetadata;
+        this.hashRing = adminMessage.hashRing;
         this.sender = adminMessage.sender;
         this.receiver = adminMessage.receiver;
         this.range = adminMessage.range;

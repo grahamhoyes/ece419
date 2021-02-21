@@ -158,28 +158,25 @@ public class ECSConnection {
 
             String adminPath = nodePath + "/admin";
 
-            logger.info("Watcher triggered");
-
             try {
                 byte[] data = zk.getData(adminPath, false, null);
                 AdminMessage message = new AdminMessage(new String(data));
 
                 AdminMessage response = new AdminMessage();
 
+                logger.info("Got a " + message.getAction() + " admin message");
+
                 switch (message.getAction()) {
                     case NOP:
                         break;
                     case INIT:
                         kvServer.setStatus(IKVServer.ServerStatus.STOPPED);
-                        nodeMetadata = message.getNodeMetadata();
-
                         // At this point, the node is not aware of the metadata of any other
                         // nodes in the ring, and they are not aware that this node has been
-                        // added. Global metadata updates are caught by  MetadataWatcher
+                        // added. Global metadata updates are caught by MetadataWatcher
 
                         response.setAction(AdminMessage.Action.ACK);
                         logger.info("Server initialized");
-
                         break;
                     case START:
                         break;
@@ -196,9 +193,9 @@ public class ECSConnection {
                     case RECEIVE_DATA:
                         break;
                     case SET_METADATA:
-                        // Sets only the current node's metadata, without updating
-                        // the hash ring. MetadataWatcher handles that
-                        nodeMetadata = message.getNodeMetadata();
+                        // TODO: Is it fine to update the entire hash ring here? Probably
+                        hashRing = message.getMetadata();
+                        nodeMetadata = hashRing.getNode(serverName);
                         response.setAction(AdminMessage.Action.ACK);
                         logger.info("Metadata updated");
                         logger.info("Server now responsible for " + Arrays.toString(nodeMetadata.getNodeHashRange()));
