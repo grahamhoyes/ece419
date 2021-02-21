@@ -185,7 +185,7 @@ public class KVSimpleStore implements KVStore{
     }
 
 
-    public void splitData(String[] keyHashRange) throws IOException{
+    public String splitData(String[] keyHashRange) throws IOException{
         File sendFile = new File(this.sendPath);
         File keepFile = new File(this.keepPath);
 
@@ -215,10 +215,11 @@ public class KVSimpleStore implements KVStore{
                 }
             }
         }
+        return sendPath;
 
     }
 
-    public void moveDataCleanup(){
+    public void sendDataCleanup(){
         File storageFile = new File(this.fileName);
         File sendFile = new File(this.sendPath);
         File keepFile = new File(this.keepPath);

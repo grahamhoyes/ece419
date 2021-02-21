@@ -10,4 +10,6 @@ public interface KVStore {
     public void delete(String key) throws Exception;
 
     void mergeData(String newFileName) throws IOException;
+    String splitData(String[] hashRange) throws IOException;
+    void sendDataCleanup();
 }
