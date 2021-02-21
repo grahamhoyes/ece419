@@ -179,6 +179,8 @@ public class ECSConnection {
                         logger.info("Server initialized");
                         break;
                     case START:
+                        kvServer.start();
+                        response.setAction(AdminMessage.Action.ACK);
                         break;
                     case STOP:
                         break;

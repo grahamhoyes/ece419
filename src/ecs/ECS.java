@@ -107,8 +107,26 @@ public class ECS implements IECS {
 
     @Override
     public boolean start() {
-        // TODO
-        return false;
+        boolean startedAll = true;
+        for (ECSNode node : hashRing.getNodes()) {
+            AdminMessage message = new AdminMessage(AdminMessage.Action.START);
+            try {
+                AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 10000);
+                if (response.getAction() == AdminMessage.Action.ACK) {
+                    logger.info("Started server: " + node.getNodeName());
+                } else {
+                    logger.error("Could not start server: " + node.getNodeName());
+                    startedAll = false;
+                }
+            } catch (KeeperException | InterruptedException e) {
+                logger.error("Failed to start server: " + node.getNodeName(), e);
+                startedAll = false;
+            } catch (TimeoutException e) {
+                logger.error("Timeout while trying to start server: " + node.getNodeName());
+                startedAll = false;
+            }
+        }
+        return startedAll;
     }
 
     @Override

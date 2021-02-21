@@ -20,7 +20,11 @@ public class StartCommand extends AbstractCommand {
     @Override
     public void run(Object client, String[] tokens) throws Exception {
         super.run(client, tokens);
-        ((ECSClient) client).getECS().start();
-        System.out.println("Servers started.");
+        boolean started = ((ECSClient) client).getECS().start();
+        if (started) {
+            System.out.println("Servers started.");
+        } else {
+            System.out.println("Failed to start all servers.");
+        }
     }
 }
