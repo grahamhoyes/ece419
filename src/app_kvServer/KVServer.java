@@ -213,7 +213,6 @@ public class KVServer implements IKVServer, Runnable {
             logger.error("Unable to send data to receiving node.");
             e.printStackTrace();
         }
-
     }
 
     private void mergeNewData(){
@@ -221,7 +220,7 @@ public class KVServer implements IKVServer, Runnable {
         try{
             this.kvStore.mergeData("~" + getStorageFile());
         } catch (IOException e){
-            logger.error("");
+            logger.error("Failed to merge incoming data.");
         } finally {
             lock.writeLock().unlock();
         }
