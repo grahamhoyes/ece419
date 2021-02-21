@@ -1,5 +1,7 @@
 package client;
 
+import ecs.HashRing;
+import ecs.IECSNode;
 import shared.Connection;
 import shared.messages.DeserializationException;
 import shared.messages.JsonKVMessage;
@@ -8,6 +10,9 @@ import shared.messages.KVMessage;
 import java.net.Socket;
 
 public class KVStoreConnection extends Connection implements KVCommInterface {
+
+	private HashRing hashRing;
+	private String currentNodeName;
 
 	/**
 	 * Initialize KVStore with address and port of KVServer
@@ -26,6 +31,19 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 		output = socket.getOutputStream();
 	}
 
+	public void connectToCorrectServer(String key) throws Exception {
+		if (hashRing != null) {
+			IECSNode responsibleNode = hashRing.getNodeForKey(key);
+			if (!responsibleNode.getNodeName().equals(currentNodeName)) {
+				this.hostname = responsibleNode.getNodeHost();
+				this.port = responsibleNode.getNodePort();
+				this.disconnect();
+				this.connect();
+				this.currentNodeName = responsibleNode.getNodeName();
+			}
+		}
+	}
+
 	@Override
 	public KVMessage put(String key, String value) throws Exception {
 		JsonKVMessage req = new JsonKVMessage(KVMessage.StatusType.PUT);
@@ -33,9 +51,16 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 		req.setValue(value);
 		JsonKVMessage res;
 
+		connectToCorrectServer(key);
+
 		try {
 			sendMessage(req);
 			res = receiveMessage();
+
+			if (res.getStatus() == KVMessage.StatusType.SERVER_NOT_RESPONSIBLE) {
+				hashRing = res.getMetadata();
+				return put(key, value);
+			}
 		} catch (DeserializationException e) {
 			logger.error(e.getMessage());
 			res = new JsonKVMessage(KVMessage.StatusType.PUT_ERROR);
@@ -53,9 +78,16 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 		req.setKey(key);
 		JsonKVMessage res;
 
+		connectToCorrectServer(key);
+
 		try {
 			sendMessage(req);
 			res = receiveMessage();
+
+			if (res.getStatus() == KVMessage.StatusType.SERVER_NOT_RESPONSIBLE) {
+				hashRing = res.getMetadata();
+				return get(key);
+			}
 		} catch (DeserializationException e) {
 			logger.error(e.getMessage());
 			res = new JsonKVMessage(KVMessage.StatusType.GET_ERROR);
