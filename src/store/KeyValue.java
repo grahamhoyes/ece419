@@ -34,7 +34,12 @@ public class KeyValue {
 
     public String getKeyHash() { return keyHash; }
 
-    public String getJsonKV() {return jsonKV;}
+    public String getJsonKV() {
+        if (jsonKV == null){
+            this.jsonKV = constructFileString();
+        }
+        return jsonKV;
+    }
 
     public String constructFileString(){
         Gson gson = new Gson();
