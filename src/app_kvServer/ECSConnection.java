@@ -191,9 +191,12 @@ public class ECSConnection {
                     case WRITE_UNLOCK:
                         break;
                     case MOVE_DATA:
-                        break;
+                        kvServer.sendData(message);
                     case RECEIVE_DATA:
-                        break;
+                        int port = kvServer.setupDataReceiver();
+                        response.setAction(AdminMessage.Action.ACK);
+                        response.setMessage(String.valueOf(port));
+
                     case SET_METADATA:
                         // TODO: Is it fine to update the entire hash ring here? Probably
                         hashRing = message.getMetadata();

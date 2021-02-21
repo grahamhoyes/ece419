@@ -119,6 +119,18 @@ public class ECSNode implements IECSNode, Comparable<ECSNode> {
         }
     }
 
+    public static boolean hashInRange(String hash, String[] hashRange){
+        String lower = hashRange[0];
+        String upper = hashRange[1];
+
+        if (upper.compareTo(lower) <= 0) {
+            return lower.compareTo(hash) <= 0 || upper.compareTo(hash) >= 0;
+        } else {
+            return lower.compareTo(hash) <= 0 && upper.compareTo(hash) >= 0;
+        }
+    }
+
+
     @Override
     public int compareTo(ECSNode other) {
         return this.getNodeHash().compareTo(other.getNodeHash());

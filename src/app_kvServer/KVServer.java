@@ -1,13 +1,15 @@
 package app_kvServer;
 
 import ecs.HashRing;
+import ecs.ECSNode;
 import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import shared.messages.AdminMessage;
 import store.KVSimpleStore;
 import store.KVStore;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -16,6 +18,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class KVServer implements IKVServer, Runnable {
 
     private static final Logger logger = Logger.getRootLogger();
+    public static final Integer BUFFER_SIZE = 1024;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
 
@@ -116,6 +119,11 @@ public class KVServer implements IKVServer, Runnable {
     }
 
     @Override
+    public String getStorageFile(){
+        return port + "_store.txt";
+    }
+
+    @Override
     public boolean inStorage(String key) throws Exception {
         boolean exists;
         lock.readLock().lock();
@@ -181,6 +189,65 @@ public class KVServer implements IKVServer, Runnable {
             lock.writeLock().unlock();
         }
 
+    }
+
+    public void sendData(AdminMessage message){
+        ECSNode receiveNode = message.getReceiver();
+        String host = receiveNode.getNodeHost();
+        int port = Integer.parseInt(message.getMessage());
+        String[] hashRange = message.getRange();
+
+        try {
+            String sendPath = kvStore.splitData(hashRange);
+            File sendFile = new File(sendPath);
+
+            byte[] buffer = new byte[BUFFER_SIZE];
+
+            Socket receiveSocket = new Socket(host, port);
+            BufferedOutputStream socketOutput = new BufferedOutputStream(receiveSocket.getOutputStream());
+            BufferedInputStream fileInput = new BufferedInputStream(new FileInputStream(sendFile));
+
+            int size = 0;
+            while ((size = fileInput.read(buffer)) > 0){
+                socketOutput.write(buffer, 0, size);
+            }
+
+            socketOutput.flush();
+
+            socketOutput.close();
+            fileInput.close();
+            receiveSocket.close();
+
+            kvStore.sendDataCleanup();
+
+        } catch (IOException e) {
+            logger.error("Unable to send data to receiving node.");
+            e.printStackTrace();
+        }
+    }
+
+    private void mergeNewData(){
+        lock.writeLock().lock();
+        try{
+            this.kvStore.mergeData("~" + getStorageFile());
+        } catch (IOException e){
+            logger.error("Failed to merge incoming data.");
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int setupDataReceiver() {
+        try {
+            ServerSocket receiveSocket = new ServerSocket(0);
+            int port = receiveSocket.getLocalPort();
+            new Thread(new KVDataReceiver(this, receiveSocket)).start();
+            return port;
+        } catch (IOException e) {
+            logger.error("Unable to open socket to receive data.");
+            e.printStackTrace();
+            return -1;
+        }
     }
 
     private boolean initializeServer() {
@@ -277,4 +344,46 @@ public class KVServer implements IKVServer, Runnable {
         }
 
     }
+
+    private class KVDataReceiver implements Runnable{
+        private ServerSocket receiveSocket;
+        private IKVServer ikvServer;
+
+        public KVDataReceiver(IKVServer ikvServer, ServerSocket receiveSocket){
+            this.receiveSocket = receiveSocket;
+            this.ikvServer = ikvServer;
+        }
+
+        @Override
+        public void run() {
+            try{
+                Socket client = receiveSocket.accept();
+
+                byte[] buffer = new byte[KVServer.BUFFER_SIZE];
+
+                String tempFileName = "~" + ikvServer.getStorageFile();
+                BufferedInputStream socketInput = new BufferedInputStream(client.getInputStream());
+                BufferedOutputStream fileOutput = new BufferedOutputStream(new FileOutputStream(tempFileName));
+
+                int size = 0;
+                while ((size = socketInput.read(buffer)) > 0){
+                    fileOutput.write(buffer, 0, size);
+                }
+
+                fileOutput.flush();
+
+                socketInput.close();
+                fileOutput.close();
+                client.close();
+                receiveSocket.close();
+
+                mergeNewData();
+            } catch (IOException e) {
+                logger.error("Receiving data failed: unable to connect with sender", e);
+            }
+        }
+
+    }
+
 }
+

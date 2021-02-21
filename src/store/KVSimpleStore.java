@@ -9,12 +9,17 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
+
+import static ecs.ECSNode.hashInRange;
 
 public class KVSimpleStore implements KVStore{
     protected static final Logger logger = Logger.getRootLogger();
 
     private String fileName;
     private String tempPath;
+    private String sendPath;
+    private String keepPath;
 
     private String value = null;
     private long startPosition = 0;
@@ -23,15 +28,19 @@ public class KVSimpleStore implements KVStore{
     public KVSimpleStore(String fileName) throws IOException{
         this.fileName = fileName;
         this.tempPath = "~temp" + this.fileName;
+        this.sendPath = "~send" + this.fileName;
+        this.keepPath = "~keep" + this.fileName;
 
         prepareFile();
     }
 
     private void prepareFile() throws IOException{
         File storageFile = new File(this.fileName);
-        boolean fileCreated = storageFile.createNewFile();
-        if (fileCreated){
-            logger.info("KVSimpleStore: Storage file created.");
+
+        boolean storageFileCreated = storageFile.createNewFile();
+
+        if (storageFileCreated){
+            logger.info("KVSimpleStore: Storage files created.");
         } else {
             logger.info("KVSimpleStore: Storage file found.");
         }
@@ -100,9 +109,8 @@ public class KVSimpleStore implements KVStore{
             fromChannel.position(storageFile.getFilePointer());
 
             toChannel.transferTo(0, toChannel.size(), fromChannel);
-
-            temp.delete();
         }
+        temp.delete();
 
     }
 
@@ -159,6 +167,67 @@ public class KVSimpleStore implements KVStore{
         }else{
             throw new KeyInvalidException(key);
         }
+    }
+
+    @Override
+    public void mergeData(String newFileName) throws IOException{
+        File temp = new File(newFileName);
+
+        try(RandomAccessFile tempRAF = new RandomAccessFile(newFileName, "rw");
+            RandomAccessFile storageRAF = new RandomAccessFile(this.fileName, "rw");){
+            FileChannel fromChannel = tempRAF.getChannel();
+            FileChannel toChannel = storageRAF.getChannel();
+
+            toChannel.position(storageRAF.length());
+            fromChannel.position(0L);
+            fromChannel.transferTo(0L, fromChannel.size(), toChannel);
+        }
+        temp.delete();
+    }
+
+
+    public String splitData(String[] keyHashRange) throws IOException{
+        File sendFile = new File(this.sendPath);
+        File keepFile = new File(this.keepPath);
+
+        Gson gson = new Gson();
+
+        try(RandomAccessFile storageRAF = new RandomAccessFile(fileName, "r");
+            RandomAccessFile sendRAF = new RandomAccessFile(sendPath, "rw");
+            RandomAccessFile keepRAF = new RandomAccessFile(keepPath, "rw");){
+
+            String str = null;
+            long sendPointer = sendRAF.getFilePointer();
+            long keepPointer = keepRAF.getFilePointer();
+
+            while ((str = storageRAF.readLine()) != null){
+                KeyValue keyValue = gson.fromJson(str, KeyValue.class);
+                String keyHash = keyValue.getKeyHash();
+                String keyValueJSON = keyValue.getJsonKV();
+
+                if (hashInRange(keyHash, keyHashRange)){
+                    // If key in keyHashRange, key-value is sent
+                    sendRAF.seek(sendRAF.length());
+                    sendRAF.write(keyValueJSON.getBytes());
+                } else {
+                    // key-value is kept
+                    keepRAF.seek(keepRAF.length());
+                    keepRAF.write(keyValueJSON.getBytes());
+                }
+            }
+        }
+        return sendPath;
+
+    }
+
+    public void sendDataCleanup(){
+        File storageFile = new File(this.fileName);
+        File sendFile = new File(this.sendPath);
+        File keepFile = new File(this.keepPath);
+
+        sendFile.delete();
+        storageFile.delete();
+        keepFile.renameTo(new File(this.fileName));
     }
 
 }
