@@ -23,6 +23,10 @@ public class AddNodeCommand extends AbstractCommand {
     public void run(Object client, String[] tokens) throws Exception {
         super.run(client, tokens);
         IECSNode node = ((ECSClient) client).getECS().addNode();
-        System.out.println("Node added.");
+        if (node != null) {
+            System.out.println("Node added");
+        } else {
+            System.out.println("Unable to add new node");
+        }
     }
 }

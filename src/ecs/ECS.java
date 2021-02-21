@@ -103,10 +103,6 @@ public class ECS implements IECS {
             e.printStackTrace();
             System.exit(1);
         }
-
-        // TODO: Hook this into commands instead of hard-code
-        addNodes(2);
-
     }
 
     @Override
@@ -135,7 +131,10 @@ public class ECS implements IECS {
     @Override
     public ECSNode addNode(String cacheStrategy, int cacheSize) {
         List<ECSNode> nodes = (List<ECSNode>) addNodes(1, cacheStrategy, cacheSize);
-        return nodes.get(0);
+        if (nodes.size() > 0)
+            return nodes.get(0);
+
+        return null;
     }
 
     @Override
