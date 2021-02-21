@@ -173,12 +173,13 @@ public class KVSimpleStore implements KVStore{
     public void mergeData(String newFileName) throws IOException{
         File temp = new File(newFileName);
 
-        try(RandomAccessFile tempRAF = new RandomAccessFile(tempPath, "rw");
+        try(RandomAccessFile tempRAF = new RandomAccessFile(newFileName, "rw");
             RandomAccessFile storageRAF = new RandomAccessFile(this.fileName, "rw");){
             FileChannel fromChannel = tempRAF.getChannel();
             FileChannel toChannel = storageRAF.getChannel();
 
             toChannel.position(storageRAF.length());
+            fromChannel.position(0L);
             fromChannel.transferTo(0L, fromChannel.size(), toChannel);
         }
         temp.delete();
