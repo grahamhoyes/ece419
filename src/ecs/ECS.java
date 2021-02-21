@@ -131,8 +131,26 @@ public class ECS implements IECS {
 
     @Override
     public boolean stop() {
-        // TODO
-        return false;
+        boolean stoppedAll = true;
+        for (ECSNode node : hashRing.getNodes()) {
+            AdminMessage message = new AdminMessage(AdminMessage.Action.STOP);
+            try {
+                AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 10000);
+                if (response.getAction() == AdminMessage.Action.ACK) {
+                    logger.info("Stopped server: " + node.getNodeName());
+                } else {
+                    logger.error("Could not stop server: " + node.getNodeName());
+                    stoppedAll = false;
+                }
+            } catch (KeeperException | InterruptedException e) {
+                logger.error("Failed to stop server: " + node.getNodeName(), e);
+                stoppedAll = false;
+            } catch (TimeoutException e) {
+                logger.error("Timeout while trying to stop server: " + node.getNodeName());
+                stoppedAll = false;
+            }
+        }
+        return stoppedAll;
     }
 
     @Override

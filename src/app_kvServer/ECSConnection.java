@@ -183,6 +183,8 @@ public class ECSConnection {
                         response.setAction(AdminMessage.Action.ACK);
                         break;
                     case STOP:
+                        kvServer.stop();
+                        response.setAction(AdminMessage.Action.ACK);
                         break;
                     case SHUT_DOWN:
                         break;
