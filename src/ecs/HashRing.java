@@ -3,6 +3,7 @@ package ecs;
 import com.google.gson.Gson;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 
 public class HashRing {
@@ -29,8 +30,22 @@ public class HashRing {
         deserialize(json);
     }
 
+    public Collection<ECSNode> getNodes() {
+        return ecsNodes;
+    }
+
     public ECSNode getNode(int index) {
         return ecsNodes.get(index);
+    }
+
+    public ECSNode getNode(String nodeName) {
+        for (ECSNode node : ecsNodes) {
+            if (node.getNodeName().equals(nodeName)) {
+                return node;
+            }
+        }
+
+        return null;
     }
 
     public void addNode(ECSNode node) {
@@ -50,7 +65,7 @@ public class HashRing {
         ECSNode successor = ecsNodes.get(successorIdx);
 
         node.setPredecessor(predecessor.getNodeHash());
-        successor.setPredecessor(successor.getNodeHash());
+        successor.setPredecessor(node.getNodeHash());
     }
 
     public ECSNode removeNode(int index) {

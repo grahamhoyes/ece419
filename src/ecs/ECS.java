@@ -161,23 +161,6 @@ public class ECS implements IECS {
 
             boolean isLocal = node.getNodeHost().equals("127.0.0.1") || node.getNodeHost().equals("localhost");
 
-            // Before bringing up the node, create ZNodes for it. We don't care
-            // if these stick around if the node fails to launch for some reason
-            String zkNodePath = ZooKeeperConnection.ZK_SERVER_ROOT + "/" + node.getNodeName();
-            String zkHeartbeatPath = ZooKeeperConnection.ZK_HEARTBEAT_ROOT + "/" + node.getNodeName();
-            String zkAdminPath = zkNodePath + "/admin";
-
-            AdminMessage adminMessage = new AdminMessage(AdminMessage.Action.NOP);
-            adminMessage.setNodeMetadata(node);
-
-            try {
-                zkConnection.createOrReset(zkNodePath, "hi", CreateMode.PERSISTENT);
-                zkConnection.createOrReset(zkAdminPath, adminMessage.serialize(), CreateMode.PERSISTENT);
-            } catch (KeeperException | InterruptedException e) {
-                logger.error("Failed to create KVServer and admin ZNodes", e);
-                continue;
-            }
-
             String cmd;
 
             if (isLocal) {
@@ -204,6 +187,9 @@ public class ECS implements IECS {
                 logger.error("Unable to launch node " + node.getNodeName() + " on host " + node.getNodeHost(), e);
                 continue;
             }
+
+            String zkHeartbeatPath = ZooKeeperConnection.ZK_HEARTBEAT_ROOT + "/" + node.getNodeName();
+            AdminMessage adminMessage = new AdminMessage(AdminMessage.Action.NOP);
 
             // Signal for successful connections, to synchronize otherwise async watchers
             CountDownLatch sig = new CountDownLatch(1);
@@ -250,12 +236,31 @@ public class ECS implements IECS {
             }
 
             launchedNodes.add(node);
+            hashRing.addNode(node);
 
         }
 
-        // nodes is now everything that was successfully initialized
-        for (ECSNode node: launchedNodes) {
-            hashRing.addNode(node);
+        // Set the metadata for the added nodes
+        for (ECSNode node : hashRing.getNodes()) {
+            AdminMessage message = new AdminMessage(AdminMessage.Action.SET_METADATA);
+            message.setNodeMetadata(node);
+
+            try {
+                AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 10000);
+
+                if (response.getAction() == AdminMessage.Action.ACK) {
+                    logger.info("Set metadata for server " + node.getNodeName());
+                } else {
+                    logger.error("Could not set metadata for server " + node.getNodeName());
+                }
+            } catch (KeeperException | InterruptedException e) {
+                logger.error("Failed to send admin message", e);
+                launchedNodes.remove(node);
+            } catch (TimeoutException e) {
+                logger.error("Timeout while trying to send admin message");
+                launchedNodes.remove(node);
+            }
+
         }
 
         logger.info("Successfully launched " + launchedNodes.size() + " nodes, "
@@ -273,6 +278,23 @@ public class ECS implements IECS {
             ECSNode node = nodePool.poll();
             assert node != null;
             node.setStatus(IKVServer.ServerStatus.STOPPED);
+
+            // Before bringing up the node, create ZNodes for it. We don't care
+            // if these stick around if the node fails to launch for some reason
+            String zkNodePath = ZooKeeperConnection.ZK_SERVER_ROOT + "/" + node.getNodeName();
+            String zkAdminPath = zkNodePath + "/admin";
+
+            AdminMessage adminMessage = new AdminMessage(AdminMessage.Action.NOP);
+            adminMessage.setNodeMetadata(node);
+
+            try {
+                zkConnection.createOrReset(zkNodePath, "hi", CreateMode.PERSISTENT);
+                zkConnection.createOrReset(zkAdminPath, adminMessage.serialize(), CreateMode.PERSISTENT);
+            } catch (KeeperException | InterruptedException e) {
+                logger.error("Failed to create KVServer and admin ZNodes for node " + node.getNodeName(), e);
+                continue;
+            }
+
             nodes.add(node);
         }
 

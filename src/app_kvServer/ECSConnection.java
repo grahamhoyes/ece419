@@ -9,6 +9,7 @@ import org.apache.zookeeper.data.Stat;
 import shared.messages.AdminMessage;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 public class ECSConnection {
     private static final Logger logger = Logger.getRootLogger();
@@ -103,7 +104,7 @@ public class ECSConnection {
     }
 
     /**
-     * Watcher for metadata changes coming over ZooKeeper
+     * Watcher for metadata changes for the entire hash ring coming over ZooKeeper
      *
      * Updates the local metadata store (hashRing)
      * // TODO: is there anything else to do when metadata changes?
@@ -118,6 +119,9 @@ public class ECSConnection {
             try {
                 byte[] metadata = zk.getData(ZooKeeperConnection.ZK_METADATA_PATH, this, null);
                 hashRing = new HashRing(new String(metadata));
+
+                // Update the metadata for this node as well
+                nodeMetadata = hashRing.getNode(serverName);
             } catch (InterruptedException | KeeperException e) {
                 logger.error("Failed to fetch metadata", e);
             }
@@ -195,6 +199,9 @@ public class ECSConnection {
                         // Sets only the current node's metadata, without updating
                         // the hash ring. MetadataWatcher handles that
                         nodeMetadata = message.getNodeMetadata();
+                        response.setAction(AdminMessage.Action.ACK);
+                        logger.info("Metadata updated");
+                        logger.info("Server now responsible for " + Arrays.toString(nodeMetadata.getNodeHashRange()));
                         break;
                     default:
                         response.setAction(AdminMessage.Action.ERROR);
