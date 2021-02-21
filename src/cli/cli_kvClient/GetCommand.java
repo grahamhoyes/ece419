@@ -31,6 +31,9 @@ public class GetCommand extends AbstractCommand {
                 break;
             case GET_ERROR:
                 throw new Exception(message.getMessage());
+            case SERVER_STOPPED:
+                System.out.println("Server is stopped. Please try again.");
+                break;
             default:
                 System.out.println("Something unexpected happened");
         }

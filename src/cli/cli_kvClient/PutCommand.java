@@ -33,6 +33,12 @@ public class PutCommand extends AbstractCommand {
                 case DELETE_SUCCESS:
                     System.out.printf("Tuple with key \"%s\" was deleted successfully%n", message.getKey());
                     break;
+                case SERVER_STOPPED:
+                    System.out.println("Server is stopped. Please try again.");
+                    break;
+                case SERVER_WRITE_LOCK:
+                    System.out.println("Server is write locked. Please try again.");
+                    break;
                 case DELETE_ERROR:
                     throw new Exception(message.getMessage());
                 default:
@@ -57,6 +63,12 @@ public class PutCommand extends AbstractCommand {
                     break;
                 case DELETE_ERROR:
                     System.out.printf("Error: key does not exist: %s", message.getKey());
+                    break;
+                case SERVER_STOPPED:
+                    System.out.println("Server is stopped. Please try again.");
+                    break;
+                case SERVER_WRITE_LOCK:
+                    System.out.println("Server is write locked. Please try again.");
                     break;
                 default:
                     System.out.println("Something unexpected happened");
