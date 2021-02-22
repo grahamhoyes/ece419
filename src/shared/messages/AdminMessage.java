@@ -16,6 +16,7 @@ public class AdminMessage implements Serializable {
         WRITE_UNLOCK,     // Unlock the KVServer for write requests
         MOVE_DATA,        // Move a subset of data to another KVServer
         RECEIVE_DATA,     // Receive data from another KVServer
+        CLEANUP_DATA,
         SET_METADATA,     // Sets the metadata for a particular KVServer. Broadcast metadata
                           // updates are done by updating the metadata ZNode afterwards
         ACK,              // Acknowledge success

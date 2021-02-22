@@ -219,14 +219,15 @@ public class KVServer implements IKVServer, Runnable {
             fileInput.close();
             receiveSocket.close();
 
-            // TODO: Admin message for this
-            kvStore.sendDataCleanup();
-
             logger.info("Finished data transfer to node " + receiveNode.getNodeName());
 
         } catch (IOException e) {
             logger.error("Unable to send data to receiving node", e);
         }
+    }
+
+    public void cleanUpData(){
+        kvStore.sendDataCleanup();
     }
 
     private void mergeNewData(){
@@ -244,7 +245,6 @@ public class KVServer implements IKVServer, Runnable {
         try {
             ServerSocket receiveSocket = new ServerSocket(0);
             int port = receiveSocket.getLocalPort();
-            logger.info("Starting data receiver thread");
             new Thread(new KVDataReceiver(this, receiveSocket)).start();
             return port;
         } catch (IOException e) {
