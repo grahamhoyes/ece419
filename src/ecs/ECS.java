@@ -224,6 +224,28 @@ public class ECS implements IECS {
             return null;
         }
 
+        // Start the server
+        adminMessage.setAction(AdminMessage.Action.START);
+        adminMessage.setMetadata(null);
+
+        try {
+            AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), adminMessage, 10000);
+
+            if (response.getAction() == AdminMessage.Action.ACK) {
+                logger.info("Started server " + node.getNodeName());
+            } else {
+                logger.error("Could not start server " + node.getNodeName());
+                return null;
+            }
+
+        } catch (KeeperException | InterruptedException e) {
+            logger.error("Failed to send admin message to start server " + node.getNodeName(), e);
+            return null;
+        } catch (TimeoutException e) {
+            logger.error("Timeout while trying to send admin message to start server " + node.getNodeName());
+            return null;
+        }
+
         ECSNode successor = updatedHashRing.getSuccessor(node);
         assert successor != null;
 
@@ -249,8 +271,27 @@ public class ECS implements IECS {
 
         if (updatedHashRing.getNodes().size() > 1) {
             // Release the write lock on the successor servers and remove old data
-            // TODO: Admin message to clean up the data
             if (!setWriteLock(successor, false)) return null;
+
+            adminMessage.setAction(AdminMessage.Action.CLEANUP_DATA);
+
+            try {
+                AdminMessage response = zkConnection.sendAdminMessage(successor.getNodeName(), adminMessage, 10000);
+
+                if (response.getAction() == AdminMessage.Action.ACK) {
+                    logger.info("Data transfer cleanup complete on " + successor.getNodeName());
+                } else {
+                    logger.error("Could not clean up transfer data on " + successor.getNodeName());
+                    return null;
+                }
+
+            } catch (KeeperException | InterruptedException e) {
+                logger.error("Failed to send admin message to cleanup transfer data on " + successor.getNodeName(), e);
+                return null;
+            } catch (TimeoutException e) {
+                logger.error("Timeout while trying to send admin message to cleanup transfer data on " + successor.getNodeName());
+                return null;
+            }
         }
 
         logger.info("Successfully launched node " + node.getNodeName());
@@ -482,7 +523,9 @@ public class ECS implements IECS {
     private boolean setWriteLock(ECSNode node, boolean lock) {
         boolean success = true;
 
-        AdminMessage message = new AdminMessage(AdminMessage.Action.WRITE_LOCK);
+        AdminMessage message = new AdminMessage(
+                lock ? AdminMessage.Action.WRITE_LOCK : AdminMessage.Action.WRITE_UNLOCK
+        );
 
         try {
             AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 10000);

@@ -145,10 +145,16 @@ public class ClientConnection extends Connection implements Runnable {
                     logger.fatal("Error: Storage file not found.");
                     server.kill();
                 } catch (IOException e) {
-                    // IOException indicates something wrong with the socket,
-                    // so the connection is terminated
-                    logger.error(e);
-                    isOpen = false;
+                    // "Connection terminated" is thrown by us when the connection is closed
+                    // by the client
+                    if (e.getMessage().equals("Connection terminated")) {
+                        logger.info("Connection closed by client");
+                    } else {
+                        // IOException indicates something wrong with the socket,
+                        // so the connection is terminated
+                        logger.error(e);
+                        isOpen = false;
+                    }
                 }
 
             }
