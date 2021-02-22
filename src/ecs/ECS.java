@@ -32,7 +32,12 @@ public class ECS implements IECS {
     private HashMap<String, ECSNode> configMap = new HashMap<>();
 
     // Queue of inactive ECSNodes
+    private Queue<ECSNode> offlineNodes = new LinkedList<>();
     private Queue<ECSNode> nodePool = new LinkedList<>();
+//    private Queue<ECSNode> nodePool = new LinkedList<>();
+    // This seems to be the easiest way to get a list of tuples(node, launched)
+    // Launched is true if the node process has already been started
+//    private Queue<Map.Entry<ECSNode, Boolean>> nodePool = new LinkedList<>();
 
     // Set of active nodes
     private HashRing hashRing;
@@ -73,7 +78,7 @@ public class ECS implements IECS {
 
                 ECSNode node = new ECSNode(name, host, Integer.parseInt(port));
                 configMap.put(name, node);
-                nodePool.add(node);
+                offlineNodes.add(node);
             }
         } catch (IOException e) {
             logger.fatal("Failed to read ECS config file");
@@ -187,69 +192,9 @@ public class ECS implements IECS {
         Collection<ECSNode> launchedNodes = new ArrayList<>();
 
         for (ECSNode node : nodes) {
-            String javaCmd = String.join(" ",
-                    "java -jar",
-                    remotePath + SERVER_JAR,
-                    String.valueOf(node.getNodePort()),
-                    node.getNodeName(),
-                    ZK_HOST,
-                    String.valueOf(ZK_PORT));
-
-            boolean isLocal = node.getNodeHost().equals("127.0.0.1") || node.getNodeHost().equals("localhost");
-
-            String cmd;
-
-            if (isLocal) {
-                cmd = javaCmd;
-            } else {
-                // TODO: Test this. The & at the end may be an issue
-                cmd = String.join(" ",
-                        "ssh -o StrictHostsKeyChecking=no -n",
-                        node.getNodeHost(),
-                        "nohup",
-                        javaCmd,
-                        "&");
-            }
-
-            try {
-                Process p = Runtime.getRuntime().exec(cmd);
-
-                if (isLocal) {
-                    logger.info("Local KVServer started with process " + p.pid());
-                } else {
-                    logger.info("Remote KVServer started on " + node.getNodeHost() + ":" + node.getNodePort());
-                }
-            } catch (IOException e) {
-                logger.error("Unable to launch node " + node.getNodeName() + " on host " + node.getNodeHost(), e);
-                continue;
-            }
-
-            String zkHeartbeatPath = ZooKeeperConnection.ZK_HEARTBEAT_ROOT + "/" + node.getNodeName();
-            AdminMessage adminMessage = new AdminMessage(AdminMessage.Action.NOP);
-
-            // Signal for successful connections, to synchronize otherwise async watchers
-            CountDownLatch sig = new CountDownLatch(1);
-
-            // Watch for the heartbeat to come online.
-            try {
-                zk.exists(zkHeartbeatPath, event -> sig.countDown());
-
-                boolean success = sig.await(5000, TimeUnit.MILLISECONDS);
-
-                if (!success) {
-                    logger.error("Timeout while waiting to start server " + node.getNodeName());
-                    continue;
-                }
-
-            } catch (KeeperException | InterruptedException e) {
-                logger.error("Error waiting for heartbeat thread for server " + node.getNodeName());
-                continue;
-            }
-
-            logger.info("Server " + node.getNodeName() + " has been started");
 
             // Initialize the server
-            adminMessage.setAction(AdminMessage.Action.INIT);
+            AdminMessage adminMessage = new AdminMessage(AdminMessage.Action.INIT);
 
             try {
                 AdminMessage response = zkConnection.sendAdminMessage(
@@ -323,6 +268,7 @@ public class ECS implements IECS {
 
             // Set the write lock on the successor
             // TODO: Handle failures here and abort the transfer
+            // TODO: KVServer.sendData actually sets the write lock for us
             if (!setWriteLock(successor, true)) continue;
 
             // Invoke data transfer
@@ -331,19 +277,20 @@ public class ECS implements IECS {
         }
 
         // Once all data has been transferred, send global metadata updates
-        // TODO: Does this have to be synchronous before the next step? We don't get responses back
         hashRing = updatedHashRing;
 
         try {
-            zkConnection.setData(ZooKeeperConnection.ZK_METADATA_PATH, hashRing.serialize());
-        } catch (KeeperException | InterruptedException e) {
-            logger.error("Failed to update global metadata", e);
+            updateGlobalMetadata(10000);
+        } catch (KeeperException | InterruptedException | TimeoutException e) {
+            logger.error("Failed to update global metadata");
         }
 
         // Release the write lock on the successor servers and remove old data
         for (ECSNode node : launchedNodes) {
             ECSNode successor = updatedHashRing.getSuccessor(node);
             assert successor != null;
+
+            // TODO: Add admin message for cleaning up the transfer
 
             setWriteLock(successor, false);
         }
@@ -356,12 +303,13 @@ public class ECS implements IECS {
 
     @Override
     public Collection<ECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
-        if (count > nodePool.size()) return null;
+        if (count > nodePool.size() + offlineNodes.size()) return null;
 
         List<ECSNode> nodes = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            ECSNode node = nodePool.poll();
-            assert node != null;
+
+        // Grab nodes from the offline pool first, and start them
+        while (count > 0 && offlineNodes.size() > 0) {
+            ECSNode node = offlineNodes.poll();
             node.setStatus(IKVServer.ServerStatus.STOPPED);
 
             // Before bringing up the node, create ZNodes for it. We don't care
@@ -379,11 +327,94 @@ public class ECS implements IECS {
                 continue;
             }
 
+            String javaCmd = String.join(" ",
+                    "java -jar",
+                    remotePath + SERVER_JAR,
+                    String.valueOf(node.getNodePort()),
+                    node.getNodeName(),
+                    ZK_HOST,
+                    String.valueOf(ZK_PORT));
+
+            boolean isLocal = node.getNodeHost().equals("127.0.0.1") || node.getNodeHost().equals("localhost");
+
+            String cmd;
+
+            if (isLocal) {
+                cmd = javaCmd;
+            } else {
+                // TODO: Test this. The & at the end may be an issue
+                cmd = String.join(" ",
+                        "ssh -o StrictHostsKeyChecking=no -n",
+                        node.getNodeHost(),
+                        "nohup",
+                        javaCmd,
+                        "&");
+            }
+
+            try {
+                Process p = Runtime.getRuntime().exec(cmd);
+
+                if (isLocal) {
+                    logger.info("Local KVServer started with process " + p.pid());
+                } else {
+                    logger.info("Remote KVServer started on " + node.getNodeHost() + ":" + node.getNodePort());
+                }
+            } catch (IOException e) {
+                logger.error("Unable to launch node " + node.getNodeName() + " on host " + node.getNodeHost(), e);
+                continue;
+            }
+
+            // Wait for the server to come online
+            String zkHeartbeatPath = ZooKeeperConnection.ZK_HEARTBEAT_ROOT + "/" + node.getNodeName();
+
+            // Signal for successful connections, to synchronize otherwise async watchers
+            CountDownLatch sig = new CountDownLatch(1);
+
+            // Watch for the heartbeat to come online.
+            try {
+                zk.exists(zkHeartbeatPath, event -> sig.countDown());
+
+                boolean success = sig.await(5000, TimeUnit.MILLISECONDS);
+
+                if (!success) {
+                    logger.error("Timeout while waiting to start server " + node.getNodeName());
+                    continue;
+                }
+
+            } catch (KeeperException | InterruptedException e) {
+                logger.error("Error waiting for heartbeat thread for server " + node.getNodeName());
+                continue;
+            }
+
+            logger.info("Server " + node.getNodeName() + " has been started");
+
             nodes.add(node);
+            count--;
         }
 
-        // Metadata (informing all nodes of all others) isn't set until after
-        // nodes have been successfully added
+        // Grab the rest of the nodes from the node pool
+        while (count > 0 && nodePool.size() > 0) {
+            ECSNode node = nodePool.poll();
+            node.setStatus(IKVServer.ServerStatus.STOPPED);
+
+            // Reset the ZNodes for these nodes just in case
+            // TODO: Really don't need to do this
+            String zkNodePath = ZooKeeperConnection.ZK_SERVER_ROOT + "/" + node.getNodeName();
+            String zkAdminPath = zkNodePath + "/admin";
+
+            AdminMessage adminMessage = new AdminMessage(AdminMessage.Action.NOP);
+
+            try {
+                zkConnection.createOrReset(zkNodePath, "hi", CreateMode.PERSISTENT);
+                zkConnection.createOrReset(zkAdminPath, adminMessage.serialize(), CreateMode.PERSISTENT);
+            } catch (KeeperException | InterruptedException e) {
+                logger.error("Failed to create KVServer and admin ZNodes for node " + node.getNodeName(), e);
+                continue;
+            }
+
+            nodes.add(node);
+            count--;
+        }
 
         return nodes;
     }
@@ -420,7 +451,7 @@ public class ECS implements IECS {
             AdminMessage response = zkConnection.sendAdminMessage(toNode.getNodeName(), message, 10000);
 
             if (response.getAction() == AdminMessage.Action.ACK) {
-                logger.info("Ready to receive data for server " + toNode.getNodeName());
+                logger.info("Ready to receive data at server " + toNode.getNodeName());
                 int port = Integer.parseInt(response.getMessage());
                 success = nodeMoveData(fromNode, toNode, port);
             } else {
@@ -450,16 +481,16 @@ public class ECS implements IECS {
             AdminMessage response = zkConnection.sendAdminMessage(fromNode.getNodeName(), message, 10000);
 
             if (response.getAction() == AdminMessage.Action.ACK) {
-                logger.info("Sending data from server " + toNode.getNodeName());
+                logger.info("Sending data from server " + fromNode.getNodeName());
             } else {
-                logger.error("Could not send data from server " + toNode.getNodeName());
+                logger.error("Could not send data from server " + fromNode.getNodeName());
                 success = false;
             }
         } catch (KeeperException | InterruptedException e) {
-            logger.error("Failed to send admin message to send data at " + toNode.getNodeName(), e);
+            logger.error("Failed to send admin message to send data at " + fromNode.getNodeName(), e);
             success = false;
         } catch (TimeoutException e) {
-            logger.error("Timeout while trying to send admin message to send data at " + toNode.getNodeName());
+            logger.error("Timeout while trying to send admin message to send data at " + fromNode.getNodeName());
             success = false;
         }
 
@@ -497,6 +528,71 @@ public class ECS implements IECS {
         }
 
         return success;
+    }
+
+    /**
+     * Synchronously update the global metadata of the cluster
+     *
+     * @param timeoutMillis Timeout period (ms)
+     */
+    private void updateGlobalMetadata(int timeoutMillis) throws KeeperException, InterruptedException, TimeoutException {
+        // TODO: We made the SET_METADATA action update global metadata for one node,
+        //  so could just use that instead of this complexity
+//        AtomicBoolean success = new AtomicBoolean(true);
+//
+//        // Set a watcher to acknowledge metadata updates
+//        CountDownLatch sig = new CountDownLatch(hashRing.getNodes().size());
+//
+//        for (ECSNode node : hashRing.getNodes()) {
+//            try {
+//                zk.getData(ZooKeeperConnection.ZK_SERVER_ROOT + "/" + node.getNodeName(), event -> {
+//                    try {
+//                        byte[] data = zk.getData(event.getPath(), false, null);
+//                        AdminMessage response = new AdminMessage(new String(data));
+//
+//                        if (response.getAction() == AdminMessage.Action.ACK) {
+//                            logger.info("Updated metadata on node " + node.getNodeName());
+//                        } else {
+//                            logger.error("Error updating metadata on node " + node.getNodeName());
+//                            success.set(false);
+//                        }
+//                    } catch (KeeperException | InterruptedException e) {
+//                        logger.error("Failed to update metadata on node " + node.getNodeName(), e);
+//                        success.set(false);
+//                    } finally {
+//                        sig.countDown();
+//                    }
+//
+//                }, null);
+//            } catch (KeeperException | InterruptedException e) {
+//                logger.error("Failed to set watcher for metadata update response on node " + node.getNodeName(), e);
+//            }
+//        }
+//
+//        try {
+//            zkConnection.setData(ZooKeeperConnection.ZK_METADATA_PATH, hashRing.serialize());
+//        } catch (KeeperException | InterruptedException e) {
+//            logger.error("Failed to update global metadata", e);
+//            success.set(false);
+//        }
+//
+//        if (!sig.await(timeoutMillis, TimeUnit.MILLISECONDS))
+//            success.set(false);
+//
+//        return success.get();
+
+        for (ECSNode node : hashRing.getNodes()) {
+            AdminMessage message = new AdminMessage(AdminMessage.Action.SET_METADATA);
+            message.setMetadata(hashRing);
+
+            AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, timeoutMillis);
+
+            if (response.getAction() == AdminMessage.Action.ACK) {
+                logger.info("Updated metadata on node " + node.getNodeName());
+            } else {
+                logger.error("Failed to update metadata on node " + node.getNodeName());
+            }
+        }
     }
 
 

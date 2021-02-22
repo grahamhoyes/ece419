@@ -108,6 +108,7 @@ public class ECSConnection {
      *
      * Updates the local metadata store (hashRing)
      * // TODO: is there anything else to do when metadata changes?
+     * // TODO: This probably isn't getting used at all, since we need it synchronous
      *
      * Metadata is at /servers/metadata
      */
@@ -189,16 +190,23 @@ public class ECSConnection {
                     case SHUT_DOWN:
                         break;
                     case WRITE_LOCK:
+                        kvServer.lockWrite();
+                        response.setAction(AdminMessage.Action.ACK);
                         break;
                     case WRITE_UNLOCK:
+                        kvServer.unlockWrite();
+                        response.setAction(AdminMessage.Action.ACK);
                         break;
                     case MOVE_DATA:
                         kvServer.sendData(message);
+                        response.setAction(AdminMessage.Action.ACK);
+                        break;
                     case RECEIVE_DATA:
                         int port = kvServer.setupDataReceiver();
+                        logger.info("Got here");
                         response.setAction(AdminMessage.Action.ACK);
                         response.setMessage(String.valueOf(port));
-
+                        break;
                     case SET_METADATA:
                         // TODO: Is it fine to update the entire hash ring here? Probably
                         hashRing = message.getMetadata();
