@@ -192,13 +192,13 @@ public class KVServer implements IKVServer, Runnable {
     }
 
     public void sendData(AdminMessage message){
-//        lockWrite();
         ECSNode receiveNode = message.getReceiver();
         String host = receiveNode.getNodeHost();
         int port = Integer.parseInt(message.getMessage());
         String[] hashRange = message.getSender().getNodeHashRange();
 
         try {
+            logger.info("Starting data transfer to node " + receiveNode.getNodeName());
             String sendPath = kvStore.splitData(hashRange);
             File sendFile = new File(sendPath);
 
@@ -208,8 +208,8 @@ public class KVServer implements IKVServer, Runnable {
             BufferedOutputStream socketOutput = new BufferedOutputStream(receiveSocket.getOutputStream());
             BufferedInputStream fileInput = new BufferedInputStream(new FileInputStream(sendFile));
 
-            int size = 0;
-            while ((size = fileInput.read(buffer)) > 0){
+            int size;
+            while ((size = fileInput.read(buffer)) > 0) {
                 socketOutput.write(buffer, 0, size);
             }
 
@@ -219,12 +219,13 @@ public class KVServer implements IKVServer, Runnable {
             fileInput.close();
             receiveSocket.close();
 
+            // TODO: Admin message for this
             kvStore.sendDataCleanup();
-//            unlockWrite();
+
+            logger.info("Finished data transfer to node " + receiveNode.getNodeName());
 
         } catch (IOException e) {
-            logger.error("Unable to send data to receiving node.");
-            e.printStackTrace();
+            logger.error("Unable to send data to receiving node", e);
         }
     }
 
@@ -287,7 +288,7 @@ public class KVServer implements IKVServer, Runnable {
                     logger.info("Connected to "
                             + getHostname()
                             + ":" + getPort());
-                    // TODO: Handle client connections
+
                 } catch (IOException e) {
                     logger.error("Error! Unable to establish connection. \n", e);
                 }

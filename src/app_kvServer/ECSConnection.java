@@ -149,7 +149,6 @@ public class ECSConnection {
      * Admin messages come to /servers/<server>/admin
      *
      * After processing the message, the node should be deleted.
-     * TODO: How should the KVServer inform the ECS of errors?
      */
     private class AdminWatcher implements Watcher {
         @Override
@@ -203,7 +202,6 @@ public class ECSConnection {
                         break;
                     case RECEIVE_DATA:
                         int port = kvServer.setupDataReceiver();
-                        logger.info("Got here");
                         response.setAction(AdminMessage.Action.ACK);
                         response.setMessage(String.valueOf(port));
                         break;

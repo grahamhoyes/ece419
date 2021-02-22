@@ -32,7 +32,12 @@ public class KeyValue {
         return value;
     }
 
-    public String getKeyHash() { return keyHash; }
+    public String getKeyHash() {
+        if (keyHash == null) {
+            keyHash = md5Hash(key);
+        }
+        return keyHash;
+    }
 
     public String getJsonKV() {
         if (jsonKV == null){

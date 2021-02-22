@@ -3,13 +3,11 @@ package store;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import org.apache.log4j.Logger;
-import store.KeyInvalidException;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
-import java.nio.charset.StandardCharsets;
 
 import static ecs.ECSNode.hashInRange;
 
@@ -51,7 +49,7 @@ public class KVSimpleStore implements KVStore{
         Gson gson = new Gson();
 
         try(RandomAccessFile storageFile = new RandomAccessFile(fileName, "r");) {
-            String str = null;
+            String str;
 
             long currPointer = storageFile.getFilePointer();
             long prevPointer = currPointer;
@@ -186,9 +184,11 @@ public class KVSimpleStore implements KVStore{
     }
 
 
-    public String splitData(String[] keyHashRange) throws IOException{
+    public String splitData(String[] keyHashRange) throws IOException {
         File sendFile = new File(this.sendPath);
+        boolean ignored = sendFile.createNewFile();
         File keepFile = new File(this.keepPath);
+        ignored = keepFile.createNewFile();
 
         Gson gson = new Gson();
 
@@ -196,16 +196,14 @@ public class KVSimpleStore implements KVStore{
             RandomAccessFile sendRAF = new RandomAccessFile(sendPath, "rw");
             RandomAccessFile keepRAF = new RandomAccessFile(keepPath, "rw");){
 
-            String str = null;
-            long sendPointer = sendRAF.getFilePointer();
-            long keepPointer = keepRAF.getFilePointer();
+            String str;
 
             while ((str = storageRAF.readLine()) != null){
                 KeyValue keyValue = gson.fromJson(str, KeyValue.class);
                 String keyHash = keyValue.getKeyHash();
                 String keyValueJSON = keyValue.getJsonKV();
 
-                if (hashInRange(keyHash, keyHashRange)){
+                if (hashInRange(keyHash, keyHashRange)) {
                     // key-value is sent
                     keepRAF.seek(keepRAF.length());
                     keepRAF.write(keyValueJSON.getBytes());

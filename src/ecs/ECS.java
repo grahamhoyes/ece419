@@ -171,109 +171,70 @@ public class ECS implements IECS {
 
     @Override
     public ECSNode addNode(String cacheStrategy, int cacheSize) {
-        List<ECSNode> nodes = (List<ECSNode>) addNodes(1, cacheStrategy, cacheSize);
-        if (nodes.size() > 0)
-            return nodes.get(0);
-
-        return null;
-    }
-
-    @Override
-    public Collection<ECSNode> addNodes(int count) {
-        return addNodes(count, cacheStrategy, cacheSize);
-    }
-
-    @Override
-    public Collection<ECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
-        Collection<ECSNode> nodes = setupNodes(count, cacheStrategy, cacheSize);
+        List<ECSNode> nodes = (List<ECSNode>) setupNodes(1, cacheStrategy, cacheSize);
         if (nodes == null) return null;
 
+        ECSNode node = nodes.get(0);
+
         HashRing updatedHashRing = hashRing.copy();
-        Collection<ECSNode> launchedNodes = new ArrayList<>();
+        updatedHashRing.addNode(node);
 
-        for (ECSNode node : nodes) {
+        // Initialize the server
+        AdminMessage adminMessage = new AdminMessage(AdminMessage.Action.INIT);
 
-            // Initialize the server
-            AdminMessage adminMessage = new AdminMessage(AdminMessage.Action.INIT);
+        try {
+            AdminMessage response = zkConnection.sendAdminMessage(
+                    node.getNodeName(), adminMessage, 10000
+            );
 
-            try {
-                AdminMessage response = zkConnection.sendAdminMessage(
-                        node.getNodeName(), adminMessage, 10000
-                );
-
-                if (response.getAction() == AdminMessage.Action.ACK) {
-                    logger.info("Server " + node.getNodeName() + " initialized");
-                } else {
-                    logger.error("Server " + node.getNodeName() + " failed to initialize");
-                    logger.debug(response.getMessage());
-                    continue;
-                }
-            } catch (KeeperException | InterruptedException e) {
-                logger.error("Failed to send admin message to initialize " + node.getNodeName(), e);
-                continue;
-            } catch (TimeoutException e) {
-                logger.error("Timeout while trying to send admin message to initialize " + node.getNodeName());
-                continue;
+            if (response.getAction() == AdminMessage.Action.ACK) {
+                logger.info("Server " + node.getNodeName() + " initialized");
+            } else {
+                logger.error("Server " + node.getNodeName() + " failed to initialize");
+                logger.debug(response.getMessage());
+                return null;
             }
-
-            launchedNodes.add(node);
-            updatedHashRing.addNode(node);
-
+        } catch (KeeperException | InterruptedException e) {
+            logger.error("Failed to send admin message to initialize " + node.getNodeName(), e);
+            return null;
+        } catch (TimeoutException e) {
+            logger.error("Timeout while trying to send admin message to initialize " + node.getNodeName());
+            return null;
         }
 
-        boolean retry = true;
-        while (retry) {  // Retry until all nodes have been successfully added
-            retry = false;
+        // Set the metadata for the added server
+        adminMessage.setAction(AdminMessage.Action.SET_METADATA);
+        adminMessage.setMetadata(updatedHashRing);
 
-            // Set the metadata for the added nodes
-            for (ECSNode node : launchedNodes) {
-                AdminMessage message = new AdminMessage(AdminMessage.Action.SET_METADATA);
-                message.setMetadata(updatedHashRing);
+        try {
+            AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), adminMessage, 10000);
 
-                try {
-                    AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 10000);
-
-                    if (response.getAction() == AdminMessage.Action.ACK) {
-                        logger.info("Set metadata for server " + node.getNodeName());
-                    } else {
-                        logger.error("Could not set metadata for server " + node.getNodeName());
-                        launchedNodes.remove(node);
-                        updatedHashRing.removeNode(node.getNodeName());
-                        retry = true;
-                        break;
-                    }
-
-                // Errors mean that we have to remove this node from the hash ring, and retry
-                } catch (KeeperException | InterruptedException e) {
-                    logger.error("Failed to send admin message to set metadata for " + node.getNodeName(), e);
-                    launchedNodes.remove(node);
-                    updatedHashRing.removeNode(node.getNodeName());
-                    retry = true;
-                    break;
-                } catch (TimeoutException e) {
-                    logger.error("Timeout while trying to send admin message to set metadata for " + node.getNodeName());
-                    launchedNodes.remove(node);
-                    updatedHashRing.removeNode(node.getNodeName());
-                    retry = true;
-                    break;
-                }
-
+            if (response.getAction() == AdminMessage.Action.ACK) {
+                logger.info("Set metadata for server " + node.getNodeName());
+            } else {
+                logger.error("Could not set metadata for server " + node.getNodeName());
+                return null;
             }
+
+        } catch (KeeperException | InterruptedException e) {
+            logger.error("Failed to send admin message to set metadata for " + node.getNodeName(), e);
+            return null;
+        } catch (TimeoutException e) {
+            logger.error("Timeout while trying to send admin message to set metadata for " + node.getNodeName());
+            return null;
         }
 
-        // For each node that has been launched so far, invoke data transfer to its successor
-        for (ECSNode node : launchedNodes) {
-            ECSNode successor = updatedHashRing.getSuccessor(node);
-            assert successor != null;
+        ECSNode successor = updatedHashRing.getSuccessor(node);
+        assert successor != null;
 
-            // Set the write lock on the successor
-            // TODO: Handle failures here and abort the transfer
-            // TODO: KVServer.sendData actually sets the write lock for us
-            if (!setWriteLock(successor, true)) continue;
+        if (updatedHashRing.getNodes().size() > 1) {
+            // Invoke data transfer to its successor
+            assert !successor.getNodeName().equals(node.getNodeName());
+
+            if (!setWriteLock(successor, true)) return null;
 
             // Invoke data transfer
             moveDataBetweenNodes(successor, node);
-
         }
 
         // Once all data has been transferred, send global metadata updates
@@ -283,22 +244,36 @@ public class ECS implements IECS {
             updateGlobalMetadata(10000);
         } catch (KeeperException | InterruptedException | TimeoutException e) {
             logger.error("Failed to update global metadata");
+            return null;
         }
 
-        // Release the write lock on the successor servers and remove old data
-        for (ECSNode node : launchedNodes) {
-            ECSNode successor = updatedHashRing.getSuccessor(node);
-            assert successor != null;
-
-            // TODO: Add admin message for cleaning up the transfer
-
-            setWriteLock(successor, false);
+        if (updatedHashRing.getNodes().size() > 1) {
+            // Release the write lock on the successor servers and remove old data
+            // TODO: Admin message to clean up the data
+            if (!setWriteLock(successor, false)) return null;
         }
 
-        logger.info("Successfully launched " + launchedNodes.size() + " nodes, "
-                + (count - launchedNodes.size()) + " failures");
+        logger.info("Successfully launched node " + node.getNodeName());
 
-        return launchedNodes;
+        return node;
+    }
+
+    @Override
+    public Collection<ECSNode> addNodes(int count) {
+        return addNodes(count, cacheStrategy, cacheSize);
+    }
+
+    @Override
+    public Collection<ECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
+        List<ECSNode> nodes = new ArrayList<>();
+
+        for (int i = 0; i < count; i++) {
+            ECSNode node = addNode(cacheStrategy, cacheSize);
+            if (node == null) continue;
+            nodes.add(node);
+        }
+
+        return nodes;
     }
 
     @Override
@@ -478,7 +453,7 @@ public class ECS implements IECS {
         message.setMessage(String.valueOf(port));
 
         try {
-            AdminMessage response = zkConnection.sendAdminMessage(fromNode.getNodeName(), message, 10000);
+            AdminMessage response = zkConnection.sendAdminMessage(fromNode.getNodeName(), message, -1);
 
             if (response.getAction() == AdminMessage.Action.ACK) {
                 logger.info("Sending data from server " + fromNode.getNodeName());
@@ -536,51 +511,6 @@ public class ECS implements IECS {
      * @param timeoutMillis Timeout period (ms)
      */
     private void updateGlobalMetadata(int timeoutMillis) throws KeeperException, InterruptedException, TimeoutException {
-        // TODO: We made the SET_METADATA action update global metadata for one node,
-        //  so could just use that instead of this complexity
-//        AtomicBoolean success = new AtomicBoolean(true);
-//
-//        // Set a watcher to acknowledge metadata updates
-//        CountDownLatch sig = new CountDownLatch(hashRing.getNodes().size());
-//
-//        for (ECSNode node : hashRing.getNodes()) {
-//            try {
-//                zk.getData(ZooKeeperConnection.ZK_SERVER_ROOT + "/" + node.getNodeName(), event -> {
-//                    try {
-//                        byte[] data = zk.getData(event.getPath(), false, null);
-//                        AdminMessage response = new AdminMessage(new String(data));
-//
-//                        if (response.getAction() == AdminMessage.Action.ACK) {
-//                            logger.info("Updated metadata on node " + node.getNodeName());
-//                        } else {
-//                            logger.error("Error updating metadata on node " + node.getNodeName());
-//                            success.set(false);
-//                        }
-//                    } catch (KeeperException | InterruptedException e) {
-//                        logger.error("Failed to update metadata on node " + node.getNodeName(), e);
-//                        success.set(false);
-//                    } finally {
-//                        sig.countDown();
-//                    }
-//
-//                }, null);
-//            } catch (KeeperException | InterruptedException e) {
-//                logger.error("Failed to set watcher for metadata update response on node " + node.getNodeName(), e);
-//            }
-//        }
-//
-//        try {
-//            zkConnection.setData(ZooKeeperConnection.ZK_METADATA_PATH, hashRing.serialize());
-//        } catch (KeeperException | InterruptedException e) {
-//            logger.error("Failed to update global metadata", e);
-//            success.set(false);
-//        }
-//
-//        if (!sig.await(timeoutMillis, TimeUnit.MILLISECONDS))
-//            success.set(false);
-//
-//        return success.get();
-
         for (ECSNode node : hashRing.getNodes()) {
             AdminMessage message = new AdminMessage(AdminMessage.Action.SET_METADATA);
             message.setMetadata(hashRing);

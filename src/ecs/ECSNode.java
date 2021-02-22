@@ -1,12 +1,14 @@
 package ecs;
 
 import app_kvServer.IKVServer;
+import org.apache.log4j.Logger;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 public class ECSNode implements IECSNode, Comparable<ECSNode> {
+    public static final Logger logger = Logger.getRootLogger();
     public static BigInteger HASH_MAX = new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16);
     private final String name;
     private final String hostname;
@@ -119,13 +121,16 @@ public class ECSNode implements IECSNode, Comparable<ECSNode> {
         }
     }
 
-    public static boolean hashInRange(String hash, String[] hashRange){
+    public static boolean hashInRange(String hash, String[] hashRange) {
+        logger.info("What up my friends");
         String lower = hashRange[0];
         String upper = hashRange[1];
 
         if (upper.compareTo(lower) <= 0) {
+            logger.info("Duck");
             return lower.compareTo(hash) <= 0 || upper.compareTo(hash) >= 0;
         } else {
+            logger.info("Cat");
             return lower.compareTo(hash) <= 0 && upper.compareTo(hash) >= 0;
         }
     }
