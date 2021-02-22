@@ -192,7 +192,6 @@ public class KVServer implements IKVServer, Runnable {
     }
 
     public void sendData(AdminMessage message){
-        lockWrite();
         ECSNode receiveNode = message.getReceiver();
         String host = receiveNode.getNodeHost();
         int port = Integer.parseInt(message.getMessage());
@@ -219,13 +218,14 @@ public class KVServer implements IKVServer, Runnable {
             fileInput.close();
             receiveSocket.close();
 
-            kvStore.sendDataCleanup();
-            unlockWrite();
-
         } catch (IOException e) {
             logger.error("Unable to send data to receiving node.");
             e.printStackTrace();
         }
+    }
+
+    public void cleanUpData(){
+        kvStore.sendDataCleanup();
     }
 
     private void mergeNewData(){
