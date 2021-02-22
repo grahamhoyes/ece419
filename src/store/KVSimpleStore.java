@@ -206,13 +206,14 @@ public class KVSimpleStore implements KVStore{
                 String keyValueJSON = keyValue.getJsonKV();
 
                 if (hashInRange(keyHash, keyHashRange)){
-                    // If key in keyHashRange, key-value is sent
-                    sendRAF.seek(sendRAF.length());
-                    sendRAF.write(keyValueJSON.getBytes());
-                } else {
-                    // key-value is kept
+                    // key-value is sent
                     keepRAF.seek(keepRAF.length());
                     keepRAF.write(keyValueJSON.getBytes());
+                } else {
+                    // If key in keyHashRange, key-value is kept
+                    sendRAF.seek(sendRAF.length());
+                    sendRAF.write(keyValueJSON.getBytes());
+
                 }
             }
         }
