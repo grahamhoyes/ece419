@@ -32,8 +32,13 @@ public class KVSimpleStore implements KVStore{
         prepareFile();
     }
 
-    private void prepareFile() throws IOException{
+    private void prepareFile() throws IOException {
         File storageFile = new File(this.fileName);
+
+        if (!storageFile.getParentFile().exists()) {
+            // Create the parent directories
+            storageFile.getParentFile().mkdirs();
+        }
 
         boolean storageFileCreated = storageFile.createNewFile();
 
