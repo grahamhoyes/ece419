@@ -363,4 +363,46 @@ public class ECS implements IECS {
         return null;
     }
 
+    private void moveDataBetweenNodes(ECSNode fromNode, ECSNode toNode) {
+        try {
+            AdminMessage message = new AdminMessage(AdminMessage.Action.RECEIVE_DATA);
+            AdminMessage response = zkConnection.sendAdminMessage(toNode.getNodeName(), message, 10000);
+
+            if (response.getAction() == AdminMessage.Action.ACK) {
+                logger.info("Ready to receive data for server " + toNode.getNodeName());
+                int port = Integer.parseInt(response.getMessage());
+                nodeMoveData(fromNode, toNode, port);
+            } else {
+                logger.error("Could not receive data at server " + toNode.getNodeName());
+            }
+        } catch (KeeperException | InterruptedException e) {
+            logger.error("Failed to send admin message to receive data at " + toNode.getNodeName(), e);
+        } catch (TimeoutException e) {
+            logger.error("Timeout while trying to send admin message to receive data at " + toNode.getNodeName());
+        }
+    }
+
+    private void nodeMoveData(ECSNode fromNode, ECSNode toNode, int port){
+        AdminMessage message = new AdminMessage(AdminMessage.Action.MOVE_DATA);
+        message.setSender(fromNode);
+        message.setReceiver(toNode);
+        message.setMessage(String.valueOf(port));
+
+        try {
+            AdminMessage response = zkConnection.sendAdminMessage(fromNode.getNodeName(), message, 10000);
+
+            if (response.getAction() == AdminMessage.Action.ACK) {
+                logger.info("Sending data from server " + toNode.getNodeName());
+            } else {
+                logger.error("Could not send data from server " + toNode.getNodeName());
+            }
+        } catch (KeeperException | InterruptedException e) {
+            logger.error("Failed to send admin message to send data at " + toNode.getNodeName(), e);
+        } catch (TimeoutException e) {
+            logger.error("Timeout while trying to send admin message to send data at " + toNode.getNodeName());
+        }
+
+    }
+
+
 }
