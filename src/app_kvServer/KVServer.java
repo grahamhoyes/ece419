@@ -196,7 +196,7 @@ public class KVServer implements IKVServer, Runnable {
         ECSNode receiveNode = message.getReceiver();
         String host = receiveNode.getNodeHost();
         int port = Integer.parseInt(message.getMessage());
-        String[] hashRange = message.getRange();
+        String[] hashRange = message.getSender().getNodeHashRange();
 
         try {
             String sendPath = kvStore.splitData(hashRange);
