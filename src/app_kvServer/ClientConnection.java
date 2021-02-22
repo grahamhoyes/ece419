@@ -153,8 +153,8 @@ public class ClientConnection extends Connection implements Runnable {
                         // IOException indicates something wrong with the socket,
                         // so the connection is terminated
                         logger.error(e);
-                        isOpen = false;
                     }
+                    isOpen = false;
                 }
 
             }

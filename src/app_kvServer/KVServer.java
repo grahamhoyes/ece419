@@ -45,7 +45,7 @@ public class KVServer implements IKVServer, Runnable {
      */
     public KVServer(int port, String serverName, String zkHost, int zkPort) throws IOException {
         this.port = port;
-        this.kvStore = new KVSimpleStore("data/" + port + "_store.txt");
+        this.kvStore = new KVSimpleStore(port + "_store.txt");
         this.status = ServerStatus.STOPPED;
         this.serverName = serverName;
 

@@ -323,7 +323,31 @@ public class ECS implements IECS {
 
         List<ECSNode> nodes = new ArrayList<>();
 
-        // Grab nodes from the offline pool first, and start them
+        // Grab nodes from the stopped node pool first
+        while (count > 0 && nodePool.size() > 0) {
+            ECSNode node = nodePool.poll();
+            node.setStatus(IKVServer.ServerStatus.STOPPED);
+
+            // Reset the ZNodes for these nodes just in case
+            // TODO: Really don't need to do this
+            String zkNodePath = ZooKeeperConnection.ZK_SERVER_ROOT + "/" + node.getNodeName();
+            String zkAdminPath = zkNodePath + "/admin";
+
+            AdminMessage adminMessage = new AdminMessage(AdminMessage.Action.NOP);
+
+            try {
+                zkConnection.createOrReset(zkNodePath, "hi", CreateMode.PERSISTENT);
+                zkConnection.createOrReset(zkAdminPath, adminMessage.serialize(), CreateMode.PERSISTENT);
+            } catch (KeeperException | InterruptedException e) {
+                logger.error("Failed to create KVServer and admin ZNodes for node " + node.getNodeName(), e);
+                continue;
+            }
+
+            nodes.add(node);
+            count--;
+        }
+
+        // Get any extra nodes from the offline pool, and start them
         while (count > 0 && offlineNodes.size() > 0) {
             ECSNode node = offlineNodes.poll();
             node.setStatus(IKVServer.ServerStatus.STOPPED);
@@ -403,30 +427,6 @@ public class ECS implements IECS {
             }
 
             logger.info("Server " + node.getNodeName() + " has been started");
-
-            nodes.add(node);
-            count--;
-        }
-
-        // Grab the rest of the nodes from the node pool
-        while (count > 0 && nodePool.size() > 0) {
-            ECSNode node = nodePool.poll();
-            node.setStatus(IKVServer.ServerStatus.STOPPED);
-
-            // Reset the ZNodes for these nodes just in case
-            // TODO: Really don't need to do this
-            String zkNodePath = ZooKeeperConnection.ZK_SERVER_ROOT + "/" + node.getNodeName();
-            String zkAdminPath = zkNodePath + "/admin";
-
-            AdminMessage adminMessage = new AdminMessage(AdminMessage.Action.NOP);
-
-            try {
-                zkConnection.createOrReset(zkNodePath, "hi", CreateMode.PERSISTENT);
-                zkConnection.createOrReset(zkAdminPath, adminMessage.serialize(), CreateMode.PERSISTENT);
-            } catch (KeeperException | InterruptedException e) {
-                logger.error("Failed to create KVServer and admin ZNodes for node " + node.getNodeName(), e);
-                continue;
-            }
 
             nodes.add(node);
             count--;
