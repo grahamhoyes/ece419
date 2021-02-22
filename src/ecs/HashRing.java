@@ -106,6 +106,15 @@ public class HashRing {
         return null;
     }
 
+    public ECSNode getSuccessor(ECSNode node) {
+        for (ECSNode other : ecsNodes) {
+            if (other.getPredecessorHash().equals(node.getNodeHash()))
+                return other;
+        }
+
+        return null;
+    }
+
     public String serialize() {
         return new Gson().toJson(this);
     }
@@ -114,5 +123,21 @@ public class HashRing {
         HashRing hashRingFromJson = new Gson().fromJson(json, HashRing.class);
         this.ecsNodes = hashRingFromJson.ecsNodes;
         Collections.sort(ecsNodes);
+    }
+
+    /**
+     * @return A deep copy of this HashRing
+     */
+    public HashRing copy() {
+        ArrayList<ECSNode> copyNodes = new ArrayList<>();
+
+        for (ECSNode node : this.ecsNodes) {
+            copyNodes.add(node.copy());
+        }
+
+        HashRing copyHashRing = new HashRing();
+        copyHashRing.ecsNodes = copyNodes;
+
+        return copyHashRing;
     }
 }

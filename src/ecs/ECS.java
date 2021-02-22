@@ -183,6 +183,7 @@ public class ECS implements IECS {
         Collection<ECSNode> nodes = setupNodes(count, cacheStrategy, cacheSize);
         if (nodes == null) return null;
 
+        HashRing updatedHashRing = hashRing.copy();
         Collection<ECSNode> launchedNodes = new ArrayList<>();
 
         for (ECSNode node : nodes) {
@@ -271,32 +272,80 @@ public class ECS implements IECS {
             }
 
             launchedNodes.add(node);
-            hashRing.addNode(node);
+            updatedHashRing.addNode(node);
 
         }
 
-        // Set the metadata for the added nodes
-        for (ECSNode node : hashRing.getNodes()) {
-            AdminMessage message = new AdminMessage(AdminMessage.Action.SET_METADATA);
-            message.setMetadata(hashRing);
+        boolean retry = true;
+        while (retry) {  // Retry until all nodes have been successfully added
+            retry = false;
 
-            try {
-                AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 10000);
+            // Set the metadata for the added nodes
+            for (ECSNode node : launchedNodes) {
+                AdminMessage message = new AdminMessage(AdminMessage.Action.SET_METADATA);
+                message.setMetadata(updatedHashRing);
 
-                if (response.getAction() == AdminMessage.Action.ACK) {
-                    logger.info("Set metadata for server " + node.getNodeName());
-                } else {
-                    logger.error("Could not set metadata for server " + node.getNodeName());
+                try {
+                    AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 10000);
+
+                    if (response.getAction() == AdminMessage.Action.ACK) {
+                        logger.info("Set metadata for server " + node.getNodeName());
+                    } else {
+                        logger.error("Could not set metadata for server " + node.getNodeName());
+                        launchedNodes.remove(node);
+                        updatedHashRing.removeNode(node.getNodeName());
+                        retry = true;
+                        break;
+                    }
+
+                // Errors mean that we have to remove this node from the hash ring, and retry
+                } catch (KeeperException | InterruptedException e) {
+                    logger.error("Failed to send admin message to set metadata for " + node.getNodeName(), e);
+                    launchedNodes.remove(node);
+                    updatedHashRing.removeNode(node.getNodeName());
+                    retry = true;
+                    break;
+                } catch (TimeoutException e) {
+                    logger.error("Timeout while trying to send admin message to set metadata for " + node.getNodeName());
+                    launchedNodes.remove(node);
+                    updatedHashRing.removeNode(node.getNodeName());
+                    retry = true;
+                    break;
                 }
-            // TODO: These errors should do something to the hash ring probably
-            } catch (KeeperException | InterruptedException e) {
-                logger.error("Failed to send admin message to set metadata for " + node.getNodeName(), e);
-                launchedNodes.remove(node);
-            } catch (TimeoutException e) {
-                logger.error("Timeout while trying to send admin message to set metadata for " + node.getNodeName());
-                launchedNodes.remove(node);
-            }
 
+            }
+        }
+
+        // For each node that has been launched so far, invoke data transfer to its successor
+        for (ECSNode node : launchedNodes) {
+            ECSNode successor = updatedHashRing.getSuccessor(node);
+            assert successor != null;
+
+            // Set the write lock on the successor
+            // TODO: Handle failures here and abort the transfer
+            if (!setWriteLock(successor, true)) continue;
+
+            // Invoke data transfer
+            moveDataBetweenNodes(successor, node);
+
+        }
+
+        // Once all data has been transferred, send global metadata updates
+        // TODO: Does this have to be synchronous before the next step? We don't get responses back
+        hashRing = updatedHashRing;
+
+        try {
+            zkConnection.setData(ZooKeeperConnection.ZK_METADATA_PATH, hashRing.serialize());
+        } catch (KeeperException | InterruptedException e) {
+            logger.error("Failed to update global metadata", e);
+        }
+
+        // Release the write lock on the successor servers and remove old data
+        for (ECSNode node : launchedNodes) {
+            ECSNode successor = updatedHashRing.getSuccessor(node);
+            assert successor != null;
+
+            setWriteLock(successor, false);
         }
 
         logger.info("Successfully launched " + launchedNodes.size() + " nodes, "
@@ -363,7 +412,9 @@ public class ECS implements IECS {
         return null;
     }
 
-    private void moveDataBetweenNodes(ECSNode fromNode, ECSNode toNode) {
+    private boolean moveDataBetweenNodes(ECSNode fromNode, ECSNode toNode) {
+        boolean success = true;
+
         try {
             AdminMessage message = new AdminMessage(AdminMessage.Action.RECEIVE_DATA);
             AdminMessage response = zkConnection.sendAdminMessage(toNode.getNodeName(), message, 10000);
@@ -371,18 +422,25 @@ public class ECS implements IECS {
             if (response.getAction() == AdminMessage.Action.ACK) {
                 logger.info("Ready to receive data for server " + toNode.getNodeName());
                 int port = Integer.parseInt(response.getMessage());
-                nodeMoveData(fromNode, toNode, port);
+                success = nodeMoveData(fromNode, toNode, port);
             } else {
                 logger.error("Could not receive data at server " + toNode.getNodeName());
+                success = false;
             }
         } catch (KeeperException | InterruptedException e) {
             logger.error("Failed to send admin message to receive data at " + toNode.getNodeName(), e);
+            success = false;
         } catch (TimeoutException e) {
             logger.error("Timeout while trying to send admin message to receive data at " + toNode.getNodeName());
+            success = false;
         }
+
+        return success;
     }
 
-    private void nodeMoveData(ECSNode fromNode, ECSNode toNode, int port){
+    private boolean nodeMoveData(ECSNode fromNode, ECSNode toNode, int port){
+        boolean success = true;
+
         AdminMessage message = new AdminMessage(AdminMessage.Action.MOVE_DATA);
         message.setSender(fromNode);
         message.setReceiver(toNode);
@@ -395,13 +453,50 @@ public class ECS implements IECS {
                 logger.info("Sending data from server " + toNode.getNodeName());
             } else {
                 logger.error("Could not send data from server " + toNode.getNodeName());
+                success = false;
             }
         } catch (KeeperException | InterruptedException e) {
             logger.error("Failed to send admin message to send data at " + toNode.getNodeName(), e);
+            success = false;
         } catch (TimeoutException e) {
             logger.error("Timeout while trying to send admin message to send data at " + toNode.getNodeName());
+            success = false;
         }
 
+        return success;
+    }
+
+    /**
+     * Set or unset the write lock for the given node
+     *
+     * @param node The node to set the status on
+     * @param lock True to set the lock, false to unset
+     * @return success status
+     */
+    private boolean setWriteLock(ECSNode node, boolean lock) {
+        boolean success = true;
+
+        AdminMessage message = new AdminMessage(AdminMessage.Action.WRITE_LOCK);
+
+        try {
+            AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 10000);
+
+            if (response.getAction() == AdminMessage.Action.ACK) {
+                logger.info("Write lock " + (lock ? "set" : "unlocked") + " on node " + node.getNodeName());
+            } else {
+                logger.error("Failed to " + (lock ? "set" : "unlock") + " write lock on node " + node.getNodeName());
+                success = false;
+            }
+
+        } catch (KeeperException | InterruptedException e) {
+            logger.error("Failed to send admin message to " + (lock ? "set" : "unlock") + " write lock for " + node.getNodeName(), e);
+            success = false;
+        } catch (TimeoutException e) {
+            logger.error("Timeout while trying to send admin message to " + (lock ? "set" : "unlock") + " write lock for " + node.getNodeName());
+            success = false;
+        }
+
+        return success;
     }
 
 

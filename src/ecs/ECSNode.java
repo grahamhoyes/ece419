@@ -135,4 +135,15 @@ public class ECSNode implements IECSNode, Comparable<ECSNode> {
     public int compareTo(ECSNode other) {
         return this.getNodeHash().compareTo(other.getNodeHash());
     }
+
+    /**
+     * @return A deep copy of this ECSNode
+     */
+    public ECSNode copy() {
+        ECSNode copyNode = new ECSNode(name, hostname, port);
+        copyNode.predecessorHash = this.predecessorHash;
+        copyNode.status = this.status;
+
+        return copyNode;
+    }
 }
