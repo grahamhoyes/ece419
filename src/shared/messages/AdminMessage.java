@@ -31,7 +31,6 @@ public class AdminMessage implements Serializable {
      * their hash ranges correct, trust the range field */
     private ECSNode sender;
     private ECSNode receiver;
-    private String[] range;    // Range of hashes to move, inclusive on both ends
 
     public AdminMessage() {
 
@@ -61,10 +60,6 @@ public class AdminMessage implements Serializable {
         return receiver;
     }
 
-    public String[] getRange() {
-        return range;
-    }
-
     public HashRing getMetadata() {
         return this.hashRing;
     }
@@ -89,10 +84,6 @@ public class AdminMessage implements Serializable {
         this.receiver = receiver;
     }
 
-    public void setRange(String[] range) {
-        this.range = range;
-    }
-
     public String serialize() {
         return new Gson().toJson(this);
     }
@@ -105,6 +96,5 @@ public class AdminMessage implements Serializable {
         this.hashRing = adminMessage.hashRing;
         this.sender = adminMessage.sender;
         this.receiver = adminMessage.receiver;
-        this.range = adminMessage.range;
     }
 }
