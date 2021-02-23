@@ -106,7 +106,7 @@ public class ECSNode implements IECSNode, Comparable<ECSNode> {
     public boolean isNodeResponsible(String key) {
         String keyHash = md5Hash(key);
 
-        if (predecessorHash == null) {
+        if (predecessorHash == null || predecessorHash.equals(this.getNodeHash())) {
             // This is the only server
             return true;
         }

@@ -31,10 +31,8 @@ public class AddNumberOfNodesCommand extends AbstractCommand {
         Collection<ECSNode> nodes = ((ECSClient) client).getECS().addNodes(numberOfNodes);
         if (nodes == null || nodes.size() == 0) {
             System.out.println("Unable to add any new nodes");
-        } else if (nodes.size() < numberOfNodes) {
-            System.out.println(nodes.size() + " nodes were added");
         } else {
-            System.out.println("Nodes added");
+            System.out.println(nodes.size() + " nodes added");
         }
     }
 }
