@@ -14,12 +14,11 @@ import java.util.concurrent.TimeoutException;
 
 public class ECS implements IECS {
     private static final Logger logger = Logger.getRootLogger();
-    private static final String SERVER_JAR = "KVServer.jar";
 
     // ZooKeeper is assumed to be running on the default port
     // on this machine
-    private static final String ZK_HOST = "127.0.0.1";
-    private static final int ZK_PORT = 2181;
+    private final String zkHost;
+    private final int zkPort;
 
     private static final String cacheStrategy = "";
     private static final int cacheSize = 0;
@@ -37,8 +36,11 @@ public class ECS implements IECS {
     // Set of active nodes
     private HashRing hashRing;
 
-    public ECS(String configFileName, String remotePath) {
+    public ECS(String configFileName, String zkHost, int zkPort, String remotePath) {
         this.remotePath = remotePath;
+        this.zkHost = zkHost;
+        this.zkPort = zkPort;
+
 
         // Read in the config file
         try {
@@ -86,7 +88,7 @@ public class ECS implements IECS {
         zkConnection = new ZooKeeperConnection();
 
         try {
-            zk = zkConnection.connect(ZK_HOST, ZK_PORT);
+            zk = zkConnection.connect(this.zkHost, this.zkPort);
         } catch (InterruptedException | IOException e) {
             logger.fatal("Failed to establish a connection to ZooKeeper");
             e.printStackTrace();
@@ -347,11 +349,11 @@ public class ECS implements IECS {
 
             String javaCmd = String.join(" ",
                     "java -jar",
-                    remotePath + SERVER_JAR,
+                    remotePath,
                     String.valueOf(node.getNodePort()),
                     node.getNodeName(),
-                    ZK_HOST,
-                    String.valueOf(ZK_PORT));
+                    zkHost,
+                    String.valueOf(zkPort));
 
             boolean isLocal = node.getNodeHost().equals("127.0.0.1") || node.getNodeHost().equals("localhost");
 

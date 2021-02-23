@@ -22,25 +22,28 @@ public class ECSClient implements IECSClient, Runnable {
 
     private boolean running;
 
-    public ECSClient(String configFileName, String remotePath) throws IOException {
-        ecs = new ECS(configFileName, remotePath);
+    public ECSClient(String configFileName, String zkHost, int zkPort, String remotePath) throws IOException {
+        ecs = new ECS(configFileName, zkHost, zkPort, remotePath);
     }
 
     public static void main(String[] args) {
         try {
             new LogSetup("logs/ecs.log", Level.ALL);
-            if (args.length == 0 || args.length > 2) {
-                System.err.println("Usage: ECS.jar ecs.config [remote path]");
+            if (args.length == 0 || args.length > 4) {
+                System.err.println("Usage: ECS.jar ecs.config zookeeper_host zookeeper_port [path to remove server jar]");
             } else {
                 String remotePath;
 
-                if (args.length >= 2) {
-                    remotePath = args[1];
+                if (args.length >= 4) {
+                    remotePath = args[3];
                 } else {
-                    remotePath = System.getProperty("user.home") + "/ece419/";
+                    remotePath = System.getProperty("user.home") + "/ece419/KVServer.java";
                 }
 
-                ECSClient client = new ECSClient(args[0], remotePath);
+                String ecs_config = args[0];
+                String zkHost = args[1];
+                int zkPort = Integer.parseInt(args[2]);
+                ECSClient client = new ECSClient(ecs_config, zkHost, zkPort, remotePath);
                 new Thread(client).start();
             }
         } catch (IOException e) {
