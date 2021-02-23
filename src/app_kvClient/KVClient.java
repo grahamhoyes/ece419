@@ -117,16 +117,12 @@ public class KVClient implements IKVClient, Runnable {
         try {
             command.run(this, tokens);
         } catch (Exception e) {
-            this.printError(e.getMessage());
+            logger.error(e);
             if (e instanceof  IOException) {
                 this.storeConnection = null;
             }
         }
 
-    }
-
-    public void printError(String message) {
-        System.out.println(message);
     }
 
     @Override

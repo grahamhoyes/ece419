@@ -49,13 +49,12 @@ public class ClientConnection extends Connection implements Runnable {
 
                     res.setKey(req.getKey());
                     res.setValue(req.getValue());
+                    res.setMetadata(server.getMetadata());
 
                     if (!server.isNodeResponsible(req.getKey())) {
                         res.setStatus(StatusType.SERVER_NOT_RESPONSIBLE);
                         res.setMessage("Server is not responsible for the given key");
 
-                        HashRing metadata = server.getMetadata();
-                        res.setMetadata(metadata);
                         sendMessage(res);
                         continue;
                     }
@@ -169,5 +168,10 @@ public class ClientConnection extends Connection implements Runnable {
                     + hostname + ":" + port + " has been closed");
 
         }
+    }
+
+    public void close() {
+        this.isOpen = false;
+        disconnect();
     }
 }

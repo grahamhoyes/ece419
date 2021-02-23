@@ -1,18 +1,23 @@
 package client;
 
+import ecs.ECS;
+import ecs.ECSNode;
 import ecs.HashRing;
-import ecs.IECSNode;
 import shared.Connection;
 import shared.messages.DeserializationException;
 import shared.messages.JsonKVMessage;
 import shared.messages.KVMessage;
 
+import java.io.IOException;
 import java.net.Socket;
 
 public class KVStoreConnection extends Connection implements KVCommInterface {
 
 	private HashRing hashRing;
-	private String currentNodeName;
+//	private String currentNodeName;
+	private ECSNode currentNode;
+	private boolean retry = false;
+	private int retryAttempts = 0;
 
 	/**
 	 * Initialize KVStore with address and port of KVServer
@@ -31,16 +36,28 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 		output = socket.getOutputStream();
 	}
 
-	public void connectToCorrectServer(String key) throws Exception {
-		if (hashRing != null) {
-			IECSNode responsibleNode = hashRing.getNodeForKey(key);
-			if (!responsibleNode.getNodeName().equals(currentNodeName)) {
-				this.hostname = responsibleNode.getNodeHost();
-				this.port = responsibleNode.getNodePort();
-				this.disconnect();
-				this.connect();
-				this.currentNodeName = responsibleNode.getNodeName();
-			}
+	private void switchServers(ECSNode node) throws Exception {
+		this.hostname = node.getNodeHost();
+		this.port = node.getNodePort();
+		this.disconnect();
+		this.connect();
+	}
+
+	private void switchToSuccessor() throws Exception {
+		if (hashRing == null) return;
+
+		ECSNode successor = hashRing.getSuccessor(currentNode);
+		this.currentNode = successor;
+		switchServers(successor);
+	}
+
+	private void connectToCorrectServer(String key) throws Exception {
+		if (hashRing == null) return;
+
+		ECSNode responsibleNode = hashRing.getNodeForKey(key);
+		if (currentNode == null || !responsibleNode.getNodeName().equals(currentNode.getNodeName())) {
+			switchServers(responsibleNode);
+			this.currentNode = responsibleNode;
 		}
 	}
 
@@ -51,14 +68,22 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 		req.setValue(value);
 		JsonKVMessage res;
 
-		connectToCorrectServer(key);
+		if (!retry) {
+			connectToCorrectServer(key);
+			retryAttempts = 0;
+		} else {
+			switchToSuccessor();
+			retryAttempts++;
+		}
 
 		try {
 			sendMessage(req);
 			res = receiveMessage();
+			hashRing = res.getMetadata();
 
+			retry = false;
 			if (res.getStatus() == KVMessage.StatusType.SERVER_NOT_RESPONSIBLE) {
-				hashRing = res.getMetadata();
+				// Metadata updated above, retry with new metadata
 				return put(key, value);
 			}
 		} catch (DeserializationException e) {
@@ -67,6 +92,20 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 			req.setKey(key);
 			req.setValue(value);
 			req.setMessage(e.getMessage());
+		} catch (IOException e) {
+			if (!e.getMessage().equals("Connection terminated"))
+				throw e;
+
+			// Server has terminated the connection
+			if (hashRing == null) throw e;
+
+			if (retryAttempts == hashRing.getNodes().size()) {
+				retry = false;
+				throw e;
+			} else {
+				retry = true;
+				return put(key, value);
+			}
 		}
 
 		return res;
@@ -78,14 +117,24 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 		req.setKey(key);
 		JsonKVMessage res;
 
-		connectToCorrectServer(key);
+		if (!retry) {
+			connectToCorrectServer(key);
+			retryAttempts = 0;
+		} else {
+			switchToSuccessor();
+			retryAttempts++;
+		}
 
 		try {
 			sendMessage(req);
 			res = receiveMessage();
+			// TODO: Have a way to request metadata from the server after retries,
+			//  rather than always sending it to save network traffic
+			hashRing = res.getMetadata();
 
+			retry = false;
 			if (res.getStatus() == KVMessage.StatusType.SERVER_NOT_RESPONSIBLE) {
-				hashRing = res.getMetadata();
+				// Metadata updated above, retry with new metadata
 				return get(key);
 			}
 		} catch (DeserializationException e) {
@@ -93,6 +142,20 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 			res = new JsonKVMessage(KVMessage.StatusType.GET_ERROR);
 			res.setKey(key);
 			res.setMessage(e.getMessage());
+		} catch (IOException e) {
+			if (!e.getMessage().equals("Connection terminated"))
+				throw e;
+
+			// Server has terminated the connection
+			if (hashRing == null) throw e;
+
+			if (retryAttempts == hashRing.getNodes().size()) {
+				retry = false;
+				throw e;
+			} else {
+				retry = true;
+				return get(key);
+			}
 		}
 
 		return res;

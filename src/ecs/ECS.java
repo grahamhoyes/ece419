@@ -114,7 +114,7 @@ public class ECS implements IECS {
             node.setStatus(IKVServer.ServerStatus.STOPPED);
             AdminMessage message = new AdminMessage(AdminMessage.Action.START);
             try {
-                AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 10000);
+                AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 20000);
                 if (response.getAction() == AdminMessage.Action.ACK) {
                     logger.info("Started server: " + node.getNodeName());
                 } else {
@@ -131,7 +131,7 @@ public class ECS implements IECS {
         }
 
         try {
-            updateGlobalMetadata(10000);
+            updateGlobalMetadata(20000);
         } catch (KeeperException | InterruptedException | TimeoutException e) {
             logger.error("Failed to update global metadata stopping servers", e);
         }
@@ -146,7 +146,7 @@ public class ECS implements IECS {
             node.setStatus(IKVServer.ServerStatus.STOPPED);
             AdminMessage message = new AdminMessage(AdminMessage.Action.STOP);
             try {
-                AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 10000);
+                AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 20000);
                 if (response.getAction() == AdminMessage.Action.ACK) {
                     logger.info("Stopped server: " + node.getNodeName());
                 } else {
@@ -163,7 +163,7 @@ public class ECS implements IECS {
         }
 
         try {
-            updateGlobalMetadata(10000);
+            updateGlobalMetadata(20000);
         } catch (KeeperException | InterruptedException | TimeoutException e) {
             logger.error("Failed to update global metadata stopping servers", e);
         }
@@ -201,7 +201,7 @@ public class ECS implements IECS {
 
         try {
             AdminMessage response = zkConnection.sendAdminMessage(
-                    node.getNodeName(), adminMessage, 10000
+                    node.getNodeName(), adminMessage, 20000
             );
 
             if (response.getAction() == AdminMessage.Action.ACK) {
@@ -224,7 +224,7 @@ public class ECS implements IECS {
         adminMessage.setMetadata(updatedHashRing);
 
         try {
-            AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), adminMessage, 10000);
+            AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), adminMessage, 20000);
 
             if (response.getAction() == AdminMessage.Action.ACK) {
                 logger.info("Set metadata for server " + node.getNodeName());
@@ -247,7 +247,7 @@ public class ECS implements IECS {
         adminMessage.setMetadata(null);
 
         try {
-            AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), adminMessage, 10000);
+            AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), adminMessage, 20000);
 
             if (response.getAction() == AdminMessage.Action.ACK) {
                 logger.info("Started server " + node.getNodeName());
@@ -281,7 +281,7 @@ public class ECS implements IECS {
         hashRing = updatedHashRing;
 
         try {
-            updateGlobalMetadata(10000);
+            updateGlobalMetadata(20000);
         } catch (KeeperException | InterruptedException | TimeoutException e) {
             logger.error("Failed to update global metadata", e);
             return null;
@@ -294,7 +294,7 @@ public class ECS implements IECS {
             adminMessage.setAction(AdminMessage.Action.CLEANUP_DATA);
 
             try {
-                AdminMessage response = zkConnection.sendAdminMessage(successor.getNodeName(), adminMessage, 10000);
+                AdminMessage response = zkConnection.sendAdminMessage(successor.getNodeName(), adminMessage, 20000);
 
                 if (response.getAction() == AdminMessage.Action.ACK) {
                     logger.info("Data transfer cleanup complete on " + successor.getNodeName());
@@ -415,7 +415,7 @@ public class ECS implements IECS {
             try {
                 zk.exists(zkHeartbeatPath, event -> sig.countDown());
 
-                boolean success = sig.await(10000, TimeUnit.MILLISECONDS);
+                boolean success = sig.await(20000, TimeUnit.MILLISECONDS);
 
                 if (!success) {
                     logger.error("Timeout while waiting to start server " + node.getNodeName());
@@ -485,7 +485,7 @@ public class ECS implements IECS {
         adminMessage.setMetadata(updatedHashRing);
 
         try {
-            AdminMessage response = zkConnection.sendAdminMessage(successor.getNodeName(), adminMessage, 10000);
+            AdminMessage response = zkConnection.sendAdminMessage(successor.getNodeName(), adminMessage, 20000);
 
             if (response.getAction() == AdminMessage.Action.ACK) {
                 logger.info("Set metadata for server " + successor.getNodeName());
@@ -510,7 +510,7 @@ public class ECS implements IECS {
         hashRing = updatedHashRing;
 
         try {
-            updateGlobalMetadata(10000);
+            updateGlobalMetadata(20000);
         } catch (KeeperException | InterruptedException | TimeoutException e) {
             logger.error("Failed to update global metadata");
             return false;
@@ -522,7 +522,7 @@ public class ECS implements IECS {
         adminMessage.setAction(AdminMessage.Action.CLEANUP_DATA);
 
         try {
-            AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), adminMessage, 10000);
+            AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), adminMessage, 20000);
 
             if (response.getAction() == AdminMessage.Action.ACK) {
                 logger.info("Data transfer cleanup complete on " + node.getNodeName());
@@ -554,7 +554,7 @@ public class ECS implements IECS {
         AdminMessage shutdownMessage = new AdminMessage(AdminMessage.Action.SHUT_DOWN);
 
         try {
-            AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), shutdownMessage, 10000);
+            AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), shutdownMessage, 20000);
 
             if (response.getAction() == AdminMessage.Action.ACK) {
                 logger.info("Shut down node " + node.getNodeName());
@@ -593,7 +593,7 @@ public class ECS implements IECS {
 
         try {
             AdminMessage message = new AdminMessage(AdminMessage.Action.RECEIVE_DATA);
-            AdminMessage response = zkConnection.sendAdminMessage(toNode.getNodeName(), message, 10000);
+            AdminMessage response = zkConnection.sendAdminMessage(toNode.getNodeName(), message, 20000);
 
             if (response.getAction() == AdminMessage.Action.ACK) {
                 logger.info("Ready to receive data at server " + toNode.getNodeName());
@@ -657,7 +657,7 @@ public class ECS implements IECS {
         );
 
         try {
-            AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 10000);
+            AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 20000);
 
             if (response.getAction() == AdminMessage.Action.ACK) {
                 logger.info("Write lock " + (lock ? "set" : "unlocked") + " on node " + node.getNodeName());

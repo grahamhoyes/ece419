@@ -13,6 +13,7 @@ import java.io.*;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class KVServer implements IKVServer, Runnable {
@@ -31,6 +32,7 @@ public class KVServer implements IKVServer, Runnable {
 
     private final String serverName;
     private final ECSConnection ecsConnection;
+    private ArrayList<ClientConnection> connections = new ArrayList<>();
 
     private ServerStatus status;
 
@@ -285,6 +287,7 @@ public class KVServer implements IKVServer, Runnable {
                     Socket client = serverSocket.accept();
 
                     ClientConnection connection = new ClientConnection(client, this);
+                    connections.add(connection);
                     new Thread(connection).start();
 
                     logger.info("Connected to "
@@ -306,7 +309,6 @@ public class KVServer implements IKVServer, Runnable {
 
     @Override
     public void kill() {
-        // TODO: Kill client connection threads
         running = false;
         try {
             serverSocket.close();
@@ -317,6 +319,12 @@ public class KVServer implements IKVServer, Runnable {
 
     @Override
     public void close() {
+        running = false;
+
+        for (ClientConnection connection : connections) {
+            connection.close();
+        }
+
         kill();
     }
 
