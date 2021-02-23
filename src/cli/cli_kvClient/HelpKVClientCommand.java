@@ -26,7 +26,6 @@ public class HelpKVClientCommand extends AbstractCommand {
         System.out.println(new LogLevelCommand().getCommandHelpDescription());
         System.out.println(new HelpKVClientCommand().getCommandHelpDescription());
         System.out.println(new QuitCommand().getCommandHelpDescription());
-        System.out.println(new UnrecognizedCommand().getCommandHelpDescription());
     }
 
     @Override

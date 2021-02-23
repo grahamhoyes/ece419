@@ -20,7 +20,10 @@ public class ShutDownCommand extends AbstractCommand {
     @Override
     public void run(Object client, String[] tokens) throws Exception {
         super.run(client, tokens);
-        ((ECSClient) client).getECS().shutdown();
-        System.out.println("Process exited.");
+        if (((ECSClient) client).getECS().shutdown()) {
+            System.out.println("All servers stopped");
+        } else {
+            System.out.println("Failed to shutdown some servers");
+        }
     }
 }
