@@ -156,7 +156,8 @@ public class ECS implements IECS {
     @Override
     public boolean shutdown() {
         boolean success = true;
-        for (ECSNode node : hashRing.getNodes()) {
+        for (ECSNode node : hashRing.copy().getNodes()) {
+            hashRing.removeNode(node.getNodeName());
             success = success & shutdownNode(node);
         }
         return success;

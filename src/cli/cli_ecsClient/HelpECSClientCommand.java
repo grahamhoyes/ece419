@@ -26,7 +26,6 @@ public class HelpECSClientCommand extends AbstractCommand {
         System.out.println(new AddNodeCommand().getCommandHelpDescription());
         System.out.println(new RemoveNodeCommand().getCommandHelpDescription());
         System.out.println(new HelpECSClientCommand().getCommandHelpDescription());
-        System.out.println(new UnrecognizedCommand().getCommandHelpDescription());
     }
 
     @Override

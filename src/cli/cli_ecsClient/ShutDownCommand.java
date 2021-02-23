@@ -7,7 +7,7 @@ public class ShutDownCommand extends AbstractCommand {
 
     private final static String commandName = "shutDown";
     private final static String commandDescription = "" +
-            "\tStops all server instances and exits the remote processes..";
+            "\tStops all server instances and exits the remote processes. Does not preserve data.";
     private final static String commandParameters = "";
     private final static String commandOutput = "" +
             "\t\tstatus report: Notifies the user about the imminent program shutdown.";
