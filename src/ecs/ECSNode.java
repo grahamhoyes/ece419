@@ -121,16 +121,22 @@ public class ECSNode implements IECSNode, Comparable<ECSNode> {
         }
     }
 
+    /**
+     * Check if the given hash falls within the hash range
+     *
+     * @param hash Hash value to check
+     * @param hashRange List of [lower bound, upper bound] hashes, inclusive
+     * @return True if the hash is in the range, false otherwise
+     */
     public static boolean hashInRange(String hash, String[] hashRange) {
-        logger.info("What up my friends");
+        if (hashRange == null) return false;
+
         String lower = hashRange[0];
         String upper = hashRange[1];
 
         if (upper.compareTo(lower) <= 0) {
-            logger.info("Duck");
             return lower.compareTo(hash) <= 0 || upper.compareTo(hash) >= 0;
         } else {
-            logger.info("Cat");
             return lower.compareTo(hash) <= 0 && upper.compareTo(hash) >= 0;
         }
     }

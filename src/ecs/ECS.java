@@ -256,7 +256,7 @@ public class ECS implements IECS {
             if (!setWriteLock(successor, true)) return null;
 
             // Invoke data transfer
-            moveDataBetweenNodes(successor, node);
+            if (!moveDataBetweenNodes(successor, node)) return null;
         }
 
         // Once all data has been transferred, send global metadata updates
@@ -443,8 +443,103 @@ public class ECS implements IECS {
 
     @Override
     public boolean removeNodes(Collection<String> nodeNames) {
-        // TODO
-        return false;
+        boolean success = true;
+
+        for (String nodeName : nodeNames) {
+            success = success && removeNode(nodeName);
+        }
+
+        return success;
+    }
+
+    public boolean removeNode(String nodeName) {
+        if (hashRing.getNodes().size() == 0) {
+            logger.error("No nodes to remove");
+            return false;
+        } else if (hashRing.getNodes().size() == 1) {
+            logger.error("Cannot remove node - would result in permanent data loss");
+            return false;
+        }
+
+        ECSNode node = hashRing.getNode(nodeName);
+        if (node == null) {
+            logger.error("Node " + nodeName + " is not running");
+            return false;
+        }
+
+        ECSNode successor = hashRing.getSuccessor(node);
+
+        HashRing updatedHashRing = hashRing.copy();
+        updatedHashRing.removeNode(nodeName);
+
+        // Refresh the hash range of the successor
+        successor = updatedHashRing.getNode(successor.getNodeName());
+
+        // Write lock the node to be deleted
+        if (!setWriteLock(node, true)) return false;
+
+        // Send updated metadata to successor server
+        AdminMessage adminMessage = new AdminMessage(AdminMessage.Action.SET_METADATA);
+        adminMessage.setMetadata(updatedHashRing);
+
+        try {
+            AdminMessage response = zkConnection.sendAdminMessage(successor.getNodeName(), adminMessage, 10000);
+
+            if (response.getAction() == AdminMessage.Action.ACK) {
+                logger.info("Set metadata for server " + successor.getNodeName());
+            } else {
+                logger.error("Could not set metadata for server " + successor.getNodeName());
+                return false;
+            }
+
+        } catch (KeeperException | InterruptedException e) {
+            logger.error("Failed to send admin message to set metadata for " + successor.getNodeName(), e);
+            return false;
+        } catch (TimeoutException e) {
+            logger.error("Timeout while trying to send admin message to set metadata for " + successor.getNodeName());
+            return false;
+        }
+
+        // Transfer data from the node to be removed to its successor
+        node.setPredecessor(null);  // Also sets the hash range to null
+        if (!moveDataBetweenNodes(node, successor)) return false;
+
+        // Once all data has been transferred, send global metadata updates
+        hashRing = updatedHashRing;
+
+        try {
+            updateGlobalMetadata(10000);
+        } catch (KeeperException | InterruptedException | TimeoutException e) {
+            logger.error("Failed to update global metadata");
+            return false;
+        }
+
+        // Clean up the data from the old server (and reset the write lock for good measure)
+        if (!setWriteLock(node, false)) return false;
+
+        adminMessage.setAction(AdminMessage.Action.CLEANUP_DATA);
+
+        try {
+            AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), adminMessage, 10000);
+
+            if (response.getAction() == AdminMessage.Action.ACK) {
+                logger.info("Data transfer cleanup complete on " + node.getNodeName());
+            } else {
+                logger.error("Could not clean up transfer data on " + node.getNodeName());
+                return false;
+            }
+
+        } catch (KeeperException | InterruptedException e) {
+            logger.error("Failed to send admin message to cleanup transfer data on " + node.getNodeName(), e);
+            return false;
+        } catch (TimeoutException e) {
+            logger.error("Timeout while trying to send admin message to cleanup transfer data on " + node.getNodeName());
+            return false;
+        }
+
+        // TODO: Shutdown
+        return true;
+
     }
 
     @Override
@@ -460,7 +555,7 @@ public class ECS implements IECS {
     }
 
     private boolean moveDataBetweenNodes(ECSNode fromNode, ECSNode toNode) {
-        boolean success = true;
+        boolean success;
 
         try {
             AdminMessage message = new AdminMessage(AdminMessage.Action.RECEIVE_DATA);
