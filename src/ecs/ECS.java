@@ -453,17 +453,14 @@ public class ECS implements IECS {
     }
 
     public boolean removeNode(String nodeName) {
-        if (hashRing.getNodes().size() == 0) {
-            logger.error("No nodes to remove");
-            return false;
-        } else if (hashRing.getNodes().size() == 1) {
-            logger.error("Cannot remove node - would result in permanent data loss");
-            return false;
-        }
-
         ECSNode node = hashRing.getNode(nodeName);
         if (node == null) {
             logger.error("Node " + nodeName + " is not running");
+            return false;
+        }
+
+        if (hashRing.getNodes().size() == 1) {  // == 0 is captured by node == null as well
+            logger.error("Cannot remove last node, would result in permanent data loss");
             return false;
         }
 
@@ -537,9 +534,41 @@ public class ECS implements IECS {
             return false;
         }
 
-        // TODO: Shutdown
-        return true;
+        return shutdownNode(node);
 
+    }
+
+    /**
+     * Sends a shutdown command to the given node. The node is assumed to already
+     * be removed from the storage service. It will be added back to the offline
+     * node pool.
+     *
+     * @return success
+     */
+    public boolean shutdownNode(ECSNode node) {
+        AdminMessage shutdownMessage = new AdminMessage(AdminMessage.Action.SHUT_DOWN);
+
+        try {
+            AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), shutdownMessage, 10000);
+
+            if (response.getAction() == AdminMessage.Action.ACK) {
+                logger.info("Shut down node " + node.getNodeName());
+            } else {
+                logger.error("Could not shut down node " + node.getNodeName());
+                return false;
+            }
+        } catch (KeeperException | InterruptedException e) {
+            logger.error("Failed to send admin message to shutdown " + node.getNodeName(), e);
+            return false;
+        } catch (TimeoutException e) {
+            logger.error("Timeout while trying to send admin message to shutdown " + node.getNodeName());
+            return false;
+        }
+
+        node.setStatus(IKVServer.ServerStatus.OFFLINE);
+        offlineNodes.add(node);
+
+        return true;
     }
 
     @Override

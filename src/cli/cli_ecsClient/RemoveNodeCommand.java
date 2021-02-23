@@ -33,7 +33,10 @@ public class RemoveNodeCommand extends AbstractCommand {
         List<String> serverNames = new ArrayList<>(Arrays.asList(tokens));
         serverNames.remove(0);
 
-        boolean result = ((ECSClient) client).getECS().removeNodes(serverNames);
-        System.out.println("Nodes removed.");
+        if (((ECSClient) client).getECS().removeNodes(serverNames)) {
+            System.out.println("Nodes removed");
+        } else {
+            System.out.println("Unable to remove nodes");
+        }
     }
 }

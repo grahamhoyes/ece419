@@ -156,6 +156,8 @@ public class ECSConnection {
              // TODO: Should this be here?
 //            if (!kvServer.isRunning()) return;
 
+            boolean shutdown = false;
+
             String adminPath = nodePath + "/admin";
 
             try {
@@ -187,6 +189,9 @@ public class ECSConnection {
                         response.setAction(AdminMessage.Action.ACK);
                         break;
                     case SHUT_DOWN:
+                        // ACK the message before we terminate this thread and defer shutdown
+                        shutdown = true;
+                        response.setAction(AdminMessage.Action.ACK);
                         break;
                     case WRITE_LOCK:
                         kvServer.lockWrite();
@@ -226,11 +231,17 @@ public class ECSConnection {
                 // has a watcher for
                 zkConnection.setData(nodePath, response.serialize());
 
-                // Re-register the watch so it can be triggered again
-                zk.exists(adminPath, this);
+                if (shutdown) {
+                    kvServer.close();
+                    zkConnection.close();
+                } else {
+                    // Re-register the watch so it can be triggered again
+                    zk.exists(adminPath, this);
+                }
+
+
             } catch (KeeperException | InterruptedException e) {
-                logger.warn("Unable to process Admin watch event");
-                e.printStackTrace();
+                logger.warn("Unable to process Admin watch event", e);
             }
         }
     }
