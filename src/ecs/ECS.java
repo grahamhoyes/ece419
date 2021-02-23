@@ -32,12 +32,7 @@ public class ECS implements IECS {
     private HashMap<String, ECSNode> configMap = new HashMap<>();
 
     // Queue of inactive ECSNodes
-    private Queue<ECSNode> offlineNodes = new LinkedList<>();
     private Queue<ECSNode> nodePool = new LinkedList<>();
-//    private Queue<ECSNode> nodePool = new LinkedList<>();
-    // This seems to be the easiest way to get a list of tuples(node, launched)
-    // Launched is true if the node process has already been started
-//    private Queue<Map.Entry<ECSNode, Boolean>> nodePool = new LinkedList<>();
 
     // Set of active nodes
     private HashRing hashRing;
@@ -78,7 +73,7 @@ public class ECS implements IECS {
 
                 ECSNode node = new ECSNode(name, host, Integer.parseInt(port));
                 configMap.put(name, node);
-                offlineNodes.add(node);
+                nodePool.add(node);
             }
         } catch (IOException e) {
             logger.fatal("Failed to read ECS config file");
@@ -319,37 +314,16 @@ public class ECS implements IECS {
 
     @Override
     public Collection<ECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
-        if (count > nodePool.size() + offlineNodes.size()) return null;
+        if (count > nodePool.size()) {
+            logger.error("Unable to add " + count + " nodes, only " + nodePool.size() + " remaining in the pool");
+            return null;
+        }
 
         List<ECSNode> nodes = new ArrayList<>();
 
-        // Grab nodes from the stopped node pool first
+        // Get any extra nodes from the offline pool, and start them
         while (count > 0 && nodePool.size() > 0) {
             ECSNode node = nodePool.poll();
-            node.setStatus(IKVServer.ServerStatus.STOPPED);
-
-            // Reset the ZNodes for these nodes just in case
-            // TODO: Really don't need to do this
-            String zkNodePath = ZooKeeperConnection.ZK_SERVER_ROOT + "/" + node.getNodeName();
-            String zkAdminPath = zkNodePath + "/admin";
-
-            AdminMessage adminMessage = new AdminMessage(AdminMessage.Action.NOP);
-
-            try {
-                zkConnection.createOrReset(zkNodePath, "hi", CreateMode.PERSISTENT);
-                zkConnection.createOrReset(zkAdminPath, adminMessage.serialize(), CreateMode.PERSISTENT);
-            } catch (KeeperException | InterruptedException e) {
-                logger.error("Failed to create KVServer and admin ZNodes for node " + node.getNodeName(), e);
-                continue;
-            }
-
-            nodes.add(node);
-            count--;
-        }
-
-        // Get any extra nodes from the offline pool, and start them
-        while (count > 0 && offlineNodes.size() > 0) {
-            ECSNode node = offlineNodes.poll();
             node.setStatus(IKVServer.ServerStatus.STOPPED);
 
             // Before bringing up the node, create ZNodes for it. We don't care
@@ -566,7 +540,7 @@ public class ECS implements IECS {
         }
 
         node.setStatus(IKVServer.ServerStatus.OFFLINE);
-        offlineNodes.add(node);
+        nodePool.add(node);
 
         return true;
     }
