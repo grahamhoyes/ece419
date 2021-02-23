@@ -2,6 +2,8 @@ package app_kvServer;
 
 import ecs.HashRing;
 
+import java.io.IOException;
+
 public interface IKVServer {
     public enum CacheStrategy {
         None,
@@ -92,7 +94,7 @@ public interface IKVServer {
     /**
      * Clear the storage of the server
      */
-    public void clearStorage() throws Exception;
+    public void clearStorage() throws IOException;
 
     /**
      * Starts running the server

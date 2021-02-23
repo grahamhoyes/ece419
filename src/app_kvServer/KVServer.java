@@ -52,6 +52,8 @@ public class KVServer implements IKVServer, Runnable {
         this.cacheSize = 0;
         this.cacheStrategy = CacheStrategy.None;
 
+        this.clearStorage();
+
         this.ecsConnection = new ECSConnection(zkHost, zkPort, serverName, this);
     }
 
@@ -181,7 +183,7 @@ public class KVServer implements IKVServer, Runnable {
     }
 
     @Override
-    public void clearStorage() throws Exception {
+    public void clearStorage() throws IOException {
         lock.writeLock().lock();
         try {
             this.kvStore.clear();

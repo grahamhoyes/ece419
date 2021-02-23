@@ -5,7 +5,7 @@ import java.io.IOException;
 public interface KVStore {
     public boolean put(String key, String value) throws Exception;
     public String get(String key) throws Exception;
-    public void clear() throws Exception;
+    public void clear() throws IOException;
     public boolean exists(String key) throws Exception;
     public void delete(String key) throws Exception;
 

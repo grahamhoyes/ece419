@@ -151,7 +151,7 @@ public class KVSimpleStore implements KVStore{
     }
 
     @Override
-    public void clear() throws IOException{
+    public void clear() throws IOException {
         try(RandomAccessFile storageFile = new RandomAccessFile(this.fileName, "rw")){
             storageFile.setLength(0L);
         }
