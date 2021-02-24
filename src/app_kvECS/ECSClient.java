@@ -29,7 +29,7 @@ public class ECSClient implements IECSClient, Runnable {
     public static void main(String[] args) {
         try {
             new LogSetup("logs/ecs.log", Level.ALL);
-            if (args.length == 0 || args.length > 4) {
+            if (args.length != 3) {
                 System.err.println("Usage: ECS.jar ecs.config zookeeper_host zookeeper_port");
             } else {
                 String kvServerJar = System.getenv("KV_SERVER_JAR");
