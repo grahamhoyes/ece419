@@ -153,8 +153,6 @@ public class ECSConnection {
     private class AdminWatcher implements Watcher {
         @Override
         public void process(WatchedEvent event) {
-             // TODO: Should this be here?
-//            if (!kvServer.isRunning()) return;
 
             boolean shutdown = false;
 

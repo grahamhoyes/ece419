@@ -660,7 +660,6 @@ public class ECS implements IECS {
      * @return success status
      */
     private boolean setWriteLock(ECSNode node, boolean lock) {
-        boolean success = true;
 
         AdminMessage message = new AdminMessage(
                 lock ? AdminMessage.Action.WRITE_LOCK : AdminMessage.Action.WRITE_UNLOCK
@@ -673,18 +672,18 @@ public class ECS implements IECS {
                 logger.info("Write lock " + (lock ? "set" : "unlocked") + " on node " + node.getNodeName());
             } else {
                 logger.error("Failed to " + (lock ? "set" : "unlock") + " write lock on node " + node.getNodeName());
-                success = false;
+                return false;
             }
 
         } catch (KeeperException | InterruptedException e) {
             logger.error("Failed to send admin message to " + (lock ? "set" : "unlock") + " write lock for " + node.getNodeName(), e);
-            success = false;
+            return false;
         } catch (TimeoutException e) {
             logger.error("Timeout while trying to send admin message to " + (lock ? "set" : "unlock") + " write lock for " + node.getNodeName());
-            success = false;
+            return false;
         }
 
-        return success;
+        return true;
     }
 
     /**
