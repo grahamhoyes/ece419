@@ -30,20 +30,18 @@ public class ECSClient implements IECSClient, Runnable {
         try {
             new LogSetup("logs/ecs.log", Level.ALL);
             if (args.length == 0 || args.length > 4) {
-                System.err.println("Usage: ECS.jar ecs.config zookeeper_host zookeeper_port [path to remove server jar]");
+                System.err.println("Usage: ECS.jar ecs.config zookeeper_host zookeeper_port");
             } else {
-                String remotePath;
+                String kvServerJar = System.getenv("KV_SERVER_JAR");
 
-                if (args.length >= 4) {
-                    remotePath = args[3];
-                } else {
-                    remotePath = System.getProperty("user.home") + "/ece419/KVServer.java";
+                if (kvServerJar == null) {
+                    kvServerJar = System.getProperty("user.home") + "/ece419/KVServer.java";
                 }
 
                 String ecs_config = args[0];
                 String zkHost = args[1];
                 int zkPort = Integer.parseInt(args[2]);
-                ECSClient client = new ECSClient(ecs_config, zkHost, zkPort, remotePath);
+                ECSClient client = new ECSClient(ecs_config, zkHost, zkPort, kvServerJar);
                 new Thread(client).start();
             }
         } catch (IOException e) {
