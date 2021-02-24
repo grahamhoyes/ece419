@@ -34,6 +34,8 @@ public class KVClient implements IKVClient, Runnable {
 
     public void setLogLevel(Level level) {
         logger.setLevel(level);
+        Logger.getLogger("KVStoreConnection").setLevel(level);
+        Logger.getLogger("Connection").setLevel(level);
     }
 
     public void setRunning(boolean running) {
