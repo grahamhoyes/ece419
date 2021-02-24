@@ -5,8 +5,10 @@ import org.apache.log4j.Logger;
 import org.apache.zookeeper.*;
 import shared.messages.AdminMessage;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -418,7 +420,16 @@ public class ECS implements IECS {
                 boolean success = sig.await(20000, TimeUnit.MILLISECONDS);
 
                 if (!success) {
+                    // Something crashed in the remote process, print its stderr for debugging
+                    try {
+                        BufferedReader buf = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+                        String line;
+                        while ((line = buf.readLine()) != null)
+                            System.err.println(line);
+                    } catch (IOException ignored) {}
+                    
                     logger.error("Timeout while waiting to start server " + node.getNodeName());
+
                     nodePool.add(node);
                     p.destroy();
                     continue;
