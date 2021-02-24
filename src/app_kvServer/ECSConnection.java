@@ -86,7 +86,7 @@ public class ECSConnection {
             System.exit(1);
         }
 
-        logger.info("ZNode crated at " + nodePath);
+        logger.info("ECS connection initialized");
 
     }
 
