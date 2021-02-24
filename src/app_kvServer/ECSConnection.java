@@ -76,19 +76,6 @@ public class ECSConnection {
             System.exit(1);
         }
 
-        // Fetch the metadata from zookeeper and set the watcher
-        // On first initialization, this will be incorrect. The node will be informed of
-        // its own metadata by an admin message, and after all nodes have been added
-        // global metadata will be broadcasted and updated by the watcher.
-        try {
-            byte[] metadata = zk.getData(ZooKeeperConnection.ZK_METADATA_PATH, new MetadataWatcher(), null);
-            hashRing = new HashRing(new String(metadata));
-        } catch (InterruptedException | KeeperException e) {
-            logger.fatal("Failed to fetch matadata");
-            e.printStackTrace();
-            System.exit(1);
-        }
-
         try {
             // Create an ephemeral heartbeat node. This is used by the ECS to detect
             // disconnects, and to indicate that the node is up
@@ -101,32 +88,6 @@ public class ECSConnection {
 
         logger.info("ZNode crated at " + nodePath);
 
-    }
-
-    /**
-     * Watcher for metadata changes for the entire hash ring coming over ZooKeeper
-     *
-     * Updates the local metadata store (hashRing)
-     * // TODO: is there anything else to do when metadata changes?
-     * // TODO: This probably isn't getting used at all, since we need it synchronous
-     *
-     * Metadata is at /servers/metadata
-     */
-    private class MetadataWatcher implements Watcher {
-        @Override
-        public void process(WatchedEvent event) {
-            if (!kvServer.isRunning()) return;
-
-            try {
-                byte[] metadata = zk.getData(ZooKeeperConnection.ZK_METADATA_PATH, this, null);
-                hashRing = new HashRing(new String(metadata));
-
-                // Update the metadata for this node as well
-                nodeMetadata = hashRing.getNode(serverName);
-            } catch (InterruptedException | KeeperException e) {
-                logger.error("Failed to fetch metadata", e);
-            }
-        }
     }
 
     /**
@@ -171,10 +132,6 @@ public class ECSConnection {
                         break;
                     case INIT:
                         kvServer.setStatus(IKVServer.ServerStatus.STOPPED);
-                        // At this point, the node is not aware of the metadata of any other
-                        // nodes in the ring, and they are not aware that this node has been
-                        // added. Global metadata updates are caught by MetadataWatcher
-
                         response.setAction(AdminMessage.Action.ACK);
                         logger.info("Server initialized");
                         break;
@@ -213,7 +170,6 @@ public class ECSConnection {
                         response.setAction(AdminMessage.Action.ACK);
                         break;
                     case SET_METADATA:
-                        // TODO: Is it fine to update the entire hash ring here? Probably
                         hashRing = message.getMetadata();
                         nodeMetadata = hashRing.getNode(serverName);
                         response.setAction(AdminMessage.Action.ACK);

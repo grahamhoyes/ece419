@@ -97,11 +97,10 @@ public class ECS implements IECS {
             System.exit(1);
         }
 
-        // Create the server root, heartbeat, and metadata nodes if they don't exist
+        // Create the server root and heartbeat nodes if they don't exist
         try {
             zkConnection.createOrReset(ZooKeeperConnection.ZK_SERVER_ROOT, "root", CreateMode.PERSISTENT);
             zkConnection.createOrReset(ZooKeeperConnection.ZK_HEARTBEAT_ROOT, "heartbeat", CreateMode.PERSISTENT);
-            zkConnection.createOrReset(ZooKeeperConnection.ZK_METADATA_PATH, hashRing.serialize(), CreateMode.PERSISTENT);
         } catch (InterruptedException | KeeperException e) {
             logger.fatal("Unable to create ZNode");
             e.printStackTrace();
