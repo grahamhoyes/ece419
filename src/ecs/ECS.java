@@ -382,13 +382,11 @@ public class ECS implements IECS {
             if (isLocal) {
                 cmd = javaCmd;
             } else {
-                // TODO: Test this. The & at the end may be an issue
                 cmd = String.join(" ",
-                        "ssh -o StrictHostsKeyChecking=no -n",
+                        "ssh -o StrictHostKeyChecking=no -n",
                         node.getNodeHost(),
                         "nohup",
-                        javaCmd,
-                        "&");
+                        javaCmd);
             }
 
             Process p;
