@@ -390,31 +390,30 @@ public class ECS implements IECS {
                         "&");
             }
 
-            Process p;
-
-            try {
-                p = Runtime.getRuntime().exec(cmd);
-
-                if (isLocal) {
-                    logger.info("Local KVServer started with process " + p.pid());
-                } else {
-                    logger.info("Remote KVServer started on " + node.getNodeHost() + ":" + node.getNodePort());
-                }
-            } catch (IOException e) {
-                logger.error("Unable to launch node " + node.getNodeName() + " on host " + node.getNodeHost(), e);
-                nodePool.add(node);
-                continue;
-            }
-
-            // Wait for the server to come online
+            // Setup the watcher for the server coming online before we launch it
             String zkHeartbeatPath = ZooKeeperConnection.ZK_HEARTBEAT_ROOT + "/" + node.getNodeName();
 
             // Signal for successful connections, to synchronize otherwise async watchers
             CountDownLatch sig = new CountDownLatch(1);
 
-            // Watch for the heartbeat to come online.
+            Process p = null;
             try {
+                // Watcher for heartbeat coming online
                 zk.exists(zkHeartbeatPath, event -> sig.countDown());
+
+                try {
+                    p = Runtime.getRuntime().exec(cmd);
+
+                    if (isLocal) {
+                        logger.info("Local KVServer started with process " + p.pid());
+                    } else {
+                        logger.info("Remote KVServer started on " + node.getNodeHost() + ":" + node.getNodePort());
+                    }
+                } catch (IOException e) {
+                    logger.error("Unable to launch node " + node.getNodeName() + " on host " + node.getNodeHost(), e);
+                    nodePool.add(node);
+                    continue;
+                }
 
                 boolean success = sig.await(20000, TimeUnit.MILLISECONDS);
 
@@ -437,7 +436,7 @@ public class ECS implements IECS {
             } catch (KeeperException | InterruptedException e) {
                 logger.error("Error waiting for heartbeat thread for server " + node.getNodeName());
                 nodePool.add(node);
-                p.destroy();
+                if (p != null) p.destroy();
                 continue;
             }
 
