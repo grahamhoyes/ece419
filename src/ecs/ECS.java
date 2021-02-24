@@ -562,12 +562,30 @@ public class ECS implements IECS {
      */
     public boolean shutdownNode(ECSNode node) {
         AdminMessage shutdownMessage = new AdminMessage(AdminMessage.Action.SHUT_DOWN);
+        String zkHeartbeatPath = ZooKeeperConnection.ZK_HEARTBEAT_ROOT + "/" + node.getNodeName();
+
+        CountDownLatch sig = new CountDownLatch(1);
+
+        // Setup watcher for the heartbeat to disappear after the shutdown signal is sent
+        try {
+            zk.exists(zkHeartbeatPath, event -> {
+                if (event.getType() == Watcher.Event.EventType.NodeDeleted) {
+                    logger.info("Shutdown complete on node " + node.getNodeName());
+                } else {
+                    logger.error("Heartbeat ZNode was not properly deleted for node " + node.getNodeName());
+                }
+                sig.countDown();
+            });
+        } catch (KeeperException | InterruptedException e) {
+            logger.error("Error waiting for heartbeat thread for server " + node.getNodeName());
+            return false;
+        }
 
         try {
             AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), shutdownMessage, 20000);
 
             if (response.getAction() == AdminMessage.Action.ACK) {
-                logger.info("Shut down node " + node.getNodeName());
+                logger.info("Shut down acknowledged on node " + node.getNodeName());
             } else {
                 logger.error("Could not shut down node " + node.getNodeName());
                 return false;
@@ -580,10 +598,14 @@ public class ECS implements IECS {
             return false;
         }
 
-        node.setStatus(IKVServer.ServerStatus.OFFLINE);
-        nodePool.add(node);
+        // Wait for shutdown to complete
+        try {
+            return sig.await(20000, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            logger.error("Error waiting for heartbeat to disappear for node " + node.getNodeName(), e);
+        }
 
-        return true;
+        return false;
     }
 
     @Override
