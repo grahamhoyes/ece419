@@ -1,7 +1,9 @@
 package cli.cli_kvClient;
 
 import app_kvClient.KVClient;
+import app_kvServer.KVServer;
 import cli.AbstractCommand;
+import client.KVCommInterface;
 import shared.messages.KVMessage;
 
 public class GetCommand extends AbstractCommand {
@@ -23,7 +25,13 @@ public class GetCommand extends AbstractCommand {
     @Override
     public void run(Object client, String[] tokens) throws Exception {
         super.run(client, tokens);
-        KVMessage message = ((KVClient) client).getStore().get(tokens[1]);
+        KVCommInterface store = ((KVClient) client).getStore();
+        if (store == null) {
+            System.out.println("Not connected to any store");
+            return;
+        }
+
+        KVMessage message = store.get(tokens[1]);
 
         switch (message.getStatus()) {
             case GET_SUCCESS:
