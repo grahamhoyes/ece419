@@ -5,8 +5,10 @@ import org.apache.log4j.Logger;
 import org.apache.zookeeper.*;
 import shared.messages.AdminMessage;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -380,9 +382,8 @@ public class ECS implements IECS {
             if (isLocal) {
                 cmd = javaCmd;
             } else {
-                // TODO: Test this. The & at the end may be an issue
                 cmd = String.join(" ",
-                        "ssh -o StrictHostsKeyChecking=no -n",
+                        "ssh -o StrictHostKeyChecking=no -n",
                         node.getNodeHost(),
                         "nohup",
                         javaCmd,
@@ -418,7 +419,16 @@ public class ECS implements IECS {
                 boolean success = sig.await(20000, TimeUnit.MILLISECONDS);
 
                 if (!success) {
+                    // Something crashed in the remote process, print its stderr for debugging
+                    try {
+                        BufferedReader buf = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+                        String line;
+                        while ((line = buf.readLine()) != null)
+                            System.err.println(line);
+                    } catch (IOException ignored) {}
+                    
                     logger.error("Timeout while waiting to start server " + node.getNodeName());
+
                     nodePool.add(node);
                     p.destroy();
                     continue;
@@ -552,12 +562,30 @@ public class ECS implements IECS {
      */
     public boolean shutdownNode(ECSNode node) {
         AdminMessage shutdownMessage = new AdminMessage(AdminMessage.Action.SHUT_DOWN);
+        String zkHeartbeatPath = ZooKeeperConnection.ZK_HEARTBEAT_ROOT + "/" + node.getNodeName();
+
+        CountDownLatch sig = new CountDownLatch(1);
+
+        // Setup watcher for the heartbeat to disappear after the shutdown signal is sent
+        try {
+            zk.exists(zkHeartbeatPath, event -> {
+                if (event.getType() == Watcher.Event.EventType.NodeDeleted) {
+                    logger.info("Shutdown complete on node " + node.getNodeName());
+                } else {
+                    logger.error("Heartbeat ZNode was not properly deleted for node " + node.getNodeName());
+                }
+                sig.countDown();
+            });
+        } catch (KeeperException | InterruptedException e) {
+            logger.error("Error waiting for heartbeat thread for server " + node.getNodeName());
+            return false;
+        }
 
         try {
             AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), shutdownMessage, 20000);
 
             if (response.getAction() == AdminMessage.Action.ACK) {
-                logger.info("Shut down node " + node.getNodeName());
+                logger.info("Shut down acknowledged on node " + node.getNodeName());
             } else {
                 logger.error("Could not shut down node " + node.getNodeName());
                 return false;
@@ -570,10 +598,14 @@ public class ECS implements IECS {
             return false;
         }
 
-        node.setStatus(IKVServer.ServerStatus.OFFLINE);
-        nodePool.add(node);
+        // Wait for shutdown to complete
+        try {
+            return sig.await(20000, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            logger.error("Error waiting for heartbeat to disappear for node " + node.getNodeName(), e);
+        }
 
-        return true;
+        return false;
     }
 
     @Override
@@ -650,7 +682,6 @@ public class ECS implements IECS {
      * @return success status
      */
     private boolean setWriteLock(ECSNode node, boolean lock) {
-        boolean success = true;
 
         AdminMessage message = new AdminMessage(
                 lock ? AdminMessage.Action.WRITE_LOCK : AdminMessage.Action.WRITE_UNLOCK
@@ -663,18 +694,18 @@ public class ECS implements IECS {
                 logger.info("Write lock " + (lock ? "set" : "unlocked") + " on node " + node.getNodeName());
             } else {
                 logger.error("Failed to " + (lock ? "set" : "unlock") + " write lock on node " + node.getNodeName());
-                success = false;
+                return false;
             }
 
         } catch (KeeperException | InterruptedException e) {
             logger.error("Failed to send admin message to " + (lock ? "set" : "unlock") + " write lock for " + node.getNodeName(), e);
-            success = false;
+            return false;
         } catch (TimeoutException e) {
             logger.error("Timeout while trying to send admin message to " + (lock ? "set" : "unlock") + " write lock for " + node.getNodeName());
-            success = false;
+            return false;
         }
 
-        return success;
+        return true;
     }
 
     /**

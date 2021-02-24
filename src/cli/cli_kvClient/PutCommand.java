@@ -2,6 +2,7 @@ package cli.cli_kvClient;
 
 import app_kvClient.KVClient;
 import cli.AbstractCommand;
+import client.KVCommInterface;
 import shared.messages.KVMessage;
 
 import java.util.Arrays;
@@ -26,9 +27,14 @@ public class PutCommand extends AbstractCommand {
 
     @Override
     public void run(Object client, String[] tokens) throws Exception {
+        KVCommInterface store = ((KVClient) client).getStore();
+        if (store == null) {
+            System.out.println("Not connected to any store");
+            return;
+        }
 
         if (tokens.length == (expectedArgNum + 1)) {
-            KVMessage message = ((KVClient) client).getStore().put(tokens[1], "null");
+            KVMessage message = store.put(tokens[1], "null");
             switch (message.getStatus()) {
                 case DELETE_SUCCESS:
                     System.out.printf("Tuple with key \"%s\" was deleted successfully%n", message.getKey());
@@ -47,7 +53,7 @@ public class PutCommand extends AbstractCommand {
         }
         else if (tokens.length >= (expectedArgNum + 2)) {
             String v = String.join(" ", Arrays.copyOfRange(tokens, 2, tokens.length));
-            KVMessage message = ((KVClient) client).getStore().put(tokens[1], v);
+            KVMessage message = store.put(tokens[1], v);
             switch (message.getStatus()) {
                 case PUT_SUCCESS:
                     System.out.printf("Tuple {%s, %s} was inserted successfully%n", message.getKey(), message.getValue());

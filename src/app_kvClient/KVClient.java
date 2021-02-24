@@ -34,6 +34,8 @@ public class KVClient implements IKVClient, Runnable {
 
     public void setLogLevel(Level level) {
         logger.setLevel(level);
+        Logger.getLogger("KVStoreConnection").setLevel(level);
+        Logger.getLogger("Connection").setLevel(level);
     }
 
     public void setRunning(boolean running) {
@@ -117,7 +119,8 @@ public class KVClient implements IKVClient, Runnable {
         try {
             command.run(this, tokens);
         } catch (Exception e) {
-            logger.error(e);
+            logger.error("Something went wrong: " + e.getMessage());
+            System.out.println(e.getMessage());
             if (e instanceof  IOException) {
                 this.storeConnection = null;
             }

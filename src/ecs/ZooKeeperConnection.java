@@ -85,8 +85,6 @@ public class ZooKeeperConnection {
         String nodePath = ZK_SERVER_ROOT + "/" + nodeName;
         String adminPath = nodePath + "/admin";
 
-        setData(adminPath, message.serialize());
-
         // Server will respond by setting an ack or error status on its ZNode
         CountDownLatch sig = new CountDownLatch(1);
 
@@ -104,6 +102,9 @@ public class ZooKeeperConnection {
             }
 
         }, null);
+
+        // Send the message
+        setData(adminPath, message.serialize());
 
         if (timeoutMillis > 0) {
             boolean success = sig.await(timeoutMillis, TimeUnit.MILLISECONDS);
