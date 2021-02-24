@@ -1,6 +1,6 @@
 package app_kvServer;
 
-import ecs.HashRing;
+import org.apache.log4j.Logger;
 import shared.Connection;
 import shared.messages.DeserializationException;
 import shared.messages.JsonKVMessage;
@@ -16,7 +16,7 @@ import java.net.Socket;
  * by the server.
  */
 public class ClientConnection extends Connection implements Runnable {
-
+    public static Logger logger = Logger.getLogger("ClientConnection");
     private final IKVServer server;
     private boolean isOpen;
 

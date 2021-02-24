@@ -12,7 +12,7 @@ import java.nio.channels.FileChannel;
 import static ecs.ECSNode.hashInRange;
 
 public class KVSimpleStore implements KVStore{
-    protected static final Logger logger = Logger.getRootLogger();
+    protected static final Logger logger = Logger.getLogger("KVSimpleStore");
 
     private String fileName;
     private String tempPath;

@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public class ECS implements IECS {
-    private static final Logger logger = Logger.getRootLogger();
+    private static final Logger logger = Logger.getLogger("ECS");
 
     // ZooKeeper is assumed to be running on the default port
     // on this machine

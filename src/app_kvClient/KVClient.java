@@ -13,7 +13,7 @@ import java.io.*;
 
 public class KVClient implements IKVClient, Runnable {
 
-    private static final Logger logger = Logger.getRootLogger();
+    private static final Logger logger = Logger.getLogger("KVClient");
     private static final String PROMPT = "> ";
 
     private KVCommInterface storeConnection;

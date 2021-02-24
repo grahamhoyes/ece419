@@ -8,7 +8,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 public class ECSNode implements IECSNode, Comparable<ECSNode> {
-    public static final Logger logger = Logger.getRootLogger();
+    public static final Logger logger = Logger.getLogger("ECSNode");
     public static BigInteger HASH_MAX = new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16);
     private final String name;
     private final String hostname;

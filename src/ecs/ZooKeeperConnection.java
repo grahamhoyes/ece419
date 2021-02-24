@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public class ZooKeeperConnection {
-    public static final Logger logger = Logger.getRootLogger();
+    public static final Logger logger = Logger.getLogger("ZooKeeperConnection");
 
     public static String ZK_SERVER_ROOT = "/servers";
     public static String ZK_HEARTBEAT_ROOT = "/heartbeats";

@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 public class ECSConnection {
-    private static final Logger logger = Logger.getRootLogger();
+    private static final Logger logger = Logger.getLogger("ECSConnection");
 
     private final KVServer kvServer;
     private final ZooKeeperConnection zkConnection;

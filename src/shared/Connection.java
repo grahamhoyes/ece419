@@ -17,7 +17,7 @@ import java.nio.ByteOrder;
  * the client and server for communications purpose.
  */
 public abstract class Connection {
-    protected static final Logger logger = Logger.getRootLogger();
+    protected static Logger logger = Logger.getLogger("Connection");
 
     // Header size in bytes
     public static final int HEADER_SIZE = 16;

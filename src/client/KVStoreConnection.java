@@ -1,8 +1,8 @@
 package client;
 
-import ecs.ECS;
 import ecs.ECSNode;
 import ecs.HashRing;
+import org.apache.log4j.Logger;
 import shared.Connection;
 import shared.messages.DeserializationException;
 import shared.messages.JsonKVMessage;
@@ -12,9 +12,8 @@ import java.io.IOException;
 import java.net.Socket;
 
 public class KVStoreConnection extends Connection implements KVCommInterface {
-
+	public static Logger logger = Logger.getLogger("KVStoreConnection");
 	private HashRing hashRing;
-//	private String currentNodeName;
 	private ECSNode currentNode;
 	private boolean retry = false;
 	private int retryAttempts = 0;

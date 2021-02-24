@@ -15,7 +15,7 @@ import java.io.InputStreamReader;
 
 public class ECSClient implements IECSClient, Runnable {
 
-    private static final Logger logger = Logger.getRootLogger();
+    private static final Logger logger = Logger.getLogger("ECSClient");
     private static final String PROMPT = "> ";
 
     private IECS ecs;

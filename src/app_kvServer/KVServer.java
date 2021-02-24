@@ -18,7 +18,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class KVServer implements IKVServer, Runnable {
 
-    private static final Logger logger = Logger.getRootLogger();
+    private static final Logger logger = Logger.getLogger("KVServer");
     public static final Integer BUFFER_SIZE = 1024;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
