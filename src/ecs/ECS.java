@@ -386,7 +386,8 @@ public class ECS implements IECS {
                         "ssh -o StrictHostKeyChecking=no -n",
                         node.getNodeHost(),
                         "nohup",
-                        javaCmd);
+                        javaCmd,
+                        "&");
             }
 
             Process p;
