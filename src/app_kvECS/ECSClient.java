@@ -88,10 +88,12 @@ public class ECSClient implements IECSClient, Runnable {
                 command = new RemoveNodeCommand();
                 break;
             case "shutDown":
+                command = new ShutDownCommand();
+                break;
             case "q":
             case "exit":
             case "quit":
-                command = new ShutDownCommand();
+                command = new QuitCommand();
                 break;
             default:
                 command = new UnrecognizedCommand();

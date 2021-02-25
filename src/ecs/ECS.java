@@ -97,11 +97,10 @@ public class ECS implements IECS {
             System.exit(1);
         }
 
-        // Create the server root, heartbeat, and metadata nodes if they don't exist
+        // Create the server root and heartbeat nodes if they don't exist
         try {
             zkConnection.createOrReset(ZooKeeperConnection.ZK_SERVER_ROOT, "root", CreateMode.PERSISTENT);
             zkConnection.createOrReset(ZooKeeperConnection.ZK_HEARTBEAT_ROOT, "heartbeat", CreateMode.PERSISTENT);
-            zkConnection.createOrReset(ZooKeeperConnection.ZK_METADATA_PATH, hashRing.serialize(), CreateMode.PERSISTENT);
         } catch (InterruptedException | KeeperException e) {
             logger.fatal("Unable to create ZNode");
             e.printStackTrace();
@@ -390,31 +389,30 @@ public class ECS implements IECS {
                         "&");
             }
 
-            Process p;
-
-            try {
-                p = Runtime.getRuntime().exec(cmd);
-
-                if (isLocal) {
-                    logger.info("Local KVServer started with process " + p.pid());
-                } else {
-                    logger.info("Remote KVServer started on " + node.getNodeHost() + ":" + node.getNodePort());
-                }
-            } catch (IOException e) {
-                logger.error("Unable to launch node " + node.getNodeName() + " on host " + node.getNodeHost(), e);
-                nodePool.add(node);
-                continue;
-            }
-
-            // Wait for the server to come online
+            // Setup the watcher for the server coming online before we launch it
             String zkHeartbeatPath = ZooKeeperConnection.ZK_HEARTBEAT_ROOT + "/" + node.getNodeName();
 
             // Signal for successful connections, to synchronize otherwise async watchers
             CountDownLatch sig = new CountDownLatch(1);
 
-            // Watch for the heartbeat to come online.
+            Process p = null;
             try {
+                // Watcher for heartbeat coming online
                 zk.exists(zkHeartbeatPath, event -> sig.countDown());
+
+                try {
+                    p = Runtime.getRuntime().exec(cmd);
+
+                    if (isLocal) {
+                        logger.info("Local KVServer started with process " + p.pid());
+                    } else {
+                        logger.info("Remote KVServer started on " + node.getNodeHost() + ":" + node.getNodePort());
+                    }
+                } catch (IOException e) {
+                    logger.error("Unable to launch node " + node.getNodeName() + " on host " + node.getNodeHost(), e);
+                    nodePool.add(node);
+                    continue;
+                }
 
                 boolean success = sig.await(20000, TimeUnit.MILLISECONDS);
 
@@ -437,7 +435,7 @@ public class ECS implements IECS {
             } catch (KeeperException | InterruptedException e) {
                 logger.error("Error waiting for heartbeat thread for server " + node.getNodeName());
                 nodePool.add(node);
-                p.destroy();
+                if (p != null) p.destroy();
                 continue;
             }
 
@@ -600,7 +598,13 @@ public class ECS implements IECS {
 
         // Wait for shutdown to complete
         try {
-            return sig.await(20000, TimeUnit.MILLISECONDS);
+            boolean success = sig.await(20000, TimeUnit.MILLISECONDS);
+
+            // Add the node back to the node pool
+            node.setStatus(IKVServer.ServerStatus.OFFLINE);
+            nodePool.add(node);
+
+            return success;
         } catch (InterruptedException e) {
             logger.error("Error waiting for heartbeat to disappear for node " + node.getNodeName(), e);
         }

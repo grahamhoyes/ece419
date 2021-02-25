@@ -16,7 +16,6 @@ public class ZooKeeperConnection {
 
     public static String ZK_SERVER_ROOT = "/servers";
     public static String ZK_HEARTBEAT_ROOT = "/heartbeats";
-    public static String ZK_METADATA_PATH = ZK_SERVER_ROOT + "/" + "metadata";
     private ZooKeeper zk;
 
     public ZooKeeper connect(String host, int port) throws InterruptedException, IOException {
