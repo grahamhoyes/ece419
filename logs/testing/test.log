@@ -572,3 +572,491 @@ org.apache.zookeeper.KeeperException$ConnectionLossException: KeeperErrorCode = 
 2021-02-24 23:27:09,184 INFO  [main] ECSTest: Received Message: SERVER_STOPPED
 2021-02-24 23:27:09,197 INFO  [main] ECS: Shut down acknowledged on node server1
 2021-02-24 23:27:09,198 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-24 23:32:35,735 INFO  [main] ECS: Local KVServer started with process 896123
+2021-02-24 23:32:35,990 INFO  [main] ECS: Server server0 has been started
+2021-02-24 23:32:36,051 INFO  [main] ECS: Server server0 initialized
+2021-02-24 23:32:36,073 INFO  [main] ECS: Set metadata for server server0
+2021-02-24 23:32:36,086 INFO  [main] ECS: Started server server0
+2021-02-24 23:32:36,100 INFO  [main] ECS: Successfully launched node server0
+2021-02-24 23:32:36,115 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-24 23:32:36,118 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-24 23:32:36,128 INFO  [main] ECS: Local KVServer started with process 896152
+2021-02-24 23:32:36,354 INFO  [main] ECS: Server server1 has been started
+2021-02-24 23:32:36,408 INFO  [main] ECS: Server server1 initialized
+2021-02-24 23:32:36,425 INFO  [main] ECS: Set metadata for server server1
+2021-02-24 23:32:36,436 INFO  [main] ECS: Started server server1
+2021-02-24 23:32:36,448 INFO  [main] ECS: Successfully launched node server1
+2021-02-24 23:32:36,460 INFO  [main] ECS: Stopped server: server1
+2021-02-24 23:32:36,481 INFO  [main] Connection: SEND 	<localhost:9001>: '{"status":"PUT","key":"foo","value":"bar"}'
+2021-02-24 23:32:36,495 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9001>: {"status":"SERVER_STOPPED","message":"Server is stopped"}'
+2021-02-24 23:32:36,495 INFO  [main] ECSTest: Received Message: SERVER_STOPPED
+2021-02-24 23:32:36,506 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-24 23:32:36,509 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-24 23:33:32,208 INFO  [main] ECS: Local KVServer started with process 896702
+2021-02-24 23:33:32,403 INFO  [main] ECS: Server server0 has been started
+2021-02-24 23:33:32,464 INFO  [main] ECS: Server server0 initialized
+2021-02-24 23:33:32,483 INFO  [main] ECS: Set metadata for server server0
+2021-02-24 23:33:32,495 INFO  [main] ECS: Started server server0
+2021-02-24 23:33:32,508 INFO  [main] ECS: Successfully launched node server0
+2021-02-24 23:33:32,524 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-24 23:33:32,527 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-24 23:33:32,538 INFO  [main] ECS: Local KVServer started with process 896726
+2021-02-24 23:33:32,745 INFO  [main] ECS: Server server1 has been started
+2021-02-24 23:33:32,797 INFO  [main] ECS: Server server1 initialized
+2021-02-24 23:33:32,814 INFO  [main] ECS: Set metadata for server server1
+2021-02-24 23:33:32,825 INFO  [main] ECS: Started server server1
+2021-02-24 23:33:32,838 INFO  [main] ECS: Successfully launched node server1
+2021-02-24 23:33:32,849 INFO  [main] ECS: Stopped server: server1
+2021-02-24 23:33:32,872 INFO  [main] Connection: SEND 	<localhost:9001>: '{"status":"PUT","key":"foo","value":"bar"}'
+2021-02-24 23:33:32,882 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9001>: {"status":"SERVER_STOPPED","message":"Server is stopped"}'
+2021-02-24 23:33:32,882 INFO  [main] ECSTest: Received Message: SERVER_STOPPED
+2021-02-24 23:33:32,895 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-24 23:33:32,898 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-24 23:33:32,912 INFO  [main] ECS: Local KVServer started with process 896750
+2021-02-24 23:33:33,133 INFO  [main] ECS: Server server0 has been started
+2021-02-24 23:33:33,192 INFO  [main] ECS: Server server0 initialized
+2021-02-24 23:33:33,207 INFO  [main] ECS: Set metadata for server server0
+2021-02-24 23:33:33,218 INFO  [main] ECS: Started server server0
+2021-02-24 23:33:33,233 INFO  [main] ECS: Successfully launched node server0
+2021-02-24 23:33:33,245 INFO  [main] ECS: Stopped server: server0
+2021-02-24 23:33:33,256 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"PUT","key":"foo","value":"bar"}'
+2021-02-24 23:33:33,275 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"SERVER_STOPPED","message":"Server is stopped"}'
+2021-02-24 23:33:33,275 INFO  [main] ECSTest: Received Message: SERVER_STOPPED
+2021-02-24 23:33:33,286 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-24 23:33:33,289 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-24 23:33:41,026 INFO  [main] ECS: Local KVServer started with process 896986
+2021-02-24 23:33:41,257 INFO  [main] ECS: Server server0 has been started
+2021-02-24 23:33:41,315 INFO  [main] ECS: Server server0 initialized
+2021-02-24 23:33:41,333 INFO  [main] ECS: Set metadata for server server0
+2021-02-24 23:33:41,346 INFO  [main] ECS: Started server server0
+2021-02-24 23:33:41,362 INFO  [main] ECS: Successfully launched node server0
+2021-02-24 23:33:41,379 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-24 23:33:41,381 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-24 23:33:41,393 INFO  [main] ECS: Local KVServer started with process 897010
+2021-02-24 23:33:41,594 INFO  [main] ECS: Server server1 has been started
+2021-02-24 23:33:41,650 INFO  [main] ECS: Server server1 initialized
+2021-02-24 23:33:41,668 INFO  [main] ECS: Set metadata for server server1
+2021-02-24 23:33:41,680 INFO  [main] ECS: Started server server1
+2021-02-24 23:33:41,693 INFO  [main] ECS: Successfully launched node server1
+2021-02-24 23:33:41,705 INFO  [main] ECS: Stopped server: server1
+2021-02-24 23:33:41,726 INFO  [main] Connection: SEND 	<localhost:9001>: '{"status":"PUT","key":"foo","value":"bar"}'
+2021-02-24 23:33:41,738 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9001>: {"status":"SERVER_STOPPED","message":"Server is stopped"}'
+2021-02-24 23:33:41,738 INFO  [main] ECSTest: Received Message: SERVER_STOPPED
+2021-02-24 23:33:41,749 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-24 23:33:41,752 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-24 23:33:41,764 INFO  [main] ECS: Local KVServer started with process 897034
+2021-02-24 23:33:41,968 INFO  [main] ECS: Server server0 has been started
+2021-02-24 23:33:42,024 INFO  [main] ECS: Server server0 initialized
+2021-02-24 23:33:42,040 INFO  [main] ECS: Set metadata for server server0
+2021-02-24 23:33:42,050 INFO  [main] ECS: Started server server0
+2021-02-24 23:33:42,065 INFO  [main] ECS: Successfully launched node server0
+2021-02-24 23:33:42,080 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-24 23:33:42,082 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-24 23:57:49,356 INFO  [main] ECS: Local KVServer started with process 908937
+2021-02-24 23:57:49,610 INFO  [main] ECS: Server server0 has been started
+2021-02-24 23:57:49,677 INFO  [main] ECS: Server server0 initialized
+2021-02-24 23:57:49,697 INFO  [main] ECS: Set metadata for server server0
+2021-02-24 23:57:49,711 INFO  [main] ECS: Started server server0
+2021-02-24 23:57:49,725 INFO  [main] ECS: Successfully launched node server0
+2021-02-24 23:57:49,742 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-24 23:57:49,745 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-24 23:57:49,756 INFO  [main] ECS: Local KVServer started with process 908970
+2021-02-24 23:57:49,982 INFO  [main] ECS: Server server1 has been started
+2021-02-24 23:57:50,043 INFO  [main] ECS: Server server1 initialized
+2021-02-24 23:57:50,062 INFO  [main] ECS: Set metadata for server server1
+2021-02-24 23:57:50,074 INFO  [main] ECS: Started server server1
+2021-02-24 23:57:50,087 INFO  [main] ECS: Successfully launched node server1
+2021-02-24 23:57:50,100 INFO  [main] ECS: Stopped server: server1
+2021-02-24 23:57:50,124 INFO  [main] Connection: SEND 	<localhost:9001>: '{"status":"PUT","key":"foo","value":"bar"}'
+2021-02-24 23:57:50,136 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9001>: {"status":"SERVER_STOPPED","message":"Server is stopped"}'
+2021-02-24 23:57:50,137 INFO  [main] ECSTest: Received Message: SERVER_STOPPED
+2021-02-24 23:57:50,147 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-24 23:57:50,150 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-24 23:57:50,164 INFO  [main] ECS: Local KVServer started with process 908999
+2021-02-24 23:57:50,381 INFO  [main] ECS: Server server0 has been started
+2021-02-24 23:57:50,446 INFO  [main] ECS: Server server0 initialized
+2021-02-24 23:57:50,462 INFO  [main] ECS: Set metadata for server server0
+2021-02-24 23:57:50,473 INFO  [main] ECS: Started server server0
+2021-02-24 23:57:50,488 INFO  [main] ECS: Successfully launched node server0
+2021-02-24 23:57:50,500 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-24 23:57:50,503 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-24 23:58:32,610 INFO  [main] ECS: Local KVServer started with process 909392
+2021-02-24 23:58:32,836 INFO  [main] ECS: Server server0 has been started
+2021-02-24 23:58:32,899 INFO  [main] ECS: Server server0 initialized
+2021-02-24 23:58:32,919 INFO  [main] ECS: Set metadata for server server0
+2021-02-24 23:58:32,932 INFO  [main] ECS: Started server server0
+2021-02-24 23:58:32,946 INFO  [main] ECS: Successfully launched node server0
+2021-02-24 23:58:32,962 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-24 23:58:32,964 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-24 23:58:32,978 INFO  [main] ECS: Local KVServer started with process 909420
+2021-02-24 23:58:33,203 INFO  [main] ECS: Server server1 has been started
+2021-02-24 23:58:33,258 INFO  [main] ECS: Server server1 initialized
+2021-02-24 23:58:33,276 INFO  [main] ECS: Set metadata for server server1
+2021-02-24 23:58:33,287 INFO  [main] ECS: Started server server1
+2021-02-24 23:58:33,299 INFO  [main] ECS: Successfully launched node server1
+2021-02-24 23:58:33,311 INFO  [main] ECS: Stopped server: server1
+2021-02-24 23:58:33,333 INFO  [main] Connection: SEND 	<localhost:9001>: '{"status":"PUT","key":"foo","value":"bar"}'
+2021-02-24 23:58:33,344 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9001>: {"status":"SERVER_STOPPED","message":"Server is stopped"}'
+2021-02-24 23:58:33,344 INFO  [main] ECSTest: Received Message: SERVER_STOPPED
+2021-02-24 23:58:33,356 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-24 23:58:33,359 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-24 23:58:33,373 INFO  [main] ECS: Local KVServer started with process 909556
+2021-02-24 23:58:33,595 INFO  [main] ECS: Server server0 has been started
+2021-02-24 23:58:33,655 INFO  [main] ECS: Server server0 initialized
+2021-02-24 23:58:33,670 INFO  [main] ECS: Set metadata for server server0
+2021-02-24 23:58:33,681 INFO  [main] ECS: Started server server0
+2021-02-24 23:58:33,694 INFO  [main] ECS: Successfully launched node server0
+2021-02-24 23:58:33,705 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-24 23:58:33,707 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-25 00:05:38,152 INFO  [main] ECS: Local KVServer started with process 913103
+2021-02-25 00:05:38,378 INFO  [main] ECS: Server server0 has been started
+2021-02-25 00:05:38,439 INFO  [main] ECS: Server server0 initialized
+2021-02-25 00:05:38,458 INFO  [main] ECS: Set metadata for server server0
+2021-02-25 00:05:38,470 INFO  [main] ECS: Started server server0
+2021-02-25 00:05:38,484 INFO  [main] ECS: Successfully launched node server0
+2021-02-25 00:05:38,499 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-25 00:05:38,502 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-25 00:05:38,513 INFO  [main] ECS: Local KVServer started with process 913135
+2021-02-25 00:05:38,717 INFO  [main] ECS: Server server1 has been started
+2021-02-25 00:05:38,775 INFO  [main] ECS: Server server1 initialized
+2021-02-25 00:05:38,792 INFO  [main] ECS: Set metadata for server server1
+2021-02-25 00:05:38,804 INFO  [main] ECS: Started server server1
+2021-02-25 00:05:38,815 INFO  [main] ECS: Successfully launched node server1
+2021-02-25 00:05:38,827 INFO  [main] ECS: Stopped server: server1
+2021-02-25 00:05:38,848 INFO  [main] Connection: SEND 	<localhost:9001>: '{"status":"PUT","key":"foo","value":"bar"}'
+2021-02-25 00:05:38,864 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9001>: {"status":"SERVER_STOPPED","message":"Server is stopped"}'
+2021-02-25 00:05:38,864 INFO  [main] ECSTest: Received Message: SERVER_STOPPED
+2021-02-25 00:05:38,874 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-25 00:05:38,879 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-25 00:05:38,892 INFO  [main] ECS: Local KVServer started with process 913163
+2021-02-25 00:05:39,099 INFO  [main] ECS: Server server0 has been started
+2021-02-25 00:05:39,162 INFO  [main] ECS: Server server0 initialized
+2021-02-25 00:05:39,177 INFO  [main] ECS: Set metadata for server server0
+2021-02-25 00:05:39,187 INFO  [main] ECS: Started server server0
+2021-02-25 00:05:39,202 INFO  [main] ECS: Successfully launched node server0
+2021-02-25 00:05:39,215 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-25 00:05:39,217 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-25 00:06:33,592 INFO  [main] ECS: Local KVServer started with process 913779
+2021-02-25 00:06:33,821 INFO  [main] ECS: Server server0 has been started
+2021-02-25 00:06:33,886 INFO  [main] ECS: Server server0 initialized
+2021-02-25 00:06:33,906 INFO  [main] ECS: Set metadata for server server0
+2021-02-25 00:06:33,918 INFO  [main] ECS: Started server server0
+2021-02-25 00:06:33,932 INFO  [main] ECS: Successfully launched node server0
+2021-02-25 00:06:33,948 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-25 00:06:33,950 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-25 00:06:33,962 INFO  [main] ECS: Local KVServer started with process 913807
+2021-02-25 00:06:34,193 INFO  [main] ECS: Server server1 has been started
+2021-02-25 00:06:34,257 INFO  [main] ECS: Server server1 initialized
+2021-02-25 00:06:34,273 INFO  [main] ECS: Set metadata for server server1
+2021-02-25 00:06:34,286 INFO  [main] ECS: Started server server1
+2021-02-25 00:06:34,299 INFO  [main] ECS: Successfully launched node server1
+2021-02-25 00:06:34,311 INFO  [main] ECS: Stopped server: server1
+2021-02-25 00:06:34,334 INFO  [main] Connection: SEND 	<localhost:9001>: '{"status":"PUT","key":"foo","value":"bar"}'
+2021-02-25 00:06:34,344 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9001>: {"status":"SERVER_STOPPED","message":"Server is stopped"}'
+2021-02-25 00:06:34,344 INFO  [main] ECSTest: Received Message: SERVER_STOPPED
+2021-02-25 00:06:34,356 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-25 00:06:34,359 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-25 00:06:34,372 INFO  [main] ECS: Local KVServer started with process 913835
+2021-02-25 00:06:34,615 INFO  [main] ECS: Server server0 has been started
+2021-02-25 00:06:34,673 INFO  [main] ECS: Server server0 initialized
+2021-02-25 00:06:34,691 INFO  [main] ECS: Set metadata for server server0
+2021-02-25 00:06:34,702 INFO  [main] ECS: Started server server0
+2021-02-25 00:06:34,715 INFO  [main] ECS: Successfully launched node server0
+2021-02-25 00:06:34,717 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"PUT","key":"server1","value":"bar"}'
+2021-02-25 00:06:34,767 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"PUT_SUCCESS","key":"server1","value":"bar","metadata":{"ecsNodes":[{"name":"server0","hostname":"127.0.0.1","port":9000,"nodeHash":"c8e88753b97c508edf4dd3eb4892d275","predecessorHash":"c8e88753b97c508edf4dd3eb4892d275","status":"ACTIVE"}]}}'
+2021-02-25 00:06:34,769 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"GET","key":"server1"}'
+2021-02-25 00:06:34,776 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"GET_SUCCESS","key":"server1","value":"bar","metadata":{"ecsNodes":[{"name":"server0","hostname":"127.0.0.1","port":9000,"nodeHash":"c8e88753b97c508edf4dd3eb4892d275","predecessorHash":"c8e88753b97c508edf4dd3eb4892d275","status":"ACTIVE"}]}}'
+2021-02-25 00:06:34,785 INFO  [main] ECS: Local KVServer started with process 913862
+2021-02-25 00:06:35,015 INFO  [main] ECS: Server server1 has been started
+2021-02-25 00:06:35,080 INFO  [main] ECS: Server server1 initialized
+2021-02-25 00:06:35,102 INFO  [main] ECS: Set metadata for server server1
+2021-02-25 00:06:35,114 INFO  [main] ECS: Started server server1
+2021-02-25 00:06:35,124 INFO  [main] ECS: Write lock set on node server0
+2021-02-25 00:06:35,137 INFO  [main] ECS: Ready to receive data at server server1
+2021-02-25 00:06:35,154 INFO  [main] ECS: Sending data from server server0
+2021-02-25 00:06:35,188 INFO  [main] ECS: Write lock unlocked on node server0
+2021-02-25 00:06:35,198 INFO  [main] ECS: Data transfer cleanup complete on server0
+2021-02-25 00:06:35,198 INFO  [main] ECS: Successfully launched node server1
+2021-02-25 00:06:35,200 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"GET","key":"server1"}'
+2021-02-25 00:06:35,203 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"SERVER_NOT_RESPONSIBLE","key":"server1","message":"Server is not responsible for the given key","metadata":{"ecsNodes":[{"name":"server1","hostname":"127.0.0.1","port":9001,"nodeHash":"a8438da78e679f44a5cff9e44ebacfbd","predecessorHash":"c8e88753b97c508edf4dd3eb4892d275","status":"ACTIVE"},{"name":"server0","hostname":"127.0.0.1","port":9000,"nodeHash":"c8e88753b97c508edf4dd3eb4892d275","predecessorHash":"a8438da78e679f44a5cff9e44ebacfbd","status":"ACTIVE"}]}}'
+2021-02-25 00:06:35,216 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-25 00:06:35,218 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-25 00:06:35,228 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-25 00:06:35,231 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-25 00:22:50,256 INFO  [main] ECS: Local KVServer started with process 921558
+2021-02-25 00:22:50,477 INFO  [main] ECS: Server server0 has been started
+2021-02-25 00:22:50,548 INFO  [main] ECS: Server server0 initialized
+2021-02-25 00:22:50,570 INFO  [main] ECS: Set metadata for server server0
+2021-02-25 00:22:50,582 INFO  [main] ECS: Started server server0
+2021-02-25 00:22:50,596 INFO  [main] ECS: Successfully launched node server0
+2021-02-25 00:22:50,611 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-25 00:22:50,613 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-25 00:22:50,624 INFO  [main] ECS: Local KVServer started with process 921590
+2021-02-25 00:22:50,853 INFO  [main] ECS: Server server1 has been started
+2021-02-25 00:22:50,914 INFO  [main] ECS: Server server1 initialized
+2021-02-25 00:22:50,934 INFO  [main] ECS: Set metadata for server server1
+2021-02-25 00:22:50,946 INFO  [main] ECS: Started server server1
+2021-02-25 00:22:50,958 INFO  [main] ECS: Successfully launched node server1
+2021-02-25 00:22:50,971 INFO  [main] ECS: Stopped server: server1
+2021-02-25 00:22:50,996 INFO  [main] Connection: SEND 	<localhost:9001>: '{"status":"PUT","key":"foo","value":"bar"}'
+2021-02-25 00:22:51,007 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9001>: {"status":"SERVER_STOPPED","message":"Server is stopped"}'
+2021-02-25 00:22:51,007 INFO  [main] ECSTest: Received Message: SERVER_STOPPED
+2021-02-25 00:22:51,019 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-25 00:22:51,022 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-25 00:22:51,038 INFO  [main] ECS: Local KVServer started with process 921619
+2021-02-25 00:22:51,262 INFO  [main] ECS: Server server0 has been started
+2021-02-25 00:22:51,321 INFO  [main] ECS: Server server0 initialized
+2021-02-25 00:22:51,340 INFO  [main] ECS: Set metadata for server server0
+2021-02-25 00:22:51,350 INFO  [main] ECS: Started server server0
+2021-02-25 00:22:51,364 INFO  [main] ECS: Successfully launched node server0
+2021-02-25 00:22:51,366 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"PUT","key":"server1","value":"bar"}'
+2021-02-25 00:22:51,408 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"PUT_SUCCESS","key":"server1","value":"bar","metadata":{"ecsNodes":[{"name":"server0","hostname":"127.0.0.1","port":9000,"nodeHash":"c8e88753b97c508edf4dd3eb4892d275","predecessorHash":"c8e88753b97c508edf4dd3eb4892d275","status":"ACTIVE"}]}}'
+2021-02-25 00:22:51,409 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"GET","key":"server1"}'
+2021-02-25 00:22:51,418 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"GET_SUCCESS","key":"server1","value":"bar","metadata":{"ecsNodes":[{"name":"server0","hostname":"127.0.0.1","port":9000,"nodeHash":"c8e88753b97c508edf4dd3eb4892d275","predecessorHash":"c8e88753b97c508edf4dd3eb4892d275","status":"ACTIVE"}]}}'
+2021-02-25 00:22:51,426 INFO  [main] ECS: Local KVServer started with process 921647
+2021-02-25 00:22:51,648 INFO  [main] ECS: Server server1 has been started
+2021-02-25 00:22:51,708 INFO  [main] ECS: Server server1 initialized
+2021-02-25 00:22:51,727 INFO  [main] ECS: Set metadata for server server1
+2021-02-25 00:22:51,738 INFO  [main] ECS: Started server server1
+2021-02-25 00:22:51,749 INFO  [main] ECS: Write lock set on node server0
+2021-02-25 00:22:51,762 INFO  [main] ECS: Ready to receive data at server server1
+2021-02-25 00:22:51,778 INFO  [main] ECS: Sending data from server server0
+2021-02-25 00:22:51,815 INFO  [main] ECS: Write lock unlocked on node server0
+2021-02-25 00:22:51,826 INFO  [main] ECS: Data transfer cleanup complete on server0
+2021-02-25 00:22:51,826 INFO  [main] ECS: Successfully launched node server1
+2021-02-25 00:22:51,827 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"GET","key":"server1"}'
+2021-02-25 00:22:51,831 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"SERVER_NOT_RESPONSIBLE","key":"server1","message":"Server is not responsible for the given key","metadata":{"ecsNodes":[{"name":"server1","hostname":"127.0.0.1","port":9001,"nodeHash":"a8438da78e679f44a5cff9e44ebacfbd","predecessorHash":"c8e88753b97c508edf4dd3eb4892d275","status":"ACTIVE"},{"name":"server0","hostname":"127.0.0.1","port":9000,"nodeHash":"c8e88753b97c508edf4dd3eb4892d275","predecessorHash":"a8438da78e679f44a5cff9e44ebacfbd","status":"ACTIVE"}]}}'
+2021-02-25 00:22:51,844 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-25 00:22:51,846 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-25 00:22:51,857 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-25 00:22:51,860 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-25 00:22:51,869 INFO  [main] ECS: Local KVServer started with process 921673
+2021-02-25 00:22:52,106 INFO  [main] ECS: Server server1 has been started
+2021-02-25 00:22:52,167 INFO  [main] ECS: Server server1 initialized
+2021-02-25 00:22:52,184 INFO  [main] ECS: Set metadata for server server1
+2021-02-25 00:22:52,195 INFO  [main] ECS: Started server server1
+2021-02-25 00:22:52,206 INFO  [main] ECS: Successfully launched node server1
+2021-02-25 00:22:52,219 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-25 00:22:52,221 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-25 00:23:55,903 INFO  [main] ECS: Local KVServer started with process 922320
+2021-02-25 00:23:56,129 INFO  [main] ECS: Server server0 has been started
+2021-02-25 00:23:56,202 INFO  [main] ECS: Server server0 initialized
+2021-02-25 00:23:56,220 INFO  [main] ECS: Set metadata for server server0
+2021-02-25 00:23:56,235 INFO  [main] ECS: Started server server0
+2021-02-25 00:23:56,248 INFO  [main] ECS: Successfully launched node server0
+2021-02-25 00:23:56,264 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-25 00:23:56,266 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-25 00:23:56,277 INFO  [main] ECS: Local KVServer started with process 922352
+2021-02-25 00:23:56,497 INFO  [main] ECS: Server server1 has been started
+2021-02-25 00:23:56,557 INFO  [main] ECS: Server server1 initialized
+2021-02-25 00:23:56,574 INFO  [main] ECS: Set metadata for server server1
+2021-02-25 00:23:56,586 INFO  [main] ECS: Started server server1
+2021-02-25 00:23:56,599 INFO  [main] ECS: Successfully launched node server1
+2021-02-25 00:23:56,612 INFO  [main] ECS: Stopped server: server1
+2021-02-25 00:23:56,633 INFO  [main] Connection: SEND 	<localhost:9001>: '{"status":"PUT","key":"foo","value":"bar"}'
+2021-02-25 00:23:56,646 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9001>: {"status":"SERVER_STOPPED","message":"Server is stopped"}'
+2021-02-25 00:23:56,646 INFO  [main] ECSTest: Received Message: SERVER_STOPPED
+2021-02-25 00:23:56,658 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-25 00:23:56,661 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-25 00:23:56,678 INFO  [main] ECS: Local KVServer started with process 922380
+2021-02-25 00:23:56,885 INFO  [main] ECS: Server server0 has been started
+2021-02-25 00:23:56,940 INFO  [main] ECS: Server server0 initialized
+2021-02-25 00:23:56,957 INFO  [main] ECS: Set metadata for server server0
+2021-02-25 00:23:56,970 INFO  [main] ECS: Started server server0
+2021-02-25 00:23:56,986 INFO  [main] ECS: Successfully launched node server0
+2021-02-25 00:23:56,987 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"PUT","key":"server1","value":"bar"}'
+2021-02-25 00:23:57,032 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"PUT_SUCCESS","key":"server1","value":"bar","metadata":{"ecsNodes":[{"name":"server0","hostname":"127.0.0.1","port":9000,"nodeHash":"c8e88753b97c508edf4dd3eb4892d275","predecessorHash":"c8e88753b97c508edf4dd3eb4892d275","status":"ACTIVE"}]}}'
+2021-02-25 00:23:57,034 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"GET","key":"server1"}'
+2021-02-25 00:23:57,042 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"GET_SUCCESS","key":"server1","value":"bar","metadata":{"ecsNodes":[{"name":"server0","hostname":"127.0.0.1","port":9000,"nodeHash":"c8e88753b97c508edf4dd3eb4892d275","predecessorHash":"c8e88753b97c508edf4dd3eb4892d275","status":"ACTIVE"}]}}'
+2021-02-25 00:23:57,050 INFO  [main] ECS: Local KVServer started with process 922407
+2021-02-25 00:23:57,251 INFO  [main] ECS: Server server1 has been started
+2021-02-25 00:23:57,313 INFO  [main] ECS: Server server1 initialized
+2021-02-25 00:23:57,329 INFO  [main] ECS: Set metadata for server server1
+2021-02-25 00:23:57,339 INFO  [main] ECS: Started server server1
+2021-02-25 00:23:57,350 INFO  [main] ECS: Write lock set on node server0
+2021-02-25 00:23:57,363 INFO  [main] ECS: Ready to receive data at server server1
+2021-02-25 00:23:57,378 INFO  [main] ECS: Sending data from server server0
+2021-02-25 00:23:57,410 INFO  [main] ECS: Write lock unlocked on node server0
+2021-02-25 00:23:57,422 INFO  [main] ECS: Data transfer cleanup complete on server0
+2021-02-25 00:23:57,422 INFO  [main] ECS: Successfully launched node server1
+2021-02-25 00:23:57,423 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"GET","key":"server1"}'
+2021-02-25 00:23:57,427 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"SERVER_NOT_RESPONSIBLE","key":"server1","message":"Server is not responsible for the given key","metadata":{"ecsNodes":[{"name":"server1","hostname":"127.0.0.1","port":9001,"nodeHash":"a8438da78e679f44a5cff9e44ebacfbd","predecessorHash":"c8e88753b97c508edf4dd3eb4892d275","status":"ACTIVE"},{"name":"server0","hostname":"127.0.0.1","port":9000,"nodeHash":"c8e88753b97c508edf4dd3eb4892d275","predecessorHash":"a8438da78e679f44a5cff9e44ebacfbd","status":"ACTIVE"}]}}'
+2021-02-25 00:23:57,437 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-25 00:23:57,440 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-25 00:23:57,450 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-25 00:23:57,453 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-25 00:23:57,461 INFO  [main] ECS: Local KVServer started with process 922433
+2021-02-25 00:23:57,675 INFO  [main] ECS: Server server1 has been started
+2021-02-25 00:23:57,734 INFO  [main] ECS: Server server1 initialized
+2021-02-25 00:23:57,752 INFO  [main] ECS: Set metadata for server server1
+2021-02-25 00:23:57,763 INFO  [main] ECS: Started server server1
+2021-02-25 00:23:57,774 INFO  [main] ECS: Successfully launched node server1
+2021-02-25 00:23:57,776 INFO  [main] Connection: SEND 	<localhost:9001>: '{"status":"PUT","key":"server1","value":"bar"}'
+2021-02-25 00:23:57,815 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9001>: {"status":"PUT_SUCCESS","key":"server1","value":"bar","metadata":{"ecsNodes":[{"name":"server1","hostname":"127.0.0.1","port":9001,"nodeHash":"a8438da78e679f44a5cff9e44ebacfbd","predecessorHash":"a8438da78e679f44a5cff9e44ebacfbd","status":"ACTIVE"}]}}'
+2021-02-25 00:23:57,816 INFO  [main] Connection: SEND 	<localhost:9001>: '{"status":"GET","key":"server1"}'
+2021-02-25 00:23:57,826 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9001>: {"status":"GET_SUCCESS","key":"server1","value":"bar","metadata":{"ecsNodes":[{"name":"server1","hostname":"127.0.0.1","port":9001,"nodeHash":"a8438da78e679f44a5cff9e44ebacfbd","predecessorHash":"a8438da78e679f44a5cff9e44ebacfbd","status":"ACTIVE"}]}}'
+2021-02-25 00:23:57,833 INFO  [main] ECS: Local KVServer started with process 922460
+2021-02-25 00:23:58,049 INFO  [main] ECS: Server server0 has been started
+2021-02-25 00:23:58,115 INFO  [main] ECS: Server server0 initialized
+2021-02-25 00:23:58,131 INFO  [main] ECS: Set metadata for server server0
+2021-02-25 00:23:58,141 INFO  [main] ECS: Started server server0
+2021-02-25 00:23:58,151 INFO  [main] ECS: Write lock set on node server1
+2021-02-25 00:23:58,163 INFO  [main] ECS: Ready to receive data at server server0
+2021-02-25 00:23:58,181 INFO  [main] ECS: Sending data from server server1
+2021-02-25 00:23:58,212 INFO  [main] ECS: Write lock unlocked on node server1
+2021-02-25 00:23:58,221 INFO  [main] ECS: Data transfer cleanup complete on server1
+2021-02-25 00:23:58,221 INFO  [main] ECS: Successfully launched node server0
+2021-02-25 00:23:58,222 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"GET","key":"server1"}'
+2021-02-25 00:23:58,247 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"SERVER_NOT_RESPONSIBLE","key":"server1","message":"Server is not responsible for the given key","metadata":{"ecsNodes":[{"name":"server1","hostname":"127.0.0.1","port":9001,"nodeHash":"a8438da78e679f44a5cff9e44ebacfbd","predecessorHash":"c8e88753b97c508edf4dd3eb4892d275","status":"ACTIVE"},{"name":"server0","hostname":"127.0.0.1","port":9000,"nodeHash":"c8e88753b97c508edf4dd3eb4892d275","predecessorHash":"a8438da78e679f44a5cff9e44ebacfbd","status":"ACTIVE"}]}}'
+2021-02-25 00:23:58,257 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-25 00:23:58,260 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-25 00:23:58,270 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-25 00:23:58,273 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-25 00:24:27,883 INFO  [main] ECS: Local KVServer started with process 922823
+2021-02-25 00:24:28,138 INFO  [main] ECS: Server server0 has been started
+2021-02-25 00:24:28,201 INFO  [main] ECS: Server server0 initialized
+2021-02-25 00:24:28,220 INFO  [main] ECS: Set metadata for server server0
+2021-02-25 00:24:28,232 INFO  [main] ECS: Started server server0
+2021-02-25 00:24:28,244 INFO  [main] ECS: Successfully launched node server0
+2021-02-25 00:24:28,261 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-25 00:24:28,266 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-25 00:24:28,276 INFO  [main] ECS: Local KVServer started with process 922853
+2021-02-25 00:24:28,502 INFO  [main] ECS: Server server1 has been started
+2021-02-25 00:24:28,557 INFO  [main] ECS: Server server1 initialized
+2021-02-25 00:24:28,572 INFO  [main] ECS: Set metadata for server server1
+2021-02-25 00:24:28,584 INFO  [main] ECS: Started server server1
+2021-02-25 00:24:28,597 INFO  [main] ECS: Successfully launched node server1
+2021-02-25 00:24:28,609 INFO  [main] ECS: Stopped server: server1
+2021-02-25 00:24:28,630 INFO  [main] Connection: SEND 	<localhost:9001>: '{"status":"PUT","key":"foo","value":"bar"}'
+2021-02-25 00:24:28,644 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9001>: {"status":"SERVER_STOPPED","message":"Server is stopped"}'
+2021-02-25 00:24:28,644 INFO  [main] ECSTest: Received Message: SERVER_STOPPED
+2021-02-25 00:24:28,657 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-25 00:24:28,659 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-25 00:24:28,671 INFO  [main] ECS: Local KVServer started with process 922882
+2021-02-25 00:24:28,898 INFO  [main] ECS: Server server0 has been started
+2021-02-25 00:24:28,956 INFO  [main] ECS: Server server0 initialized
+2021-02-25 00:24:28,972 INFO  [main] ECS: Set metadata for server server0
+2021-02-25 00:24:28,984 INFO  [main] ECS: Started server server0
+2021-02-25 00:24:28,999 INFO  [main] ECS: Successfully launched node server0
+2021-02-25 00:24:29,000 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"PUT","key":"server1","value":"bar"}'
+2021-02-25 00:24:29,048 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"PUT_SUCCESS","key":"server1","value":"bar","metadata":{"ecsNodes":[{"name":"server0","hostname":"127.0.0.1","port":9000,"nodeHash":"c8e88753b97c508edf4dd3eb4892d275","predecessorHash":"c8e88753b97c508edf4dd3eb4892d275","status":"ACTIVE"}]}}'
+2021-02-25 00:24:29,050 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"GET","key":"server1"}'
+2021-02-25 00:24:29,059 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"GET_SUCCESS","key":"server1","value":"bar","metadata":{"ecsNodes":[{"name":"server0","hostname":"127.0.0.1","port":9000,"nodeHash":"c8e88753b97c508edf4dd3eb4892d275","predecessorHash":"c8e88753b97c508edf4dd3eb4892d275","status":"ACTIVE"}]}}'
+2021-02-25 00:24:29,068 INFO  [main] ECS: Local KVServer started with process 922909
+2021-02-25 00:24:29,283 INFO  [main] ECS: Server server1 has been started
+2021-02-25 00:24:29,343 INFO  [main] ECS: Server server1 initialized
+2021-02-25 00:24:29,358 INFO  [main] ECS: Set metadata for server server1
+2021-02-25 00:24:29,368 INFO  [main] ECS: Started server server1
+2021-02-25 00:24:29,379 INFO  [main] ECS: Write lock set on node server0
+2021-02-25 00:24:29,391 INFO  [main] ECS: Ready to receive data at server server1
+2021-02-25 00:24:29,405 INFO  [main] ECS: Sending data from server server0
+2021-02-25 00:24:29,440 INFO  [main] ECS: Write lock unlocked on node server0
+2021-02-25 00:24:29,449 INFO  [main] ECS: Data transfer cleanup complete on server0
+2021-02-25 00:24:29,449 INFO  [main] ECS: Successfully launched node server1
+2021-02-25 00:24:29,450 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"GET","key":"server1"}'
+2021-02-25 00:24:29,454 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"SERVER_NOT_RESPONSIBLE","key":"server1","message":"Server is not responsible for the given key","metadata":{"ecsNodes":[{"name":"server1","hostname":"127.0.0.1","port":9001,"nodeHash":"a8438da78e679f44a5cff9e44ebacfbd","predecessorHash":"c8e88753b97c508edf4dd3eb4892d275","status":"ACTIVE"},{"name":"server0","hostname":"127.0.0.1","port":9000,"nodeHash":"c8e88753b97c508edf4dd3eb4892d275","predecessorHash":"a8438da78e679f44a5cff9e44ebacfbd","status":"ACTIVE"}]}}'
+2021-02-25 00:24:29,465 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-25 00:24:29,467 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-25 00:24:29,478 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-25 00:24:29,480 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-25 00:24:29,491 INFO  [main] ECS: Local KVServer started with process 922936
+2021-02-25 00:24:29,715 INFO  [main] ECS: Server server1 has been started
+2021-02-25 00:24:29,770 INFO  [main] ECS: Server server1 initialized
+2021-02-25 00:24:29,787 INFO  [main] ECS: Set metadata for server server1
+2021-02-25 00:24:29,799 INFO  [main] ECS: Started server server1
+2021-02-25 00:24:29,810 INFO  [main] ECS: Successfully launched node server1
+2021-02-25 00:24:29,811 INFO  [main] Connection: SEND 	<localhost:9001>: '{"status":"PUT","key":"server1","value":"bar"}'
+2021-02-25 00:24:29,856 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9001>: {"status":"PUT_SUCCESS","key":"server1","value":"bar","metadata":{"ecsNodes":[{"name":"server1","hostname":"127.0.0.1","port":9001,"nodeHash":"a8438da78e679f44a5cff9e44ebacfbd","predecessorHash":"a8438da78e679f44a5cff9e44ebacfbd","status":"ACTIVE"}]}}'
+2021-02-25 00:24:29,857 INFO  [main] Connection: SEND 	<localhost:9001>: '{"status":"GET","key":"server1"}'
+2021-02-25 00:24:29,865 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9001>: {"status":"GET_SUCCESS","key":"server1","value":"bar","metadata":{"ecsNodes":[{"name":"server1","hostname":"127.0.0.1","port":9001,"nodeHash":"a8438da78e679f44a5cff9e44ebacfbd","predecessorHash":"a8438da78e679f44a5cff9e44ebacfbd","status":"ACTIVE"}]}}'
+2021-02-25 00:24:29,873 INFO  [main] ECS: Local KVServer started with process 922965
+2021-02-25 00:24:30,086 INFO  [main] ECS: Server server0 has been started
+2021-02-25 00:24:30,145 INFO  [main] ECS: Server server0 initialized
+2021-02-25 00:24:30,160 INFO  [main] ECS: Set metadata for server server0
+2021-02-25 00:24:30,170 INFO  [main] ECS: Started server server0
+2021-02-25 00:24:30,181 INFO  [main] ECS: Write lock set on node server1
+2021-02-25 00:24:30,193 INFO  [main] ECS: Ready to receive data at server server0
+2021-02-25 00:24:30,209 INFO  [main] ECS: Sending data from server server1
+2021-02-25 00:24:30,242 INFO  [main] ECS: Write lock unlocked on node server1
+2021-02-25 00:24:30,251 INFO  [main] ECS: Data transfer cleanup complete on server1
+2021-02-25 00:24:30,251 INFO  [main] ECS: Successfully launched node server0
+2021-02-25 00:24:30,252 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"GET","key":"server1"}'
+2021-02-25 00:24:30,278 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"SERVER_NOT_RESPONSIBLE","key":"server1","message":"Server is not responsible for the given key","metadata":{"ecsNodes":[{"name":"server1","hostname":"127.0.0.1","port":9001,"nodeHash":"a8438da78e679f44a5cff9e44ebacfbd","predecessorHash":"c8e88753b97c508edf4dd3eb4892d275","status":"ACTIVE"},{"name":"server0","hostname":"127.0.0.1","port":9000,"nodeHash":"c8e88753b97c508edf4dd3eb4892d275","predecessorHash":"a8438da78e679f44a5cff9e44ebacfbd","status":"ACTIVE"}]}}'
+2021-02-25 00:24:30,287 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-25 00:24:30,290 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-25 00:24:30,301 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-25 00:24:30,303 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-25 00:25:01,925 INFO  [main] ECS: Local KVServer started with process 923339
+2021-02-25 00:25:02,173 INFO  [main] ECS: Server server0 has been started
+2021-02-25 00:25:02,235 INFO  [main] ECS: Server server0 initialized
+2021-02-25 00:25:02,254 INFO  [main] ECS: Set metadata for server server0
+2021-02-25 00:25:02,265 INFO  [main] ECS: Started server server0
+2021-02-25 00:25:02,279 INFO  [main] ECS: Successfully launched node server0
+2021-02-25 00:25:02,294 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-25 00:25:02,297 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-25 00:25:02,309 INFO  [main] ECS: Local KVServer started with process 923370
+2021-02-25 00:25:02,524 INFO  [main] ECS: Server server1 has been started
+2021-02-25 00:25:02,592 INFO  [main] ECS: Server server1 initialized
+2021-02-25 00:25:02,611 INFO  [main] ECS: Set metadata for server server1
+2021-02-25 00:25:02,623 INFO  [main] ECS: Started server server1
+2021-02-25 00:25:02,636 INFO  [main] ECS: Successfully launched node server1
+2021-02-25 00:25:02,648 INFO  [main] ECS: Stopped server: server1
+2021-02-25 00:25:02,667 INFO  [main] Connection: SEND 	<localhost:9001>: '{"status":"PUT","key":"foo","value":"bar"}'
+2021-02-25 00:25:02,679 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9001>: {"status":"SERVER_STOPPED","message":"Server is stopped"}'
+2021-02-25 00:25:02,680 INFO  [main] ECSTest: Received Message: SERVER_STOPPED
+2021-02-25 00:25:02,691 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-25 00:25:02,693 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-25 00:25:02,709 INFO  [main] ECS: Local KVServer started with process 923398
+2021-02-25 00:25:02,931 INFO  [main] ECS: Server server0 has been started
+2021-02-25 00:25:02,987 INFO  [main] ECS: Server server0 initialized
+2021-02-25 00:25:03,005 INFO  [main] ECS: Set metadata for server server0
+2021-02-25 00:25:03,017 INFO  [main] ECS: Started server server0
+2021-02-25 00:25:03,031 INFO  [main] ECS: Successfully launched node server0
+2021-02-25 00:25:03,032 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"PUT","key":"server1","value":"bar"}'
+2021-02-25 00:25:03,076 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"PUT_SUCCESS","key":"server1","value":"bar","metadata":{"ecsNodes":[{"name":"server0","hostname":"127.0.0.1","port":9000,"nodeHash":"c8e88753b97c508edf4dd3eb4892d275","predecessorHash":"c8e88753b97c508edf4dd3eb4892d275","status":"ACTIVE"}]}}'
+2021-02-25 00:25:03,078 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"GET","key":"server1"}'
+2021-02-25 00:25:03,085 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"GET_SUCCESS","key":"server1","value":"bar","metadata":{"ecsNodes":[{"name":"server0","hostname":"127.0.0.1","port":9000,"nodeHash":"c8e88753b97c508edf4dd3eb4892d275","predecessorHash":"c8e88753b97c508edf4dd3eb4892d275","status":"ACTIVE"}]}}'
+2021-02-25 00:25:03,093 INFO  [main] ECS: Local KVServer started with process 923532
+2021-02-25 00:25:03,304 INFO  [main] ECS: Server server1 has been started
+2021-02-25 00:25:03,360 INFO  [main] ECS: Server server1 initialized
+2021-02-25 00:25:03,380 INFO  [main] ECS: Set metadata for server server1
+2021-02-25 00:25:03,392 INFO  [main] ECS: Started server server1
+2021-02-25 00:25:03,403 INFO  [main] ECS: Write lock set on node server0
+2021-02-25 00:25:03,416 INFO  [main] ECS: Ready to receive data at server server1
+2021-02-25 00:25:03,430 INFO  [main] ECS: Sending data from server server0
+2021-02-25 00:25:03,462 INFO  [main] ECS: Write lock unlocked on node server0
+2021-02-25 00:25:03,472 INFO  [main] ECS: Data transfer cleanup complete on server0
+2021-02-25 00:25:03,472 INFO  [main] ECS: Successfully launched node server1
+2021-02-25 00:25:03,473 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"GET","key":"server1"}'
+2021-02-25 00:25:03,476 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"SERVER_NOT_RESPONSIBLE","key":"server1","message":"Server is not responsible for the given key","metadata":{"ecsNodes":[{"name":"server1","hostname":"127.0.0.1","port":9001,"nodeHash":"a8438da78e679f44a5cff9e44ebacfbd","predecessorHash":"c8e88753b97c508edf4dd3eb4892d275","status":"ACTIVE"},{"name":"server0","hostname":"127.0.0.1","port":9000,"nodeHash":"c8e88753b97c508edf4dd3eb4892d275","predecessorHash":"a8438da78e679f44a5cff9e44ebacfbd","status":"ACTIVE"}]}}'
+2021-02-25 00:25:03,488 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-25 00:25:03,491 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-25 00:25:03,501 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-25 00:25:03,504 INFO  [main-EventThread] ECS: Shutdown complete on node server0
+2021-02-25 00:25:03,512 INFO  [main] ECS: Local KVServer started with process 923558
+2021-02-25 00:25:03,720 INFO  [main] ECS: Server server1 has been started
+2021-02-25 00:25:03,783 INFO  [main] ECS: Server server1 initialized
+2021-02-25 00:25:03,799 INFO  [main] ECS: Set metadata for server server1
+2021-02-25 00:25:03,812 INFO  [main] ECS: Started server server1
+2021-02-25 00:25:03,824 INFO  [main] ECS: Successfully launched node server1
+2021-02-25 00:25:03,825 INFO  [main] Connection: SEND 	<localhost:9001>: '{"status":"PUT","key":"server0","value":"bar"}'
+2021-02-25 00:25:03,866 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9001>: {"status":"PUT_SUCCESS","key":"server0","value":"bar","metadata":{"ecsNodes":[{"name":"server1","hostname":"127.0.0.1","port":9001,"nodeHash":"a8438da78e679f44a5cff9e44ebacfbd","predecessorHash":"a8438da78e679f44a5cff9e44ebacfbd","status":"ACTIVE"}]}}'
+2021-02-25 00:25:03,867 INFO  [main] Connection: SEND 	<localhost:9001>: '{"status":"GET","key":"server0"}'
+2021-02-25 00:25:03,874 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9001>: {"status":"GET_SUCCESS","key":"server0","value":"bar","metadata":{"ecsNodes":[{"name":"server1","hostname":"127.0.0.1","port":9001,"nodeHash":"a8438da78e679f44a5cff9e44ebacfbd","predecessorHash":"a8438da78e679f44a5cff9e44ebacfbd","status":"ACTIVE"}]}}'
+2021-02-25 00:25:03,882 INFO  [main] ECS: Local KVServer started with process 923585
+2021-02-25 00:25:04,104 INFO  [main] ECS: Server server0 has been started
+2021-02-25 00:25:04,158 INFO  [main] ECS: Server server0 initialized
+2021-02-25 00:25:04,173 INFO  [main] ECS: Set metadata for server server0
+2021-02-25 00:25:04,185 INFO  [main] ECS: Started server server0
+2021-02-25 00:25:04,196 INFO  [main] ECS: Write lock set on node server1
+2021-02-25 00:25:04,209 INFO  [main] ECS: Ready to receive data at server server0
+2021-02-25 00:25:04,225 INFO  [main] ECS: Sending data from server server1
+2021-02-25 00:25:04,258 INFO  [main] ECS: Write lock unlocked on node server1
+2021-02-25 00:25:04,267 INFO  [main] ECS: Data transfer cleanup complete on server1
+2021-02-25 00:25:04,267 INFO  [main] ECS: Successfully launched node server0
+2021-02-25 00:25:04,268 INFO  [main] Connection: SEND 	<localhost:9000>: '{"status":"GET","key":"server0"}'
+2021-02-25 00:25:04,297 INFO  [main] Connection: RECEIVE 	<127.0.0.1:9000>: {"status":"GET_SUCCESS","key":"server0","value":"bar","metadata":{"ecsNodes":[{"name":"server1","hostname":"127.0.0.1","port":9001,"nodeHash":"a8438da78e679f44a5cff9e44ebacfbd","predecessorHash":"c8e88753b97c508edf4dd3eb4892d275","status":"ACTIVE"},{"name":"server0","hostname":"127.0.0.1","port":9000,"nodeHash":"c8e88753b97c508edf4dd3eb4892d275","predecessorHash":"a8438da78e679f44a5cff9e44ebacfbd","status":"ACTIVE"}]}}'
+2021-02-25 00:25:04,306 INFO  [main] ECS: Shut down acknowledged on node server1
+2021-02-25 00:25:04,309 INFO  [main-EventThread] ECS: Shutdown complete on node server1
+2021-02-25 00:25:04,320 INFO  [main] ECS: Shut down acknowledged on node server0
+2021-02-25 00:25:04,323 INFO  [main-EventThread] ECS: Shutdown complete on node server0

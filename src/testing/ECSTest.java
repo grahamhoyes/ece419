@@ -6,6 +6,8 @@ import ecs.ECSNode;
 import ecs.HashRing;
 import org.apache.log4j.Logger;
 import org.junit.*;
+import shared.Connection;
+import shared.messages.JsonKVMessage;
 import shared.messages.KVMessage;
 
 import java.util.Map;
@@ -105,6 +107,58 @@ public class ECSTest extends Assert {
 
         assert (node0.isNodeResponsible("server0"));
         assert (!node0.isNodeResponsible("server1"));
+    }
+
+    @Test()
+    public void testECSMetaDataUpdate() throws Exception{
+        ecs.addNodes(1);
+
+        KVStoreConnection kvClient0 = new KVStoreConnection("localhost", 9000);
+        kvClient0.connect();
+
+        // The first server is responsible for all keys
+        String key = "server1";
+        KVMessage message = kvClient0.put(key, "bar");
+        message = kvClient0.get(key);
+
+        // The second added server is called server1 so it should be responsible for its own key
+        ecs.addNodes(1);
+
+        JsonKVMessage req = new JsonKVMessage(KVMessage.StatusType.GET);
+        req.setKey(key);
+        JsonKVMessage res;
+
+
+        kvClient0.sendMessage(req);
+        res = kvClient0.receiveMessage();
+        assert(res.getStatus() == KVMessage.StatusType.SERVER_NOT_RESPONSIBLE);
+    }
+
+    @Test()
+    public void testMoveData() throws Exception{
+        ecs.addNodes(1);
+
+        KVStoreConnection kvClient0 = new KVStoreConnection("localhost", 9001);
+        kvClient0.connect();
+
+        // The first server is responsible for all keys
+        String key = "server0";
+        KVMessage message = kvClient0.put(key, "bar");
+        message = kvClient0.get(key);
+
+        // The second added server is called server1 so it should be responsible for its own key
+        ecs.addNodes(1);
+        KVStoreConnection kvClient1 = new KVStoreConnection("localhost", 9000);
+        kvClient1.connect();
+
+        JsonKVMessage req = new JsonKVMessage(KVMessage.StatusType.GET);
+        req.setKey(key);
+        JsonKVMessage res;
+
+        kvClient1.sendMessage(req);
+        res = kvClient1.receiveMessage();
+        System.out.println(res.getStatus());
+        assert(res.getValue().equals("bar"));
     }
 
 }
