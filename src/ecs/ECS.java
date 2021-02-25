@@ -1,6 +1,7 @@
 package ecs;
 
 import app_kvServer.IKVServer;
+import app_kvServer.KVServer;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.*;
 import shared.messages.AdminMessage;
@@ -395,47 +396,56 @@ public class ECS implements IECS {
             // Signal for successful connections, to synchronize otherwise async watchers
             CountDownLatch sig = new CountDownLatch(1);
 
-            Process p = null;
+//            Process p = null;
             try {
                 // Watcher for heartbeat coming online
                 zk.exists(zkHeartbeatPath, event -> sig.countDown());
 
-                try {
-                    p = Runtime.getRuntime().exec(cmd);
+//                try {
+//                    p = Runtime.getRuntime().exec(cmd);
+//
+//                    if (isLocal) {
+//                        logger.info("Local KVServer started with process " + p.pid());
+//                    } else {
+//                        logger.info("Remote KVServer started on " + node.getNodeHost() + ":" + node.getNodePort());
+//                    }
+//                } catch (IOException e) {
+//                    logger.error("Unable to launch node " + node.getNodeName() + " on host " + node.getNodeHost(), e);
+//                    nodePool.add(node);
+//                    continue;
+//                }
 
-                    if (isLocal) {
-                        logger.info("Local KVServer started with process " + p.pid());
-                    } else {
-                        logger.info("Remote KVServer started on " + node.getNodeHost() + ":" + node.getNodePort());
-                    }
-                } catch (IOException e) {
-                    logger.error("Unable to launch node " + node.getNodeName() + " on host " + node.getNodeHost(), e);
-                    nodePool.add(node);
-                    continue;
-                }
+                String[] args = {
+                        String.valueOf(node.getNodePort()),
+                        node.getNodeName(),
+                        zkHost,
+                        String.valueOf(zkPort)
+                };
+
+                KVServer.main(args);
 
                 boolean success = sig.await(20000, TimeUnit.MILLISECONDS);
 
                 if (!success) {
                     // Something crashed in the remote process, print its stderr for debugging
-                    try {
-                        BufferedReader buf = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-                        String line;
-                        while ((line = buf.readLine()) != null)
-                            System.err.println(line);
-                    } catch (IOException ignored) {}
-                    
+//                    try {
+//                        BufferedReader buf = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+//                        String line;
+//                        while ((line = buf.readLine()) != null)
+//                            System.err.println(line);
+//                    } catch (IOException ignored) {}
+
                     logger.error("Timeout while waiting to start server " + node.getNodeName());
 
                     nodePool.add(node);
-                    p.destroy();
+//                    p.destroy();
                     continue;
                 }
 
             } catch (KeeperException | InterruptedException e) {
                 logger.error("Error waiting for heartbeat thread for server " + node.getNodeName());
                 nodePool.add(node);
-                if (p != null) p.destroy();
+//                if (p != null) p.destroy();
                 continue;
             }
 
