@@ -17,9 +17,9 @@ public class ECSTest extends Assert {
     private static final Logger logger = Logger.getLogger("ECSTest");
 
     private static ECS ecs;
-    private static String zkHost = "127.0.0.1";
-    private static int zkPort = 2181;
-    private static int baseKVServerPort = 9000;
+    private static final String zkHost = "127.0.0.1";
+    private static final int zkPort = 2181;
+    private static final int baseKVServerPort = 9000;
 
     private static int serverCounter = -1;
 
@@ -131,7 +131,7 @@ public class ECSTest extends Assert {
         kvClient0.connect();
 
         // The first server is responsible for all keys
-        String key = "server" + String.valueOf(serverCounter +1);
+        String key = "server" + (serverCounter + 1);
         KVMessage message = kvClient0.put(key, "bar");
         JsonKVMessage res = getMessage(kvClient0, key);
         assert(res.getStatus() != KVMessage.StatusType.SERVER_NOT_RESPONSIBLE);
@@ -151,7 +151,7 @@ public class ECSTest extends Assert {
         kvClient0.connect();
 
         // The first server is responsible for all keys
-        String key = "server" + String.valueOf(serverCounter +1);
+        String key = "server" + (serverCounter + 1);
         KVMessage message = kvClient0.put(key, "bar");
         JsonKVMessage res = getMessage(kvClient0, key);
         assert(res.getStatus() != KVMessage.StatusType.SERVER_NOT_RESPONSIBLE);
@@ -173,14 +173,14 @@ public class ECSTest extends Assert {
         kvClient0.connect();
 
         // The first server is responsible for all keys
-        String key = "server" + String.valueOf(serverCounter + 1);;
+        String key = "server" + (serverCounter + 1);
         KVMessage message = kvClient0.put(key, "bar");
         JsonKVMessage res = getMessage(kvClient0, key);
         assert(res.getStatus() != KVMessage.StatusType.SERVER_NOT_RESPONSIBLE);
 
         // The second added server is called server7 so it should be responsible for its own key
         addNodes(1);
-        ecs.removeNode("server" + String.valueOf(serverCounter));
+        ecs.removeNode("server" + serverCounter);
 
         res = getMessage(kvClient0, key);
         assert(res.getValue().equals("bar"));
@@ -195,7 +195,7 @@ public class ECSTest extends Assert {
 
         // The first server is responsible for all keys
         for (int i = 0; i <= 2; i++){
-            String key = "server" + String.valueOf(serverCounter +i);
+            String key = "server" + (serverCounter + i);
             KVMessage message = kvClient0.put(key, "bar");
             JsonKVMessage res = getMessage(kvClient0, key);
             assert(res.getStatus() != KVMessage.StatusType.SERVER_NOT_RESPONSIBLE);
@@ -208,8 +208,8 @@ public class ECSTest extends Assert {
             int port = baseKVServerPort + serverCounter - i;
             KVStoreConnection kvClient = new KVStoreConnection("localhost", port);
             kvClient.connect();
-            String key = "server" + String.valueOf(serverCounter - i);
-            System.out.println("PORT: " + String.valueOf(port) + " | KEY: " + key);
+            String key = "server" + (serverCounter - i);
+            System.out.println("PORT: " + port + " | KEY: " + key);
             JsonKVMessage res = getMessage(kvClient, key);
             assert(res.getStatus() != KVMessage.StatusType.SERVER_NOT_RESPONSIBLE);
         }
@@ -225,7 +225,7 @@ public class ECSTest extends Assert {
 
         // The first server is responsible for all keys
         for (int i = 0; i <= 2; i++){
-            String key = "server" + String.valueOf(serverCounter +i);
+            String key = "server" + (serverCounter + i);
             KVMessage message = kvClient0.put(key, "bar");
             JsonKVMessage res = getMessage(kvClient0, key);
             assert(res.getStatus() != KVMessage.StatusType.SERVER_NOT_RESPONSIBLE);
@@ -234,14 +234,14 @@ public class ECSTest extends Assert {
         addNodes(2);
 
         ArrayList<String> nodesToRemove = new ArrayList<String>();
-        nodesToRemove.add("server" + String.valueOf(serverCounter - 2));
-        nodesToRemove.add("server" + String.valueOf(serverCounter - 1));
+        nodesToRemove.add("server" + (serverCounter - 2));
+        nodesToRemove.add("server" + (serverCounter - 1));
         ecs.removeNodes(nodesToRemove);
 
         KVStoreConnection kvClient2 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
         kvClient2.connect();
         for (int i = 2; i >= 0; i--){
-            String key = "server" + String.valueOf(serverCounter +i);
+            String key = "server" + (serverCounter + i);
             JsonKVMessage res = getMessage(kvClient2, key);
             assert(res.getStatus() != KVMessage.StatusType.SERVER_NOT_RESPONSIBLE);
         }
