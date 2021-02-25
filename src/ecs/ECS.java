@@ -598,7 +598,13 @@ public class ECS implements IECS {
 
         // Wait for shutdown to complete
         try {
-            return sig.await(20000, TimeUnit.MILLISECONDS);
+            boolean success = sig.await(20000, TimeUnit.MILLISECONDS);
+
+            // Add the node back to the node pool
+            node.setStatus(IKVServer.ServerStatus.OFFLINE);
+            nodePool.add(node);
+
+            return success;
         } catch (InterruptedException e) {
             logger.error("Error waiting for heartbeat to disappear for node " + node.getNodeName(), e);
         }
