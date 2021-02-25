@@ -47,7 +47,7 @@ public class KVServer implements IKVServer, Runnable {
      */
     public KVServer(int port, String serverName, String zkHost, int zkPort) throws IOException {
         this.port = port;
-        this.kvStore = new KVSimpleStore(port + "_store.txt");
+        this.kvStore = new KVSimpleStore(serverName + "_store.txt");
         this.status = ServerStatus.STOPPED;
         this.serverName = serverName;
 
@@ -124,8 +124,11 @@ public class KVServer implements IKVServer, Runnable {
 
     @Override
     public String getStorageFile(){
-        return port + "_store.txt";
+        return kvStore.getFileName();
     }
+
+    @Override
+    public String getDataDir() { return kvStore.getDataDir();}
 
     @Override
     public boolean inStorage(String key) throws Exception {
@@ -237,7 +240,7 @@ public class KVServer implements IKVServer, Runnable {
     private void mergeNewData(){
         lock.writeLock().lock();
         try{
-            this.kvStore.mergeData("~" + getStorageFile());
+            this.kvStore.mergeData(getDataDir() + File.separatorChar + "~" + getStorageFile());
         } catch (IOException e){
             logger.error("Failed to merge incoming data.");
         } finally {
@@ -375,7 +378,7 @@ public class KVServer implements IKVServer, Runnable {
 
                 byte[] buffer = new byte[KVServer.BUFFER_SIZE];
 
-                String tempFileName = "~" + ikvServer.getStorageFile();
+                String tempFileName = ikvServer.getDataDir() + File.separatorChar + "~" + ikvServer.getStorageFile();
                 BufferedInputStream socketInput = new BufferedInputStream(client.getInputStream());
                 BufferedOutputStream fileOutput = new BufferedOutputStream(new FileOutputStream(tempFileName));
 

@@ -12,4 +12,7 @@ public interface KVStore {
     void mergeData(String newFileName) throws IOException;
     String splitData(String[] hashRange) throws IOException;
     void sendDataCleanup();
+
+    public String getFileName();
+    public String getDataDir();
 }

@@ -50,6 +50,8 @@ public interface IKVServer {
      */
     public String getStorageFile();
 
+    public String getDataDir();
+
     /**
      * Check if key is in storage.
      * NOTE: does not modify any other properties
