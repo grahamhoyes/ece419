@@ -13,8 +13,9 @@ import static ecs.ECSNode.hashInRange;
 
 public class KVSimpleStore implements KVStore{
     protected static final Logger logger = Logger.getLogger("KVSimpleStore");
-
+    private static final String dataDir = "store_data";
     private String fileName;
+    private String filePath;
     private String tempPath;
     private String sendPath;
     private String keepPath;
@@ -25,15 +26,36 @@ public class KVSimpleStore implements KVStore{
 
     public KVSimpleStore(String fileName) throws IOException{
         this.fileName = fileName;
-        this.tempPath = "~temp" + this.fileName;
-        this.sendPath = "~send" + this.fileName;
-        this.keepPath = "~keep" + this.fileName;
+        this.filePath = dataDir + File.separatorChar + fileName;
+        this.tempPath = dataDir + File.separatorChar + "~temp" + this.fileName;
+        this.sendPath = dataDir + File.separatorChar + "~send" + this.fileName;
+        this.keepPath = dataDir + File.separatorChar + "~keep" + this.fileName;
 
         prepareFile();
     }
 
+    @Override
+    public String getFileName(){
+        return fileName;
+    }
+
+    @Override
+    public String getDataDir(){
+        return dataDir;
+    }
+
     private void prepareFile() throws IOException {
-        File storageFile = new File(this.fileName);
+        File storageDir = new File(dataDir);
+        if (!storageDir.exists()){
+            boolean storageDirCreated = storageDir.mkdir();
+            if (storageDirCreated) {
+                logger.info("Storage directory created.");
+            }
+        } else {
+            logger.info("Storage directory exists.");
+        }
+
+        File storageFile = new File(this.filePath);
 
         boolean storageFileCreated = storageFile.createNewFile();
 
@@ -48,7 +70,7 @@ public class KVSimpleStore implements KVStore{
         boolean exists = false;
         Gson gson = new Gson();
 
-        try(RandomAccessFile storageFile = new RandomAccessFile(fileName, "r");) {
+        try(RandomAccessFile storageFile = new RandomAccessFile(filePath, "r");) {
             String str;
 
             long currPointer = storageFile.getFilePointer();
@@ -78,7 +100,7 @@ public class KVSimpleStore implements KVStore{
         File temp = new File(tempPath);
 
         try(RandomAccessFile tempRAFile = new RandomAccessFile(tempPath, "rw");
-            RandomAccessFile storageFile = new RandomAccessFile(this.fileName, "rw");){
+            RandomAccessFile storageFile = new RandomAccessFile(this.filePath, "rw");){
             FileChannel fromChannel = storageFile.getChannel();
             FileChannel toChannel = tempRAFile.getChannel();
 
@@ -95,7 +117,7 @@ public class KVSimpleStore implements KVStore{
         File temp = new File(tempPath);
 
         try(RandomAccessFile tempRAFile = new RandomAccessFile(tempPath, "rw");
-            RandomAccessFile storageFile = new RandomAccessFile(this.fileName, "rw");){
+            RandomAccessFile storageFile = new RandomAccessFile(this.filePath, "rw");){
             FileChannel fromChannel = storageFile.getChannel();
             FileChannel toChannel = tempRAFile.getChannel();
 
@@ -113,7 +135,7 @@ public class KVSimpleStore implements KVStore{
     }
 
     private void addKeyValue(String keyValue) throws IOException{
-        try (RandomAccessFile storageFile = new RandomAccessFile(fileName, "rw");){
+        try (RandomAccessFile storageFile = new RandomAccessFile(filePath, "rw");){
             storageFile.seek(storageFile.length());
             storageFile.write(keyValue.getBytes());
         }
@@ -152,7 +174,7 @@ public class KVSimpleStore implements KVStore{
 
     @Override
     public void clear() throws IOException {
-        try(RandomAccessFile storageFile = new RandomAccessFile(this.fileName, "rw")){
+        try(RandomAccessFile storageFile = new RandomAccessFile(this.filePath, "rw")){
             storageFile.setLength(0L);
         }
     }
@@ -172,7 +194,7 @@ public class KVSimpleStore implements KVStore{
         File temp = new File(newFileName);
 
         try(RandomAccessFile tempRAF = new RandomAccessFile(newFileName, "rw");
-            RandomAccessFile storageRAF = new RandomAccessFile(this.fileName, "rw");){
+            RandomAccessFile storageRAF = new RandomAccessFile(this.filePath, "rw");){
             FileChannel fromChannel = tempRAF.getChannel();
             FileChannel toChannel = storageRAF.getChannel();
 
@@ -192,7 +214,7 @@ public class KVSimpleStore implements KVStore{
 
         Gson gson = new Gson();
 
-        try(RandomAccessFile storageRAF = new RandomAccessFile(fileName, "r");
+        try(RandomAccessFile storageRAF = new RandomAccessFile(filePath, "r");
             RandomAccessFile sendRAF = new RandomAccessFile(sendPath, "rw");
             RandomAccessFile keepRAF = new RandomAccessFile(keepPath, "rw");){
 
@@ -219,13 +241,20 @@ public class KVSimpleStore implements KVStore{
     }
 
     public void sendDataCleanup(){
-        File storageFile = new File(this.fileName);
+        File storageFile = new File(this.filePath);
         File sendFile = new File(this.sendPath);
         File keepFile = new File(this.keepPath);
 
         sendFile.delete();
         storageFile.delete();
-        keepFile.renameTo(new File(this.fileName));
+        boolean renamed = keepFile.renameTo(new File(this.filePath));
+        if (renamed){
+            logger.info("Cleaned up data after sending.");
+        } else {
+            logger.error("Failed to clean up data after sending, storage deleted.");
+        }
+
+
     }
 
 }
