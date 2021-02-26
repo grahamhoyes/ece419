@@ -1,21 +1,21 @@
 package testing;
 
-import app_kvClient.KVClient;
-import app_kvECS.ECSClient;
-import app_kvServer.KVServer;
 import client.KVStoreConnection;
 import ecs.ECS;
+import ecs.ECSNode;
+import ecs.IECSNode;
 import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.MalformedInputException;
 import java.nio.file.Files;
 import java.util.*;
-import java.util.concurrent.CyclicBarrier;
 
 public class PerformanceTestM2 {
 
@@ -27,12 +27,34 @@ public class PerformanceTestM2 {
     private ECS ecs;
     private ArrayList<ClientThread> clients;
 
-    private ArrayList<ArrayList<String>> data;
+    private List<ArrayList<String>> data;
+    private final List<ArrayList<String>> workingData;
 
-    private final int[] numbersToTest = {2, 4, 8};
+    private static final int numRequests = 500;
 
-    public PerformanceTestM2(String dataPath) {
+    private int numServers;
+    private int numClients;
+    private double ratio;
+
+
+    public PerformanceTestM2(String ecsConfigFilePath, String zkHost, int zkPort, String remotePath, String dataPath, int numServers, int numClients, double ratio) {
+        this.numServers = numServers;
+        this.numClients = numClients;
+        this.ratio = ratio;
+
         data = readData(dataPath);
+        workingData = data.subList(0, numRequests);
+        data = data.subList(numRequests, numRequests*2);
+
+        ecs = new ECS(ecsConfigFilePath, zkHost, zkPort, remotePath);
+        ecs.addNodes(numServers);
+        populateStorage(numClients);
+
+        clients = new ArrayList<>();
+        int stride = (data.size() / numClients);
+        for (int i=0; i<numClients; i++)
+            clients.add(new ClientThread(hostname, port, workingData.subList(i*stride, (i+1)*stride), false, ratio));
+
     }
 
     public void listFiles(String originalDataPath, String folder, ArrayList<ArrayList<String>> data) throws IOException {
@@ -60,7 +82,6 @@ public class PerformanceTestM2 {
         }
     }
 
-
     public ArrayList<ArrayList<String>> readData(String dataPath) {
         ArrayList<ArrayList<String>> data = new ArrayList<>();
 
@@ -73,61 +94,134 @@ public class PerformanceTestM2 {
         return data;
     }
 
-    public void reset(String ecsConfigFilePath, String zkHost, int zkPort, String remotePath, int numServers, int numClients) {
-        if (ecs != null) ecs.shutdown();
+    public void runClients(ArrayList<ClientThread> clients) {
+        ArrayList<Thread> threads = new ArrayList<>();
+        for (ClientThread client : clients) {
+            Thread t = new Thread(client);
+            t.start();
+            threads.add(t);
+        }
 
-        ecs = new ECS(ecsConfigFilePath, zkHost, zkPort, remotePath);
-        ecs.addNodes(numServers);
-        ecs.start();
-
-        clients = new ArrayList<>();
-        int stride = (data.size() / numClients);
-        for (int i=0; i<numClients; i++)
-            clients.add(new ClientThread(hostname, port, data.subList(i*stride, (i+1)*stride)));
-    }
-
-    public void runTest(String ecsConfigFilePath, String zkHost, int zkPort, String remotePath) {
-        for (int numClients : numbersToTest) {
-            for (int numServers : numbersToTest) {
-
-                reset(ecsConfigFilePath, zkHost, zkPort, remotePath, numServers, numClients);
-
-                ArrayList<Thread> threads = new ArrayList<>();
-                for (int iClient = 0; iClient < numClients; iClient++) {
-                    Thread t = new Thread(clients.get(iClient));
-                    t.start();
-                    threads.add(t);
-                }
-
-                for (Thread t: threads) {
-                    try {
-                        t.join();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-
+        for (Thread t: threads) {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }
 
+    public void populateStorage(int numClients) {
+        clients = new ArrayList<>();
+        int stride = (data.size() / numClients);
+        for (int i=0; i<numClients; i++)
+            clients.add(new ClientThread(hostname, port, data.subList(i*stride, (i+1)*stride), true, 0));
+
+        runClients(clients);
+    }
+
+    public void evaluateRun(long timeTaken, long timeToAddANode, long timeToRemoveANode) {
+        System.out.println(numServers);
+        System.out.println(numClients);
+        System.out.println(ratio);
+
+        int numWrites = 0;
+        int numReads = 0;
+
+        for (ClientThread client: clients) {
+            numWrites += client.numWriteRequests;
+            numReads += client.numReadRequests;
+        }
+
+        System.out.println(numWrites);
+        System.out.println(numReads);
+        System.out.println(timeTaken);
+        System.out.println(timeToAddANode);
+        System.out.println(timeToRemoveANode);
+    }
+
+    public void runTest() {
+        long start = System.nanoTime();
+        runClients(clients);
+        long end = System.nanoTime();
+        long timeTaken = (end - start) / 1000;
+
+        start = System.nanoTime();
+        ECSNode node = ecs.addNode();
+        end = System.nanoTime();
+        long timeToAddANode = (end - start) / 1000;
+
+        ecs.removeNode(node.getNodeName());
+
+        start = System.nanoTime();
+        for (ECSNode nodeToRemove: ecs.getNodes()) {
+            ecs.removeNode(nodeToRemove.getNodeName());
+            break;
+        }
+        end = System.nanoTime();
+        long timeToRemoveANode = (end - start) / 1000;
+
+        evaluateRun(timeTaken, timeToAddANode, timeToRemoveANode);
+        ecs.shutdown();
+    }
+
     public static void main(String[] args) {
         try {
-            new LogSetup("logs/performance.log", Level.ALL);
+            new LogSetup("logs/performance.log", Level.OFF);
+            Logger.getLogger("Connection").setLevel(Level.OFF);
+            Logger.getLogger("ClientConnection").setLevel(Level.OFF);
+            Logger.getLogger("KVServer").setLevel(Level.OFF);
+            Logger.getLogger("ECSConnection").setLevel(Level.OFF);
+            Logger.getLogger("ECS").setLevel(Level.OFF);
+            Logger.getLogger("KVSimpleStore").setLevel(Level.OFF);
+            Logger.getLogger("ZooKeeperConnection").setLevel(Level.OFF);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        new PerformanceTestM2(args[4]).runTest(args[0], args[1], Integer.parseInt(args[2]), args[3]);
+        new PerformanceTestM2(args[0], args[1], Integer.parseInt(args[2]), args[3], args[4], Integer.parseInt(args[5]), Integer.parseInt(args[6]), Double.parseDouble(args[7])).runTest();
     }
 
     public class ClientThread implements Runnable {
 
         private final List<ArrayList<String>> assignedData;
         private final KVStoreConnection storeConnection;
+        private final boolean populating;
+        private final double ratio;
 
-        public ClientThread(String hostname, int port, List<ArrayList<String>> assignedData) {
+        long totalTimeWrite = 0;
+        long totalTimeRead = 0;
+        int numReadRequests = 0;
+        int numWriteRequests = 0;
+
+        Random ran = new Random();
+
+        public ClientThread(String hostname, int port, List<ArrayList<String>> assignedData, boolean populating, double ratio) {
             this.storeConnection = new KVStoreConnection(hostname, port);
             this.assignedData = assignedData;
+            this.populating = populating;
+            this.ratio = ratio;
+        }
+
+        public void sendPutRequest(String key, String value) {
+            long start = System.nanoTime();
+            try {
+                storeConnection.put(key, value);
+            } catch (Exception ignored) {
+            }
+            long end = System.nanoTime();
+            totalTimeWrite += (end - start) / 1000;
+            numWriteRequests++;
+        }
+
+        public void sendGetRequest(String key) {
+            long start = System.nanoTime();
+            try {
+                storeConnection.get(key);
+            } catch (Exception ignored) {
+            }
+            long end = System.nanoTime();
+            totalTimeRead += (end - start) / 1000;
+            numReadRequests++;
         }
 
         @Override
@@ -138,7 +232,24 @@ public class PerformanceTestM2 {
                 for (ArrayList<String> kvPair : assignedData) {
                     String key = kvPair.get(0);
                     String value = kvPair.get(1);
-                    storeConnection.put(key, value);
+
+                    if (populating) {
+                        storeConnection.put(key, value);
+                    }
+                    else {
+                        if (Math.random() < ratio)
+                            sendPutRequest(key, value);
+                        else {
+                            int randomIndex = ran.nextInt(data.size());
+                            ArrayList<String> pair = data.get(randomIndex);
+
+                            sendGetRequest(pair.get(0));
+                        }
+                    }
+
+                    if (numReadRequests + numWriteRequests == numRequests) {
+                        break;
+                    }
                 }
 
                 storeConnection.disconnect();
@@ -148,5 +259,4 @@ public class PerformanceTestM2 {
             }
         }
     }
-
 }

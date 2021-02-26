@@ -607,9 +607,8 @@ public class ECS implements IECS {
     }
 
     @Override
-    public Map<String, ECSNode> getNodes() {
-        // TODO
-        return null;
+    public Collection<ECSNode> getNodes() {
+        return hashRing.getNodes();
     }
 
     @Override
