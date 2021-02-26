@@ -9,6 +9,7 @@ import org.junit.*;
 import shared.messages.JsonKVMessage;
 import shared.messages.KVMessage;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 
 import static shared.messages.KVMessage.StatusType.SERVER_STOPPED;
@@ -47,10 +48,6 @@ public class ECSTest extends Assert {
         ecs.shutdown();
     }
 
-    @AfterClass
-    public static void tearDown() {
-        ecs.shutdown();
-    }
 
     @Test()
     public void testSingleServerStartup() throws Exception{
@@ -121,6 +118,10 @@ public class ECSTest extends Assert {
 
         assert (node0.isNodeResponsible("server0"));
         assert (!node0.isNodeResponsible("server1"));
+
+        assert (node1.isNodeResponsible("server1"));
+        assert (!node1.isNodeResponsible("server0"));
+
     }
 
     @Test()
@@ -144,7 +145,32 @@ public class ECSTest extends Assert {
     }
 
     @Test()
-    public void testMoveData() throws Exception{
+    public void testNewServerWriteLockRelease() throws Exception{
+        addNodes(1);
+
+        KVStoreConnection kvClient0 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
+        kvClient0.connect();
+
+        // The first server is responsible for all keys
+        String key = "server" + (serverCounter + 1);
+        KVMessage message = kvClient0.put(key, "bar");
+        JsonKVMessage res = getMessage(kvClient0, key);
+        assert(res.getStatus() != KVMessage.StatusType.SERVER_NOT_RESPONSIBLE);
+
+        // The second added server is called server1 so it should be responsible for its own key
+        addNodes(1);
+        KVStoreConnection kvClient1 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
+        kvClient1.connect();
+
+        message = kvClient1.put("foo", "bar");
+        assert(message.getStatus() == KVMessage.StatusType.PUT_SUCCESS);
+        message = kvClient1.put(key, "bar1");
+        assert(message.getStatus() == KVMessage.StatusType.PUT_UPDATE);
+
+    }
+
+    @Test()
+    public void testMoveDataToNewServer() throws Exception{
         addNodes(1);
 
         KVStoreConnection kvClient0 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
@@ -166,7 +192,7 @@ public class ECSTest extends Assert {
     }
 
     @Test()
-    public void testRemoveNode() throws Exception{
+    public void testMoveDataAfterRemoveNode() throws Exception{
         addNodes(1);
 
         KVStoreConnection kvClient0 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);

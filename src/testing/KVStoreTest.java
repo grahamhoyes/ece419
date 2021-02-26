@@ -94,7 +94,7 @@ public class KVStoreTest extends Assert {
 
     @Test (expected = FileNotFoundException.class)
     public void testFileDeletion() throws Exception{
-        File file = new File(fileName);
+        File file = new File(kvStore.getDataDir() + File.separatorChar + fileName);
         file.delete();
         try{
             String key = "foo";
@@ -109,7 +109,7 @@ public class KVStoreTest extends Assert {
     public void testInvalidDataFormat() throws Exception{
         String garbage = "garbage";
         Files.writeString(
-                Paths.get(fileName),
+                Paths.get(kvStore.getDataDir() + File.separatorChar + fileName),
                 garbage,
                 StandardCharsets.ISO_8859_1,
                 StandardOpenOption.CREATE,

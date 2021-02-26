@@ -1,9 +1,7 @@
 package testing;
 
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import ecs.ECS;
+import org.junit.*;
 
 import client.KVStoreConnection;
 import shared.messages.KVMessage;
@@ -20,14 +18,25 @@ import shared.messages.KVMessage.StatusType;
 public class InteractionTest extends Assert {
 
 	private KVStoreConnection kvClient;
+	private static ECS ecs;
+	private static final String zkHost = "127.0.0.1";
+	private static final int zkPort = 2181;
+
+	@BeforeClass
+	public static void setUp() {
+		ecs = new ECS("ecs_test.config", zkHost, zkPort, System.getenv("KV_SERVER_JAR"));
+		ecs.addNodes(1);
+	}
+
+	@AfterClass
+	public static void shutDownNodes() {
+		ecs.shutdown();
+	}
 	
 	@Before
-	public void setUp() {
-		kvClient = new KVStoreConnection("localhost", 50000);
-		try {
-			kvClient.connect();
-		} catch (Exception ignored) {
-		}
+	public void testSetUp() throws Exception{
+		kvClient = new KVStoreConnection("localhost", 9000);
+		kvClient.connect();
 	}
 
 	@After
@@ -69,23 +78,18 @@ public class InteractionTest extends Assert {
 	}
 
 	@Test
-	public void testUpdate() {
+	public void testUpdate() throws Exception {
 		String key = "updateTestValue";
 		String initialValue = "initial";
 		String updatedValue = "updated";
 		
 		KVMessage response = null;
-		Exception ex = null;
 
-		try {
-			kvClient.put(key, initialValue);
-			response = kvClient.put(key, updatedValue);
-			
-		} catch (Exception e) {
-			ex = e;
-		}
+		kvClient.put(key, initialValue);
+		response = kvClient.put(key, updatedValue);
 
-		Assert.assertTrue(ex == null && response.getStatus() == StatusType.PUT_UPDATE
+
+		Assert.assertTrue(response.getStatus() == StatusType.PUT_UPDATE
 				&& response.getValue().equals(updatedValue));
 	}
 	

@@ -11,11 +11,11 @@ import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-//		ConnectionTest.class,
-//		InteractionTest.class,
-//		JsonMessageTest.class,
-//		KVStoreTest.class,
-//		CommunicationProtocolTest.class,
+		ConnectionTest.class,
+		InteractionTest.class,
+		JsonMessageTest.class,
+		KVStoreTest.class,
+		CommunicationProtocolTest.class,
 		ECSTest.class
 })
 public class AllTests {
