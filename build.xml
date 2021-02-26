@@ -25,6 +25,11 @@
   <property name="ecsmanifest.file" value="ECS_MANIFEST.MF"/>
   <property name="ecsmain.class" value="app_kvECS.ECSClient"/>
 
+  <!-- Configuration for performance testing -->
+  <property name="performancetestjar.file"      value="PerformanceTestM2.jar"/>
+  <property name="performancetestmanifest.file" value="PERFORMANCE_TEST.MF"/>
+  <property name="performancetestmain.class" value="testing.PerformanceTestM2"/>
+
   <!-- path to libraries-->
   <path id="external.jars">
     <fileset dir="${lib.dir}" includes="**/*.jar"/>
@@ -121,6 +126,24 @@
 
     <jar destfile="${ecsjar.file}" basedir="${build.dir}"
         manifest="${ecsmanifest.file}">
+      <fileset dir="${build.dir}" includes="**/*.class" />
+      <zipgroupfileset dir="${lib.dir}" includes="**/*.jar" />
+    </jar>
+  </target>
+
+  <!-- build performance testing jar -->
+  <target name="build-performancetest-jar" depends="build">
+    <delete file="${performancetestjar.file}" />
+    <delete file="${performancetestmanifest.file}" />
+
+    <manifest file="${performancetestmanifest.file}" >
+      <attribute name="built-by" value="${user.name}" />
+      <attribute name="Main-Class" value="${performancetestmain.class}" />
+      <attribute name="Class-Path" value="${project.classpath}"/>
+    </manifest>
+
+    <jar destfile="${performancetestjar.file}" basedir="${build.dir}"
+         manifest="${performancetestmanifest.file}">
       <fileset dir="${build.dir}" includes="**/*.class" />
       <zipgroupfileset dir="${lib.dir}" includes="**/*.jar" />
     </jar>

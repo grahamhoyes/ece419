@@ -67,7 +67,7 @@ public interface IECS {
     /**
      * Get a map of all nodes
      */
-    public Map<String, ECSNode> getNodes();
+    public Collection<ECSNode> getNodes();
 
     /**
      * Get the specific node responsible for the given key
