@@ -14,8 +14,10 @@ public class ServerNode implements IECSNode, Comparable<ServerNode> {
     private final String hostname;
     private final int port;
     private final String nodeHash;
-    private String predecessorHash;
     IKVServer.ServerStatus status;
+
+    private transient ServerNode predecessor;
+    private transient ServerNode successor;
 
     public ServerNode(String name, String hostname, int port) {
         this.name = name;
@@ -25,35 +27,6 @@ public class ServerNode implements IECSNode, Comparable<ServerNode> {
 
         this.nodeHash = md5Hash(getNodeName());
     }
-
-    public String getNodeName() {
-        return this.name;
-    }
-
-    public String getNodeHost() {
-        return hostname;
-    }
-
-    public int getNodePort() {
-        return port;
-    }
-
-    public String getPredecessorHash() {
-        return this.predecessorHash;
-    }
-
-    public IKVServer.ServerStatus getStatus() {
-        return status;
-    }
-
-    public void setPredecessor(String predecessorHash) {
-        this.predecessorHash = predecessorHash;
-    }
-
-    public void setStatus(IKVServer.ServerStatus status) {
-        this.status = status;
-    }
-
 
     public static String md5Hash(String data) {
         try {
@@ -74,57 +47,10 @@ public class ServerNode implements IECSNode, Comparable<ServerNode> {
         }
     }
 
-    public String getNodeHash() {
-        return this.nodeHash;
-    }
-
-    /**
-     * Return an array of hashes this node is responsible for.
-     *
-     * @return Array of two strings representing the lower bound and upper bound hashes
-     * that this node is responsible for, both inclusive
-     */
-    public String[] getNodeHashRange() {
-        if (predecessorHash == null) {
-            return null;
-        }
-
-        BigInteger startingHashValue = new BigInteger(predecessorHash, 16)
-                .add(BigInteger.ONE)
-                .mod(HASH_MAX);
-
-        StringBuilder startingHash = new StringBuilder(startingHashValue.toString(16));
-
-        while (startingHash.length() < 32) {
-            startingHash.insert(0, "0");
-        }
-
-
-        return new String[] { startingHash.toString(), this.getNodeHash() };
-    }
-
-    public boolean isNodeResponsible(String key) {
-        String keyHash = md5Hash(key);
-
-        if (predecessorHash == null || predecessorHash.equals(this.getNodeHash())) {
-            // This is the only server
-            return true;
-        }
-
-        String thisHash = this.getNodeHash();
-
-        if (predecessorHash.compareTo(thisHash) > 0) {  // TODO: Is this correct?
-            // Handle the special case where we loop over the ring boundary
-            return predecessorHash.compareTo(keyHash) < 0 || keyHash.compareTo(thisHash) <= 0;
-        } else {
-            return predecessorHash.compareTo(keyHash) < 0 && keyHash.compareTo(thisHash) <= 0;
-        }
-    }
-
     /**
      * Check if the given hash falls within the hash range
      *
-     * @param hash Hash value to check
+     * @param hash      Hash value to check
      * @param hashRange List of [lower bound, upper bound] hashes, inclusive
      * @return True if the hash is in the range, false otherwise
      */
@@ -141,6 +67,89 @@ public class ServerNode implements IECSNode, Comparable<ServerNode> {
         }
     }
 
+    public String getNodeName() {
+        return this.name;
+    }
+
+    public String getNodeHost() {
+        return hostname;
+    }
+
+    public int getNodePort() {
+        return port;
+    }
+
+    public ServerNode getPredecessor() {
+        return this.predecessor;
+    }
+
+    public void setPredecessor(ServerNode predecessor) {
+        this.predecessor = predecessor;
+    }
+
+    public ServerNode getSuccessor() {
+        return this.successor;
+    }
+
+    public void setSuccessor(ServerNode successor) {
+        this.successor = successor;
+    }
+
+    public IKVServer.ServerStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(IKVServer.ServerStatus status) {
+        this.status = status;
+    }
+
+    public String getNodeHash() {
+        return this.nodeHash;
+    }
+
+    /**
+     * Return an array of hashes this node is responsible for.
+     *
+     * @return Array of two strings representing the lower bound and upper bound hashes
+     * that this node is responsible for, both inclusive
+     */
+    public String[] getNodeHashRange() {
+        if (predecessor == null) {
+            return null;
+        }
+
+        BigInteger startingHashValue = new BigInteger(predecessor.getNodeHash(), 16)
+                .add(BigInteger.ONE)
+                .mod(HASH_MAX);
+
+        StringBuilder startingHash = new StringBuilder(startingHashValue.toString(16));
+
+        while (startingHash.length() < 32) {
+            startingHash.insert(0, "0");
+        }
+
+
+        return new String[]{startingHash.toString(), this.getNodeHash()};
+    }
+
+    public boolean isNodeResponsible(String key) {
+        String keyHash = md5Hash(key);
+
+        if (predecessor == null || predecessor.getNodeHash().equals(this.getNodeHash())) {
+            // This is the only server
+            return true;
+        }
+
+        String thisHash = this.getNodeHash();
+        String predecessorHash = this.predecessor.getNodeHash();
+
+        if (predecessorHash.compareTo(thisHash) > 0) {
+            // Handle the special case where we loop over the ring boundary
+            return predecessorHash.compareTo(keyHash) < 0 || keyHash.compareTo(thisHash) <= 0;
+        } else {
+            return predecessorHash.compareTo(keyHash) < 0 && keyHash.compareTo(thisHash) <= 0;
+        }
+    }
 
     @Override
     public int compareTo(ServerNode other) {
@@ -148,11 +157,10 @@ public class ServerNode implements IECSNode, Comparable<ServerNode> {
     }
 
     /**
-     * @return A deep copy of this ServerNode
+     * @return A copy of this ServerNode, without successors or predecessors
      */
     public ServerNode copy() {
         ServerNode copyNode = new ServerNode(name, hostname, port);
-        copyNode.predecessorHash = this.predecessorHash;
         copyNode.status = this.status;
 
         return copyNode;

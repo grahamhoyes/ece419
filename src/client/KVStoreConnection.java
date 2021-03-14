@@ -45,7 +45,7 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 	private void switchToSuccessor() throws Exception {
 		if (hashRing == null) return;
 
-		ServerNode successor = hashRing.getSuccessor(currentNode);
+		ServerNode successor = currentNode.getSuccessor();
 		this.currentNode = successor;
 		switchServers(successor);
 	}
@@ -79,6 +79,9 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 			sendMessage(req);
 			res = receiveMessage();
 			hashRing = res.getMetadata();
+			if (hashRing != null && currentNode != null) {
+				currentNode = hashRing.getNode(currentNode.getNodeName());
+			}
 
 			retry = false;
 			if (res.getStatus() == KVMessage.StatusType.SERVER_NOT_RESPONSIBLE) {
@@ -130,6 +133,9 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 			// TODO: Have a way to request metadata from the server after retries,
 			//  rather than always sending it to save network traffic
 			hashRing = res.getMetadata();
+			if (hashRing != null && currentNode != null) {
+				currentNode = hashRing.getNode(currentNode.getNodeName());
+			}
 
 			retry = false;
 			if (res.getStatus() == KVMessage.StatusType.SERVER_NOT_RESPONSIBLE) {

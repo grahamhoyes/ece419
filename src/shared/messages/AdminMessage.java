@@ -95,6 +95,9 @@ public class AdminMessage implements Serializable {
         this.action = adminMessage.action;
         this.message = adminMessage.message;
         this.hashRing = adminMessage.hashRing;
+        if (this.hashRing != null) {
+            this.hashRing.rebuildHashRingLinkedList();
+        }
         this.sender = adminMessage.sender;
         this.receiver = adminMessage.receiver;
     }

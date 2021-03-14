@@ -94,6 +94,9 @@ public class JsonKVMessage implements KVMessage, Serializable {
             this.value = kvMessage.value;
             this.message = kvMessage.message;
             this.metadata = kvMessage.metadata;
+            if (this.metadata != null) {
+                this.metadata.rebuildHashRingLinkedList();
+            }
         } catch (JsonSyntaxException e) {
             throw new DeserializationException("Failed to deserialize message: " + json);
         }

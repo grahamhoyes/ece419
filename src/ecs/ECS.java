@@ -265,7 +265,7 @@ public class ECS implements IECS {
             return null;
         }
 
-        ServerNode successor = updatedHashRing.getSuccessor(node);
+        ServerNode successor = node.getSuccessor();
         assert successor != null;
 
         if (updatedHashRing.getNodes().size() > 1) {
@@ -477,7 +477,7 @@ public class ECS implements IECS {
             return false;
         }
 
-        ServerNode successor = hashRing.getSuccessor(node);
+        ServerNode successor = node.getSuccessor();
 
         HashRing updatedHashRing = hashRing.copy();
         updatedHashRing.removeNode(nodeName);

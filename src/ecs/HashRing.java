@@ -6,36 +6,51 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 
+/**
+ * Class for tracking the Hash Ring used for persistent storage
+ * <p>
+ * Nodes are stored in two places: In a sorted ArrayList,
+ * and as an actual linked list. The ArrayList's only purpose
+ * is to support serialization and deserialization.
+ */
 public class HashRing {
-    protected ArrayList<ServerNode> serverNodes = new ArrayList<>();
+    private ArrayList<ServerNode> serverNodes = new ArrayList<>();
 
-    public HashRing() {}
-
-    public HashRing(ServerNode[] nodes) {
-        Collections.addAll(serverNodes, nodes);
-        Collections.sort(serverNodes);
-
-        // Link the nodes together
-        ServerNode lastNode = serverNodes.get(serverNodes.size() - 1);
-        serverNodes.get(0).setPredecessor(lastNode.getNodeHash());
-
-        for (int i = 1; i < serverNodes.size(); i++) {
-            ServerNode prev = serverNodes.get(i-1);
-            ServerNode cur = serverNodes.get(i);
-            cur.setPredecessor(prev.getNodeHash());
-        }
+    public HashRing() {
     }
 
     public HashRing(String json) {
         deserialize(json);
     }
 
-    public Collection<ServerNode> getNodes() {
-        return serverNodes;
+    /**
+     * Link the nodes in the provided ArrayList into a doubly
+     * linked list themselves
+     *
+     * @param nodes Sorted ArrayList of ServerNodes
+     */
+    private static void rebuildNodeLinkedList(ArrayList<ServerNode> nodes) {
+        ServerNode start = null;
+
+        for (int i = 0; i < nodes.size(); i++) {
+            ServerNode node = nodes.get(i);
+
+            if (i == 0) {
+                start = node;
+                node.setPredecessor(node);
+                node.setSuccessor(node);
+            } else {
+                ServerNode lastNode = start.getPredecessor();
+                lastNode.setSuccessor(node);
+                node.setPredecessor(lastNode);
+                node.setSuccessor(start);
+                start.setPredecessor(node);
+            }
+        }
     }
 
-    public ServerNode getNode(int index) {
-        return serverNodes.get(index);
+    public Collection<ServerNode> getNodes() {
+        return serverNodes;
     }
 
     public ServerNode getNode(String nodeName) {
@@ -64,26 +79,26 @@ public class HashRing {
         ServerNode predecessor = serverNodes.get(predecessorIdx);
         ServerNode successor = serverNodes.get(successorIdx);
 
-        node.setPredecessor(predecessor.getNodeHash());
-        successor.setPredecessor(node.getNodeHash());
+        // Insert into the linked list
+        node.setPredecessor(predecessor);
+        node.setSuccessor(successor);
+        predecessor.setSuccessor(node);
+        successor.setPredecessor(node);
     }
 
-    public ServerNode removeNode(int index) {
+    public void removeNode(int index) {
         ServerNode node = serverNodes.get(index);
-
-        int predecessorIdx = index == 0 ? serverNodes.size() - 1 : index - 1;
-        int successorIdx = index == serverNodes.size() - 1 ? 0 : index + 1;
-
-        ServerNode predecessor = serverNodes.get(predecessorIdx);
-        ServerNode successor = serverNodes.get(successorIdx);
-
         serverNodes.remove(index);
-        successor.setPredecessor(predecessor.getNodeHash());
 
-        return node;
+        ServerNode predecessor = node.getPredecessor();
+        ServerNode successor = node.getSuccessor();
+
+        predecessor.setSuccessor(successor);
+        successor.setPredecessor(predecessor);
+
     }
 
-    public ServerNode removeNode(String nodeName) {
+    public void removeNode(String nodeName) {
         int idx = -1;
 
         for (int i = 0; i < serverNodes.size(); i++) {
@@ -93,7 +108,7 @@ public class HashRing {
             }
         }
 
-        return removeNode(idx);
+        removeNode(idx);
     }
 
     public ServerNode getNodeForKey(String key) {
@@ -106,23 +121,22 @@ public class HashRing {
         return null;
     }
 
-    public ServerNode getSuccessor(ServerNode node) {
-        for (ServerNode other : serverNodes) {
-            if (other.getPredecessorHash().equals(node.getNodeHash()))
-                return other;
-        }
-
-        return null;
-    }
-
     public String serialize() {
         return new Gson().toJson(this);
+    }
+
+    public void rebuildHashRingLinkedList() {
+        rebuildNodeLinkedList(this.serverNodes);
     }
 
     public void deserialize(String json) {
         HashRing hashRingFromJson = new Gson().fromJson(json, HashRing.class);
         this.serverNodes = hashRingFromJson.serverNodes;
         Collections.sort(serverNodes);
+
+        // The deserialized nodes won't have their successors and
+        // predecessors set, so fix that
+        rebuildHashRingLinkedList();
     }
 
     /**
@@ -134,6 +148,8 @@ public class HashRing {
         for (ServerNode node : this.serverNodes) {
             copyNodes.add(node.copy());
         }
+
+        rebuildNodeLinkedList(copyNodes);
 
         HashRing copyHashRing = new HashRing();
         copyHashRing.serverNodes = copyNodes;

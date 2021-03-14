@@ -76,7 +76,7 @@ public class ECSTest extends Assert {
         HashRing hashRing = new HashRing();
         hashRing.addNode(node0);
 
-        assert (node0.getPredecessorHash().equals(node0.getNodeHash()));
+        assert (node0.getPredecessor().getNodeHash().equals(node0.getNodeHash()));
     }
 
     @Test()
@@ -88,8 +88,8 @@ public class ECSTest extends Assert {
         hashRing.addNode(node0);
         hashRing.addNode(node1);
 
-        assert (node0.getPredecessorHash().equals(node1.getNodeHash()));
-        assert (node1.getPredecessorHash().equals(node0.getNodeHash()));
+        assert (node0.getPredecessor().getNodeHash().equals(node1.getNodeHash()));
+        assert (node1.getPredecessor().getNodeHash().equals(node0.getNodeHash()));
     }
 
     @Test()
@@ -103,7 +103,7 @@ public class ECSTest extends Assert {
 
         hashRing.removeNode("server1");
 
-        assert (node0.getPredecessorHash().equals(node0.getNodeHash()));
+        assert (node0.getPredecessor().getNodeHash().equals(node0.getNodeHash()));
     }
 
     @Test()
