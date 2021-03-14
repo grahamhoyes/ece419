@@ -1,7 +1,7 @@
 package app_kvServer;
 
 import ecs.HashRing;
-import ecs.ECSNode;
+import ecs.ServerNode;
 import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -199,7 +199,7 @@ public class KVServer implements IKVServer, Runnable {
     }
 
     public void sendData(AdminMessage message){
-        ECSNode receiveNode = message.getReceiver();
+        ServerNode receiveNode = message.getReceiver();
         String host = receiveNode.getNodeHost();
         int port = Integer.parseInt(message.getMessage());
         String[] hashRange = message.getSender().getNodeHashRange();

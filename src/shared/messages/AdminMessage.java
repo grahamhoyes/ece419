@@ -1,7 +1,7 @@
 package shared.messages;
 
 import com.google.gson.Gson;
-import ecs.ECSNode;
+import ecs.ServerNode;
 import ecs.HashRing;
 
 public class AdminMessage implements Serializable {
@@ -30,8 +30,8 @@ public class AdminMessage implements Serializable {
     /* Required for move/receive messages
      * The sender and receiver nodes have no guarantee about having
      * their hash ranges correct, trust the range field */
-    private ECSNode sender;
-    private ECSNode receiver;
+    private ServerNode sender;
+    private ServerNode receiver;
 
     public AdminMessage() {
 
@@ -53,11 +53,11 @@ public class AdminMessage implements Serializable {
         return message;
     }
 
-    public ECSNode getSender() {
+    public ServerNode getSender() {
         return sender;
     }
 
-    public ECSNode getReceiver() {
+    public ServerNode getReceiver() {
         return receiver;
     }
 
@@ -77,11 +77,11 @@ public class AdminMessage implements Serializable {
         this.hashRing = hashRing;
     }
 
-    public void setSender(ECSNode sender) {
+    public void setSender(ServerNode sender) {
         this.sender = sender;
     }
 
-    public void setReceiver(ECSNode receiver) {
+    public void setReceiver(ServerNode receiver) {
         this.receiver = receiver;
     }
 

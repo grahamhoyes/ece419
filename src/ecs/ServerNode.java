@@ -7,8 +7,8 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-public class ECSNode implements IECSNode, Comparable<ECSNode> {
-    public static final Logger logger = Logger.getLogger("ECSNode");
+public class ServerNode implements IECSNode, Comparable<ServerNode> {
+    public static final Logger logger = Logger.getLogger("ServerNode");
     public static BigInteger HASH_MAX = new BigInteger("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", 16);
     private final String name;
     private final String hostname;
@@ -17,7 +17,7 @@ public class ECSNode implements IECSNode, Comparable<ECSNode> {
     private String predecessorHash;
     IKVServer.ServerStatus status;
 
-    public ECSNode(String name, String hostname, int port) {
+    public ServerNode(String name, String hostname, int port) {
         this.name = name;
         this.hostname = hostname;
         this.port = port;
@@ -143,15 +143,15 @@ public class ECSNode implements IECSNode, Comparable<ECSNode> {
 
 
     @Override
-    public int compareTo(ECSNode other) {
+    public int compareTo(ServerNode other) {
         return this.getNodeHash().compareTo(other.getNodeHash());
     }
 
     /**
-     * @return A deep copy of this ECSNode
+     * @return A deep copy of this ServerNode
      */
-    public ECSNode copy() {
-        ECSNode copyNode = new ECSNode(name, hostname, port);
+    public ServerNode copy() {
+        ServerNode copyNode = new ServerNode(name, hostname, port);
         copyNode.predecessorHash = this.predecessorHash;
         copyNode.status = this.status;
 

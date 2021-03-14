@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 
-import static ecs.ECSNode.hashInRange;
+import static ecs.ServerNode.hashInRange;
 
 public class KVSimpleStore implements KVStore{
     protected static final Logger logger = Logger.getLogger("KVSimpleStore");

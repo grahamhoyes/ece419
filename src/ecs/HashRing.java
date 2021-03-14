@@ -7,21 +7,21 @@ import java.util.Collection;
 import java.util.Collections;
 
 public class HashRing {
-    protected ArrayList<ECSNode> ecsNodes = new ArrayList<>();
+    protected ArrayList<ServerNode> serverNodes = new ArrayList<>();
 
     public HashRing() {}
 
-    public HashRing(ECSNode[] nodes) {
-        Collections.addAll(ecsNodes, nodes);
-        Collections.sort(ecsNodes);
+    public HashRing(ServerNode[] nodes) {
+        Collections.addAll(serverNodes, nodes);
+        Collections.sort(serverNodes);
 
         // Link the nodes together
-        ECSNode lastNode = ecsNodes.get(ecsNodes.size() - 1);
-        ecsNodes.get(0).setPredecessor(lastNode.getNodeHash());
+        ServerNode lastNode = serverNodes.get(serverNodes.size() - 1);
+        serverNodes.get(0).setPredecessor(lastNode.getNodeHash());
 
-        for (int i = 1; i < ecsNodes.size(); i++) {
-            ECSNode prev = ecsNodes.get(i-1);
-            ECSNode cur = ecsNodes.get(i);
+        for (int i = 1; i < serverNodes.size(); i++) {
+            ServerNode prev = serverNodes.get(i-1);
+            ServerNode cur = serverNodes.get(i);
             cur.setPredecessor(prev.getNodeHash());
         }
     }
@@ -30,16 +30,16 @@ public class HashRing {
         deserialize(json);
     }
 
-    public Collection<ECSNode> getNodes() {
-        return ecsNodes;
+    public Collection<ServerNode> getNodes() {
+        return serverNodes;
     }
 
-    public ECSNode getNode(int index) {
-        return ecsNodes.get(index);
+    public ServerNode getNode(int index) {
+        return serverNodes.get(index);
     }
 
-    public ECSNode getNode(String nodeName) {
-        for (ECSNode node : ecsNodes) {
+    public ServerNode getNode(String nodeName) {
+        for (ServerNode node : serverNodes) {
             if (node.getNodeName().equals(nodeName)) {
                 return node;
             }
@@ -48,46 +48,46 @@ public class HashRing {
         return null;
     }
 
-    public void addNode(ECSNode node) {
+    public void addNode(ServerNode node) {
         // Insert into the array list
-        ecsNodes.add(node);
+        serverNodes.add(node);
 
         // Not super efficient, but oh well
-        Collections.sort(ecsNodes);
+        Collections.sort(serverNodes);
 
         // Find the predecessor and successor nodes
-        int index = ecsNodes.indexOf(node);
+        int index = serverNodes.indexOf(node);
 
-        int predecessorIdx = index == 0 ? ecsNodes.size() - 1 : index - 1;
-        int successorIdx = index == ecsNodes.size() - 1 ? 0 : index + 1;
+        int predecessorIdx = index == 0 ? serverNodes.size() - 1 : index - 1;
+        int successorIdx = index == serverNodes.size() - 1 ? 0 : index + 1;
 
-        ECSNode predecessor = ecsNodes.get(predecessorIdx);
-        ECSNode successor = ecsNodes.get(successorIdx);
+        ServerNode predecessor = serverNodes.get(predecessorIdx);
+        ServerNode successor = serverNodes.get(successorIdx);
 
         node.setPredecessor(predecessor.getNodeHash());
         successor.setPredecessor(node.getNodeHash());
     }
 
-    public ECSNode removeNode(int index) {
-        ECSNode node = ecsNodes.get(index);
+    public ServerNode removeNode(int index) {
+        ServerNode node = serverNodes.get(index);
 
-        int predecessorIdx = index == 0 ? ecsNodes.size() - 1 : index - 1;
-        int successorIdx = index == ecsNodes.size() - 1 ? 0 : index + 1;
+        int predecessorIdx = index == 0 ? serverNodes.size() - 1 : index - 1;
+        int successorIdx = index == serverNodes.size() - 1 ? 0 : index + 1;
 
-        ECSNode predecessor = ecsNodes.get(predecessorIdx);
-        ECSNode successor = ecsNodes.get(successorIdx);
+        ServerNode predecessor = serverNodes.get(predecessorIdx);
+        ServerNode successor = serverNodes.get(successorIdx);
 
-        ecsNodes.remove(index);
+        serverNodes.remove(index);
         successor.setPredecessor(predecessor.getNodeHash());
 
         return node;
     }
 
-    public ECSNode removeNode(String nodeName) {
+    public ServerNode removeNode(String nodeName) {
         int idx = -1;
 
-        for (int i = 0; i < ecsNodes.size(); i++) {
-            if (ecsNodes.get(i).getNodeName().equals(nodeName)) {
+        for (int i = 0; i < serverNodes.size(); i++) {
+            if (serverNodes.get(i).getNodeName().equals(nodeName)) {
                 idx = i;
                 break;
             }
@@ -96,8 +96,8 @@ public class HashRing {
         return removeNode(idx);
     }
 
-    public ECSNode getNodeForKey(String key) {
-        for (ECSNode node : ecsNodes) {
+    public ServerNode getNodeForKey(String key) {
+        for (ServerNode node : serverNodes) {
             if (node.isNodeResponsible(key)) {
                 return node;
             }
@@ -106,8 +106,8 @@ public class HashRing {
         return null;
     }
 
-    public ECSNode getSuccessor(ECSNode node) {
-        for (ECSNode other : ecsNodes) {
+    public ServerNode getSuccessor(ServerNode node) {
+        for (ServerNode other : serverNodes) {
             if (other.getPredecessorHash().equals(node.getNodeHash()))
                 return other;
         }
@@ -121,22 +121,22 @@ public class HashRing {
 
     public void deserialize(String json) {
         HashRing hashRingFromJson = new Gson().fromJson(json, HashRing.class);
-        this.ecsNodes = hashRingFromJson.ecsNodes;
-        Collections.sort(ecsNodes);
+        this.serverNodes = hashRingFromJson.serverNodes;
+        Collections.sort(serverNodes);
     }
 
     /**
      * @return A deep copy of this HashRing
      */
     public HashRing copy() {
-        ArrayList<ECSNode> copyNodes = new ArrayList<>();
+        ArrayList<ServerNode> copyNodes = new ArrayList<>();
 
-        for (ECSNode node : this.ecsNodes) {
+        for (ServerNode node : this.serverNodes) {
             copyNodes.add(node.copy());
         }
 
         HashRing copyHashRing = new HashRing();
-        copyHashRing.ecsNodes = copyNodes;
+        copyHashRing.serverNodes = copyNodes;
 
         return copyHashRing;
     }

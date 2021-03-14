@@ -29,11 +29,11 @@ public class ECS implements IECS {
     private final ZooKeeperConnection zkConnection;
     private ZooKeeper zk;
 
-    // Map server name to ECSNode
-    private HashMap<String, ECSNode> configMap = new HashMap<>();
+    // Map server name to ServerNode
+    private HashMap<String, ServerNode> configMap = new HashMap<>();
 
-    // Queue of inactive ECSNodes
-    private Queue<ECSNode> nodePool = new LinkedList<>();
+    // Queue of inactive ServerNode
+    private Queue<ServerNode> nodePool = new LinkedList<>();
 
     // Set of active nodes
     private HashRing hashRing;
@@ -75,7 +75,7 @@ public class ECS implements IECS {
                     continue;
                 }
 
-                ECSNode node = new ECSNode(name, host, Integer.parseInt(port));
+                ServerNode node = new ServerNode(name, host, Integer.parseInt(port));
                 configMap.put(name, node);
                 nodePool.add(node);
             }
@@ -111,7 +111,7 @@ public class ECS implements IECS {
     @Override
     public boolean start() {
         boolean startedAll = true;
-        for (ECSNode node : hashRing.getNodes()) {
+        for (ServerNode node : hashRing.getNodes()) {
             node.setStatus(IKVServer.ServerStatus.STOPPED);
             AdminMessage message = new AdminMessage(AdminMessage.Action.START);
             try {
@@ -143,7 +143,7 @@ public class ECS implements IECS {
     @Override
     public boolean stop() {
         boolean stoppedAll = true;
-        for (ECSNode node : hashRing.getNodes()) {
+        for (ServerNode node : hashRing.getNodes()) {
             node.setStatus(IKVServer.ServerStatus.STOPPED);
             AdminMessage message = new AdminMessage(AdminMessage.Action.STOP);
             try {
@@ -175,7 +175,7 @@ public class ECS implements IECS {
     @Override
     public boolean shutdown() {
         boolean success = true;
-        for (ECSNode node : hashRing.copy().getNodes()) {
+        for (ServerNode node : hashRing.copy().getNodes()) {
             hashRing.removeNode(node.getNodeName());
             success = success & shutdownNode(node);
         }
@@ -183,16 +183,16 @@ public class ECS implements IECS {
     }
 
     @Override
-    public ECSNode addNode() {
+    public ServerNode addNode() {
         return addNode(cacheStrategy, cacheSize);
     }
 
     @Override
-    public ECSNode addNode(String cacheStrategy, int cacheSize) {
-        List<ECSNode> nodes = (List<ECSNode>) setupNodes(1, cacheStrategy, cacheSize);
+    public ServerNode addNode(String cacheStrategy, int cacheSize) {
+        List<ServerNode> nodes = (List<ServerNode>) setupNodes(1, cacheStrategy, cacheSize);
         if (nodes == null) return null;
 
-        ECSNode node = nodes.get(0);
+        ServerNode node = nodes.get(0);
 
         HashRing updatedHashRing = hashRing.copy();
         updatedHashRing.addNode(node);
@@ -265,7 +265,7 @@ public class ECS implements IECS {
             return null;
         }
 
-        ECSNode successor = updatedHashRing.getSuccessor(node);
+        ServerNode successor = updatedHashRing.getSuccessor(node);
         assert successor != null;
 
         if (updatedHashRing.getNodes().size() > 1) {
@@ -320,16 +320,16 @@ public class ECS implements IECS {
     }
 
     @Override
-    public Collection<ECSNode> addNodes(int count) {
+    public Collection<ServerNode> addNodes(int count) {
         return addNodes(count, cacheStrategy, cacheSize);
     }
 
     @Override
-    public Collection<ECSNode> addNodes(int count, String cacheStrategy, int cacheSize) {
-        List<ECSNode> nodes = new ArrayList<>();
+    public Collection<ServerNode> addNodes(int count, String cacheStrategy, int cacheSize) {
+        List<ServerNode> nodes = new ArrayList<>();
 
         for (int i = 0; i < count; i++) {
-            ECSNode node = addNode(cacheStrategy, cacheSize);
+            ServerNode node = addNode(cacheStrategy, cacheSize);
             if (node == null) continue;
             nodes.add(node);
         }
@@ -338,17 +338,17 @@ public class ECS implements IECS {
     }
 
     @Override
-    public Collection<ECSNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
+    public Collection<ServerNode> setupNodes(int count, String cacheStrategy, int cacheSize) {
         if (count > nodePool.size()) {
             logger.error("Unable to add " + count + " nodes, only " + nodePool.size() + " remaining in the pool");
             return null;
         }
 
-        List<ECSNode> nodes = new ArrayList<>();
+        List<ServerNode> nodes = new ArrayList<>();
 
         // Get any extra nodes from the offline pool, and start them
         while (count > 0 && nodePool.size() > 0) {
-            ECSNode node = nodePool.poll();
+            ServerNode node = nodePool.poll();
             node.setStatus(IKVServer.ServerStatus.STOPPED);
 
             // Before bringing up the node, create ZNodes for it. We don't care
@@ -466,7 +466,7 @@ public class ECS implements IECS {
     }
 
     public boolean removeNode(String nodeName) {
-        ECSNode node = hashRing.getNode(nodeName);
+        ServerNode node = hashRing.getNode(nodeName);
         if (node == null) {
             logger.error("Node " + nodeName + " is not running");
             return false;
@@ -477,7 +477,7 @@ public class ECS implements IECS {
             return false;
         }
 
-        ECSNode successor = hashRing.getSuccessor(node);
+        ServerNode successor = hashRing.getSuccessor(node);
 
         HashRing updatedHashRing = hashRing.copy();
         updatedHashRing.removeNode(nodeName);
@@ -558,7 +558,7 @@ public class ECS implements IECS {
      *
      * @return success
      */
-    public boolean shutdownNode(ECSNode node) {
+    public boolean shutdownNode(ServerNode node) {
         AdminMessage shutdownMessage = new AdminMessage(AdminMessage.Action.SHUT_DOWN);
         String zkHeartbeatPath = ZooKeeperConnection.ZK_HEARTBEAT_ROOT + "/" + node.getNodeName();
 
@@ -613,17 +613,17 @@ public class ECS implements IECS {
     }
 
     @Override
-    public Collection<ECSNode> getNodes() {
+    public Collection<ServerNode> getNodes() {
         return hashRing.getNodes();
     }
 
     @Override
-    public ECSNode getNodeByKey(String Key) {
+    public ServerNode getNodeByKey(String Key) {
         // TODO
         return null;
     }
 
-    private boolean moveDataBetweenNodes(ECSNode fromNode, ECSNode toNode) {
+    private boolean moveDataBetweenNodes(ServerNode fromNode, ServerNode toNode) {
         boolean success;
 
         try {
@@ -649,7 +649,7 @@ public class ECS implements IECS {
         return success;
     }
 
-    private boolean nodeMoveData(ECSNode fromNode, ECSNode toNode, int port){
+    private boolean nodeMoveData(ServerNode fromNode, ServerNode toNode, int port){
         boolean success = true;
 
         AdminMessage message = new AdminMessage(AdminMessage.Action.MOVE_DATA);
@@ -684,7 +684,7 @@ public class ECS implements IECS {
      * @param lock True to set the lock, false to unset
      * @return success status
      */
-    private boolean setWriteLock(ECSNode node, boolean lock) {
+    private boolean setWriteLock(ServerNode node, boolean lock) {
 
         AdminMessage message = new AdminMessage(
                 lock ? AdminMessage.Action.WRITE_LOCK : AdminMessage.Action.WRITE_UNLOCK
@@ -717,7 +717,7 @@ public class ECS implements IECS {
      * @param timeoutMillis Timeout period (ms)
      */
     private void updateGlobalMetadata(int timeoutMillis) throws KeeperException, InterruptedException, TimeoutException {
-        for (ECSNode node : hashRing.getNodes()) {
+        for (ServerNode node : hashRing.getNodes()) {
             AdminMessage message = new AdminMessage(AdminMessage.Action.SET_METADATA);
             message.setMetadata(hashRing);
 

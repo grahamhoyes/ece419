@@ -2,14 +2,13 @@ package testing;
 
 import client.KVStoreConnection;
 import ecs.ECS;
-import ecs.ECSNode;
+import ecs.ServerNode;
 import ecs.HashRing;
 import org.apache.log4j.Logger;
 import org.junit.*;
 import shared.messages.JsonKVMessage;
 import shared.messages.KVMessage;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 
 import static shared.messages.KVMessage.StatusType.SERVER_STOPPED;
@@ -72,7 +71,7 @@ public class ECSTest extends Assert {
 
     @Test()
     public void testSingleNodeHashRing() throws Exception{
-        ECSNode node0 = new ECSNode("server0", "127.0.0.1", 9000);
+        ServerNode node0 = new ServerNode("server0", "127.0.0.1", 9000);
 
         HashRing hashRing = new HashRing();
         hashRing.addNode(node0);
@@ -82,8 +81,8 @@ public class ECSTest extends Assert {
 
     @Test()
     public void testUpdateHashRing(){
-        ECSNode node0 = new ECSNode("server0", "127.0.0.1", 9000);
-        ECSNode node1 = new ECSNode("server1", "127.0.0.1", 9001);
+        ServerNode node0 = new ServerNode("server0", "127.0.0.1", 9000);
+        ServerNode node1 = new ServerNode("server1", "127.0.0.1", 9001);
 
         HashRing hashRing = new HashRing();
         hashRing.addNode(node0);
@@ -95,8 +94,8 @@ public class ECSTest extends Assert {
 
     @Test()
     public void testRemoveFromHashRing(){
-        ECSNode node0 = new ECSNode("server0", "127.0.0.1", 9000);
-        ECSNode node1 = new ECSNode("server1", "127.0.0.1", 9001);
+        ServerNode node0 = new ServerNode("server0", "127.0.0.1", 9000);
+        ServerNode node1 = new ServerNode("server1", "127.0.0.1", 9001);
 
         HashRing hashRing = new HashRing();
         hashRing.addNode(node0);
@@ -109,8 +108,8 @@ public class ECSTest extends Assert {
 
     @Test()
     public void testHashing(){
-        ECSNode node0 = new ECSNode("server0", "127.0.0.1", 9000);
-        ECSNode node1 = new ECSNode("server1", "127.0.0.1", 9001);
+        ServerNode node0 = new ServerNode("server0", "127.0.0.1", 9000);
+        ServerNode node1 = new ServerNode("server1", "127.0.0.1", 9001);
 
         HashRing hashRing = new HashRing();
         hashRing.addNode(node0);

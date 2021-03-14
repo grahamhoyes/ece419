@@ -2,8 +2,7 @@ package cli.cli_ecsClient;
 
 import app_kvECS.ECSClient;
 import cli.AbstractCommand;
-import ecs.ECSNode;
-import ecs.IECSNode;
+import ecs.ServerNode;
 
 import java.util.Collection;
 
@@ -28,7 +27,7 @@ public class AddNumberOfNodesCommand extends AbstractCommand {
     public void run(Object client, String[] tokens) throws Exception {
         super.run(client, tokens);
         int numberOfNodes = Integer.parseInt(tokens[1]);
-        Collection<ECSNode> nodes = ((ECSClient) client).getECS().addNodes(numberOfNodes);
+        Collection<ServerNode> nodes = ((ECSClient) client).getECS().addNodes(numberOfNodes);
         if (nodes == null || nodes.size() == 0) {
             System.out.println("Unable to add any new nodes");
         } else {

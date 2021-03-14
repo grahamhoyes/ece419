@@ -1,6 +1,6 @@
 package app_kvServer;
 
-import ecs.ECSNode;
+import ecs.ServerNode;
 import ecs.HashRing;
 import ecs.ZooKeeperConnection;
 import org.apache.log4j.Logger;
@@ -19,7 +19,7 @@ public class ECSConnection {
     private ZooKeeper zk;
     private final String serverName;
     private final String nodePath;
-    private ECSNode nodeMetadata;  // Metadata for this node only
+    private ServerNode nodeMetadata;  // Metadata for this node only
     private HashRing hashRing;     // Metadata for all nodes
 
     public ECSConnection(String host, int port, String serverName, KVServer kvServer) {

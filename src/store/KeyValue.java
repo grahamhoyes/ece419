@@ -2,7 +2,7 @@ package store;
 
 import com.google.gson.Gson;
 
-import static ecs.ECSNode.md5Hash;
+import static ecs.ServerNode.md5Hash;
 
 public class KeyValue {
     private String key;

@@ -1,6 +1,6 @@
 package client;
 
-import ecs.ECSNode;
+import ecs.ServerNode;
 import ecs.HashRing;
 import org.apache.log4j.Logger;
 import shared.Connection;
@@ -14,7 +14,7 @@ import java.net.Socket;
 public class KVStoreConnection extends Connection implements KVCommInterface {
 	public static Logger logger = Logger.getLogger("KVStoreConnection");
 	private HashRing hashRing;
-	private ECSNode currentNode;
+	private ServerNode currentNode;
 	private boolean retry = false;
 	private int retryAttempts = 0;
 
@@ -35,7 +35,7 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 		output = socket.getOutputStream();
 	}
 
-	private void switchServers(ECSNode node) throws Exception {
+	private void switchServers(ServerNode node) throws Exception {
 		this.hostname = node.getNodeHost();
 		this.port = node.getNodePort();
 		this.disconnect();
@@ -45,7 +45,7 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 	private void switchToSuccessor() throws Exception {
 		if (hashRing == null) return;
 
-		ECSNode successor = hashRing.getSuccessor(currentNode);
+		ServerNode successor = hashRing.getSuccessor(currentNode);
 		this.currentNode = successor;
 		switchServers(successor);
 	}
@@ -53,7 +53,7 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 	private void connectToCorrectServer(String key) throws Exception {
 		if (hashRing == null) return;
 
-		ECSNode responsibleNode = hashRing.getNodeForKey(key);
+		ServerNode responsibleNode = hashRing.getNodeForKey(key);
 		if (currentNode == null || !responsibleNode.getNodeName().equals(currentNode.getNodeName())) {
 			switchServers(responsibleNode);
 			this.currentNode = responsibleNode;

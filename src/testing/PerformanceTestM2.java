@@ -2,15 +2,12 @@ package testing;
 
 import client.KVStoreConnection;
 import ecs.ECS;
-import ecs.ECSNode;
-import ecs.IECSNode;
+import ecs.ServerNode;
 import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.MalformedInputException;
@@ -147,14 +144,14 @@ public class PerformanceTestM2 {
         long timeTaken = (end - start) / 1000;
 
         start = System.nanoTime();
-        ECSNode node = ecs.addNode();
+        ServerNode node = ecs.addNode();
         end = System.nanoTime();
         long timeToAddANode = (end - start) / 1000;
 
         ecs.removeNode(node.getNodeName());
 
         start = System.nanoTime();
-        for (ECSNode nodeToRemove: ecs.getNodes()) {
+        for (ServerNode nodeToRemove: ecs.getNodes()) {
             ecs.removeNode(nodeToRemove.getNodeName());
             break;
         }
