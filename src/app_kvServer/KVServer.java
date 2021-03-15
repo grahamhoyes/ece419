@@ -24,13 +24,15 @@ public class KVServer implements IKVServer, Runnable {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
 
     private final int port;
-    private final int receivePort;
+    private int dataReceivePort;
+    private int replicationReceivePort;
     private final int cacheSize;
     private final KVStore kvStore;
     private final CacheStrategy cacheStrategy;
     private boolean running;
     private ServerSocket serverSocket;
-    private ServerSocket receiveSocket;
+    private ServerSocket dataReceiveSocket;
+    private ServerSocket replicationReceiveSocket;
 
     private final String serverName;
     private final ECSConnection ecsConnection;
@@ -58,7 +60,7 @@ public class KVServer implements IKVServer, Runnable {
 
         this.clearStorage();
 
-        this.receivePort = this.acquireReceivingPort();
+        this.acquireReceivingPorts();
 
         this.ecsConnection = new ECSConnection(zkHost, zkPort, serverName, this);
     }
@@ -68,8 +70,12 @@ public class KVServer implements IKVServer, Runnable {
         return port;
     }
 
-    public int getReceivePort() {
-        return receivePort;
+    public int getReplicationReceivePort() {
+        return replicationReceivePort;
+    }
+
+    public int getDataReceivePort() {
+        return dataReceivePort;
     }
 
     @Override
@@ -209,7 +215,7 @@ public class KVServer implements IKVServer, Runnable {
     public void sendData(AdminMessage message){
         ServerNode receiveNode = message.getReceiver();
         String host = receiveNode.getNodeHost();
-        int port = Integer.parseInt(message.getMessage());
+        int port = receiveNode.getDataReceivePort();
         String[] hashRange = message.getSender().getNodeHashRange();
 
         try {
@@ -262,14 +268,16 @@ public class KVServer implements IKVServer, Runnable {
         }
     }
 
-    public int acquireReceivingPort() {
+    private void acquireReceivingPorts() {
         try {
-            receiveSocket = new ServerSocket(0);
-            return receiveSocket.getLocalPort();
+            this.replicationReceiveSocket = new ServerSocket(0);
+            this.dataReceiveSocket = new ServerSocket(0);
+
+            this.replicationReceivePort = this.replicationReceiveSocket.getLocalPort();
+            this.dataReceivePort = this.dataReceiveSocket.getLocalPort();
         } catch (IOException e) {
             logger.error("Unable to open socket to receive data.");
             e.printStackTrace();
-            return -1;
         }
     }
 
@@ -292,15 +300,16 @@ public class KVServer implements IKVServer, Runnable {
         return false;
     }
 
-    private void initializeDataListener(){
-        new Thread(new KVDataListener(this, receiveSocket)).start();
+    private void initializeDataListeners(){
+        new Thread(new KVDataListener(this, replicationReceiveSocket, true)).start();
+        new Thread(new KVDataListener(this, dataReceiveSocket, false)).start();
     }
 
     @Override
     public void run() {
         running = initializeServer();
 
-        initializeDataListener();
+        initializeDataListeners();
 
         if (serverSocket != null) {
             while (isRunning()) {

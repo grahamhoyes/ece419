@@ -135,9 +135,8 @@ public class ECSConnection {
                         response.setAction(AdminMessage.Action.ACK);
 
                         ServerNode tempNode = new ServerNode(serverName, kvServer.getHostname(), kvServer.getPort());
-                        // TODO: Put proper ports here
-                        tempNode.setDataReceivePort(0);
-                        tempNode.setReplicationReceivePort(0);
+                        tempNode.setDataReceivePort(kvServer.getDataReceivePort());
+                        tempNode.setReplicationReceivePort(kvServer.getReplicationReceivePort());
 
                         response.setReceiver(tempNode);
                         logger.info("Server initialized");
@@ -168,7 +167,7 @@ public class ECSConnection {
                         response.setAction(AdminMessage.Action.ACK);
                         break;
                     case RECEIVE_DATA:
-                        int port = kvServer.getReceivePort();
+                        int port = kvServer.getDataReceivePort();
                         response.setAction(AdminMessage.Action.ACK);
                         response.setMessage(String.valueOf(port));
                         break;

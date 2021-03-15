@@ -655,8 +655,7 @@ public class ECS implements IECS {
 
             if (response.getAction() == AdminMessage.Action.ACK) {
                 logger.info("Ready to receive data at server " + toNode.getNodeName());
-                int port = Integer.parseInt(response.getMessage());
-                success = nodeMoveData(fromNode, toNode, port);
+                success = nodeMoveData(fromNode, toNode);
             } else {
                 logger.error("Could not receive data at server " + toNode.getNodeName());
                 success = false;
@@ -672,13 +671,12 @@ public class ECS implements IECS {
         return success;
     }
 
-    private boolean nodeMoveData(ServerNode fromNode, ServerNode toNode, int port){
+    private boolean nodeMoveData(ServerNode fromNode, ServerNode toNode){
         boolean success = true;
 
         AdminMessage message = new AdminMessage(AdminMessage.Action.MOVE_DATA);
         message.setSender(fromNode);
         message.setReceiver(toNode);
-        message.setMessage(String.valueOf(port));
 
         try {
             AdminMessage response = zkConnection.sendAdminMessage(fromNode.getNodeName(), message, -1);

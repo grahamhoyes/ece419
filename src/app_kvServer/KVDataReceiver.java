@@ -11,11 +11,13 @@ public class KVDataReceiver implements Runnable {
     private final Socket client;
     private final KVServer kvServer;
     private final int id;
+    private boolean replicator;
 
-    public KVDataReceiver(int id, KVServer kvServer, Socket client) {
+    public KVDataReceiver(int id, KVServer kvServer, Socket client, boolean replicator) {
         this.id = id;
         this.client = client;
         this.kvServer = kvServer;
+        this.replicator = replicator;
     }
 
     @Override

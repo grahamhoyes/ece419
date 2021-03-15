@@ -12,10 +12,12 @@ public class KVDataListener implements Runnable {
     private final ServerSocket receiveSocket;
     private final KVServer kvServer;
     private int receiverID = 0;
+    private boolean replicator;
 
-    public KVDataListener(KVServer kvServer, ServerSocket receiveSocket) {
+    public KVDataListener(KVServer kvServer, ServerSocket receiveSocket, boolean replicator) {
         this.receiveSocket = receiveSocket;
         this.kvServer = kvServer;
+        this.replicator = replicator;
     }
 
     @Override
@@ -25,7 +27,7 @@ public class KVDataListener implements Runnable {
             try
             {
                 Socket client = receiveSocket.accept();
-                KVDataReceiver dataReceiver = new KVDataReceiver(receiverID, kvServer, client);
+                KVDataReceiver dataReceiver = new KVDataReceiver(receiverID, kvServer, client, replicator);
                 new Thread(dataReceiver).start();
                 logger.info("Receiving data at "
                         + receiveSocket.getLocalPort()
