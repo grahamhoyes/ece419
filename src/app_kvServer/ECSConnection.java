@@ -161,7 +161,7 @@ public class ECSConnection {
                         response.setAction(AdminMessage.Action.ACK);
                         break;
                     case RECEIVE_DATA:
-                        int port = kvServer.setupDataReceiver();
+                        int port = kvServer.getReceivePort();
                         response.setAction(AdminMessage.Action.ACK);
                         response.setMessage(String.valueOf(port));
                         break;
