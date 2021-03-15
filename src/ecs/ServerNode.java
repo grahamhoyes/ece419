@@ -181,6 +181,8 @@ public class ServerNode implements IECSNode, Comparable<ServerNode> {
     public ServerNode copy() {
         ServerNode copyNode = new ServerNode(name, hostname, port);
         copyNode.status = this.status;
+        copyNode.dataReceivePort = this.dataReceivePort;
+        copyNode.replicationReceivePort = this.replicationReceivePort;
 
         return copyNode;
     }
