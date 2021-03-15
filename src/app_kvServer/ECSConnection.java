@@ -133,6 +133,13 @@ public class ECSConnection {
                     case INIT:
                         kvServer.setStatus(IKVServer.ServerStatus.STOPPED);
                         response.setAction(AdminMessage.Action.ACK);
+
+                        ServerNode tempNode = new ServerNode(serverName, kvServer.getHostname(), kvServer.getPort());
+                        // TODO: Put proper ports here
+                        tempNode.setDataReceivePort(0);
+                        tempNode.setReplicationReceivePort(0);
+
+                        response.setReceiver(tempNode);
                         logger.info("Server initialized");
                         break;
                     case START:

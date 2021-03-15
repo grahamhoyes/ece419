@@ -215,6 +215,9 @@ public class ECS implements IECS {
             );
 
             if (response.getAction() == AdminMessage.Action.ACK) {
+                ServerNode receiver = response.getReceiver();
+                node.setDataReceivePort(receiver.getDataReceivePort());
+                node.setReplicationReceivePort(receiver.getReplicationReceivePort());
                 logger.info("Server " + node.getNodeName() + " initialized");
             } else {
                 logger.error("Server " + node.getNodeName() + " failed to initialize");

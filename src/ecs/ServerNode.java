@@ -16,6 +16,9 @@ public class ServerNode implements IECSNode, Comparable<ServerNode> {
     private final String nodeHash;
     IKVServer.ServerStatus status;
 
+    private int dataReceivePort;
+    private int replicationReceivePort;
+
     private transient ServerNode predecessor;
     private transient ServerNode successor;
 
@@ -105,6 +108,22 @@ public class ServerNode implements IECSNode, Comparable<ServerNode> {
 
     public String getNodeHash() {
         return this.nodeHash;
+    }
+
+    public int getDataReceivePort() {
+        return dataReceivePort;
+    }
+
+    public void setDataReceivePort(int dataReceivePort) {
+        this.dataReceivePort = dataReceivePort;
+    }
+
+    public int getReplicationReceivePort() {
+        return replicationReceivePort;
+    }
+
+    public void setReplicationReceivePort(int replicationReceivePort) {
+        this.replicationReceivePort = replicationReceivePort;
     }
 
     /**
