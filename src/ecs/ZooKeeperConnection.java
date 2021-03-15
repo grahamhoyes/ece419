@@ -109,7 +109,7 @@ public class ZooKeeperConnection {
             boolean success = sig.await(timeoutMillis, TimeUnit.MILLISECONDS);
 
             if (!success) {
-                throw new TimeoutException();
+                throw new TimeoutException("Timeout waiting on response to admin message to node " + nodeName);
             }
         } else {
             sig.await();

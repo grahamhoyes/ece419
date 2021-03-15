@@ -87,6 +87,8 @@ public class HashRing {
     }
 
     public void removeNode(int index) {
+        if (index < 0 || index >= serverNodes.size()) return;
+
         ServerNode node = serverNodes.get(index);
         serverNodes.remove(index);
 

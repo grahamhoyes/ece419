@@ -37,8 +37,11 @@ public class ECS implements IECS {
     // Queue of inactive ServerNode
     private Queue<ServerNode> nodePool = new LinkedList<>();
 
-    // Set of active nodes
+    // Hash ring of active nodes
     private HashRing hashRing;
+
+    // Set of active nodes, updated faster than the hash ring
+    private Set<String> activeNodeSet = new HashSet<>();
 
     public ECS(String configFileName, String zkHost, int zkPort, String remotePath) {
         this.remotePath = remotePath;
@@ -111,8 +114,7 @@ public class ECS implements IECS {
             zkConnection.createOrReset(ZooKeeperConnection.ZK_SERVER_ROOT, "root", CreateMode.PERSISTENT);
             zkConnection.createOrReset(ZooKeeperConnection.ZK_HEARTBEAT_ROOT, "heartbeat", CreateMode.PERSISTENT);
         } catch (InterruptedException | KeeperException e) {
-            logger.fatal("Unable to create ZNode");
-            e.printStackTrace();
+            logger.fatal("Unable to create ZNode", e);
             System.exit(1);
         }
     }
@@ -141,7 +143,7 @@ public class ECS implements IECS {
         }
 
         try {
-            updateGlobalMetadata(20000);
+            updateGlobalMetadata();
         } catch (KeeperException | InterruptedException | TimeoutException e) {
             logger.error("Failed to update global metadata stopping servers", e);
         }
@@ -173,7 +175,7 @@ public class ECS implements IECS {
         }
 
         try {
-            updateGlobalMetadata(20000);
+            updateGlobalMetadata();
         } catch (KeeperException | InterruptedException | TimeoutException e) {
             logger.error("Failed to update global metadata stopping servers", e);
         }
@@ -294,7 +296,7 @@ public class ECS implements IECS {
         hashRing = updatedHashRing;
 
         try {
-            updateGlobalMetadata(20000);
+            updateGlobalMetadata();
         } catch (KeeperException | InterruptedException | TimeoutException e) {
             logger.error("Failed to update global metadata", e);
             return null;
@@ -325,6 +327,8 @@ public class ECS implements IECS {
                 return null;
             }
         }
+
+        activeNodeSet.add(node.getNodeName());
 
         logger.info("Successfully launched node " + node.getNodeName());
 
@@ -462,6 +466,16 @@ public class ECS implements IECS {
                 continue;
             }
 
+            // Setup the watcher for when the heatbeat node dies
+            try {
+                zk.exists(zkHeartbeatPath, new HeartbeatDeathWatcher());
+            } catch (InterruptedException | KeeperException e) {
+                logger.fatal("Failed to set heartbeat watcher for server " + node.getNodeName());
+                nodePool.add(node);
+                if (p != null) p.destroy();
+                continue;
+            }
+
             logger.info("Server " + node.getNodeName() + " has been started");
 
             nodes.add(node);
@@ -499,6 +513,10 @@ public class ECS implements IECS {
             logger.error("Cannot remove last node, would result in permanent data loss");
             return false;
         }
+
+        // Immediately remove the node from the set of active nodes,
+        // prior to it being fully removed from the hash ring
+        activeNodeSet.remove(nodeName);
 
         ServerNode successor = node.getSuccessor();
 
@@ -541,7 +559,7 @@ public class ECS implements IECS {
         hashRing = updatedHashRing;
 
         try {
-            updateGlobalMetadata(20000);
+            updateGlobalMetadata();
         } catch (KeeperException | InterruptedException | TimeoutException e) {
             logger.error("Failed to update global metadata");
             return false;
@@ -737,17 +755,41 @@ public class ECS implements IECS {
     /**
      * Synchronously update the global metadata of the cluster
      *
-     * @param timeoutMillis Timeout period (ms)
      */
-    private void updateGlobalMetadata(int timeoutMillis) throws KeeperException, InterruptedException, TimeoutException {
+    private void updateGlobalMetadata() throws KeeperException, InterruptedException, TimeoutException {
         for (ServerNode node : hashRing.getNodes()) {
             AdminMessage message = new AdminMessage(AdminMessage.Action.SET_METADATA);
             message.setMetadata(hashRing);
 
-            AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, timeoutMillis);
+            AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 20000);
 
             if (response.getAction() != AdminMessage.Action.ACK) {
                 logger.error("Failed to update metadata on node " + node.getNodeName());
+            }
+        }
+    }
+
+    /**
+     * Watcher to detect when a particular heartbeat node goes down
+     */
+    private class HeartbeatDeathWatcher implements Watcher {
+        @Override
+        public void process(WatchedEvent event) {
+            if (event.getType() == Event.EventType.NodeDeleted) {
+                String nodeName = event.getPath().split("/")[2];
+
+                if (!activeNodeSet.contains(nodeName)) return;
+
+                logger.info("Node " + nodeName + " has died");
+
+                hashRing.removeNode(nodeName);
+
+                try {
+                    updateGlobalMetadata();
+                } catch (KeeperException | InterruptedException | TimeoutException e) {
+                    logger.error("Failed to update global metadata after node "
+                            + nodeName + " death", e);
+                }
             }
         }
     }
