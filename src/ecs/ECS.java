@@ -1,6 +1,7 @@
 package ecs;
 
 import app_kvServer.IKVServer;
+import app_kvServer.KVServer;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.*;
 import shared.messages.AdminMessage;
@@ -16,6 +17,7 @@ import java.util.concurrent.TimeoutException;
 
 public class ECS implements IECS {
     private static final Logger logger = Logger.getLogger("ECS");
+    private boolean DEBUG;
 
     // ZooKeeper is assumed to be running on the default port
     // on this machine
@@ -42,6 +44,13 @@ public class ECS implements IECS {
         this.remotePath = remotePath;
         this.zkHost = zkHost;
         this.zkPort = zkPort;
+
+        String debug_env = System.getenv().getOrDefault("DEBUG", "0");
+        this.DEBUG = !debug_env.equals("0");
+
+        if (this.DEBUG) {
+            logger.info("== ECS running in Debug mode ==");
+        }
 
 
         // Read in the config file
@@ -401,13 +410,24 @@ public class ECS implements IECS {
                 zk.exists(zkHeartbeatPath, event -> sig.countDown());
 
                 try {
-                    p = Runtime.getRuntime().exec(cmd);
 
-                    if (isLocal) {
-                        logger.info("Local KVServer started with process " + p.pid());
+                    // Start the server
+                    if (DEBUG && isLocal) {
+                        KVServer server = new KVServer(node.getNodePort(), node.getNodeName(), zkHost, zkPort);
+                        new Thread(server).start();
+
+                        logger.info("New debug KVServer thread started. Logs for server "
+                                + node.getNodeName() + " will be combined with the ECS logs.");
                     } else {
-                        logger.info("Remote KVServer started on " + node.getNodeHost() + ":" + node.getNodePort());
+                        p = Runtime.getRuntime().exec(cmd);
+
+                        if (isLocal) {
+                            logger.info("Local KVServer started with process " + p.pid());
+                        } else {
+                            logger.info("Remote KVServer started on " + node.getNodeHost() + ":" + node.getNodePort());
+                        }
                     }
+
                 } catch (IOException e) {
                     logger.error("Unable to launch node " + node.getNodeName() + " on host " + node.getNodeHost(), e);
                     nodePool.add(node);
