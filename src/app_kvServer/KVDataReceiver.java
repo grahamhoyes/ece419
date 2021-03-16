@@ -5,6 +5,7 @@ import org.apache.log4j.Logger;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 
 public class KVDataReceiver implements Runnable {
     public static Logger logger = Logger.getLogger("KVDataReceiver");
@@ -23,25 +24,53 @@ public class KVDataReceiver implements Runnable {
     @Override
     public void run() {
         try {
-            logger.info("Receiving data.");
-            byte[] buffer = new byte[KVServer.BUFFER_SIZE];
 
-            String tempFileName = kvServer.getDataDir() + File.separatorChar + "~" + id + kvServer.getStorageFile();
             BufferedInputStream socketInput = new BufferedInputStream(client.getInputStream());
-            BufferedOutputStream fileOutput = new BufferedOutputStream(new FileOutputStream(tempFileName));
+            BufferedReader bufferedReader = new BufferedReader(
+                    new InputStreamReader(socketInput, StandardCharsets.UTF_8));
+            String tempFileName;
+            String controlServer = "";
 
-            int size = 0;
-            while ((size = socketInput.read(buffer)) > 0) {
-                fileOutput.write(buffer, 0, size);
+            if (replicator) {
+                controlServer = bufferedReader.readLine();
+                tempFileName = kvServer.getDataDir()
+                        + File.separatorChar
+                        + "~" + id + controlServer
+                        + kvServer.getStorageFile();
+                logger.info("Receiving data to replicate from "
+                        + controlServer
+                        + " at file: "
+                        + tempFileName
+                );
+            } else {
+                tempFileName = kvServer.getDataDir()
+                        + File.separatorChar
+                        + "~" + id + "_merge"
+                        + kvServer.getStorageFile();
+                logger.info("Receiving data");
             }
 
+            BufferedOutputStream fileOutput = new BufferedOutputStream(new FileOutputStream(tempFileName));
+            BufferedWriter bufferedWriter = new BufferedWriter(
+                    new OutputStreamWriter(fileOutput, StandardCharsets.UTF_8));
+
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                bufferedWriter.write(line + System.lineSeparator());
+            }
+
+            bufferedWriter.close();
             fileOutput.flush();
 
             socketInput.close();
             fileOutput.close();
             client.close();
 
-            kvServer.mergeNewData(tempFileName);
+            if (replicator) {
+                kvServer.replicateData(tempFileName, controlServer);
+            } else {
+                kvServer.mergeNewData(tempFileName);
+            }
         } catch (IOException e) {
             logger.error("Receiving data failed: unable to connect with sender", e);
         }

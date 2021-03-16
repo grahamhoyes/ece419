@@ -15,4 +15,8 @@ public interface KVStore {
 
     public String getFileName();
     public String getDataDir();
+
+    void replicateData(String tempFilePath, String controlServer);
+
+    String getStoragePath();
 }

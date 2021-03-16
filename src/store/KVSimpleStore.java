@@ -8,24 +8,33 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
+import java.util.HashSet;
+import java.util.Set;
 
 import static ecs.ServerNode.hashInRange;
 
 public class KVSimpleStore implements KVStore{
     protected static final Logger logger = Logger.getLogger("KVSimpleStore");
     private static final String dataDir = "store_data";
+
     private String fileName;
+    private String serverName;
+
     private String filePath;
     private String tempPath;
     private String sendPath;
     private String keepPath;
 
+    private Set<String> replicatedPaths = new HashSet<String>();
+
     private String value = null;
     private long startPosition = 0;
     private long endPosition = 0;
 
-    public KVSimpleStore(String fileName) throws IOException{
-        this.fileName = fileName;
+    public KVSimpleStore(String serverName) throws IOException{
+        this.serverName = serverName;
+        this.fileName = serverName + "_store.txt";
+
         this.filePath = dataDir + File.separatorChar + fileName;
         this.tempPath = dataDir + File.separatorChar + "~temp" + this.fileName;
         this.sendPath = dataDir + File.separatorChar + "~send" + this.fileName;
@@ -37,6 +46,11 @@ public class KVSimpleStore implements KVStore{
     @Override
     public String getFileName(){
         return fileName;
+    }
+
+    @Override
+    public String getStoragePath(){
+        return filePath;
     }
 
     @Override
@@ -66,7 +80,7 @@ public class KVSimpleStore implements KVStore{
         }
     }
 
-    private boolean find(String key) throws Exception{
+    private boolean find(String key) throws Exception {
         boolean exists = false;
         Gson gson = new Gson();
 
@@ -96,7 +110,7 @@ public class KVSimpleStore implements KVStore{
         return exists;
     }
 
-    private void deleteKeyValue() throws IOException{
+    private void deleteKeyValue() throws IOException {
         File temp = new File(tempPath);
 
         try(RandomAccessFile tempRAFile = new RandomAccessFile(tempPath, "rw");
@@ -113,7 +127,7 @@ public class KVSimpleStore implements KVStore{
         }
     }
 
-    private void updateKeyValue(String keyValue) throws  IOException{
+    private void updateKeyValue(String keyValue) throws  IOException {
         File temp = new File(tempPath);
 
         try(RandomAccessFile tempRAFile = new RandomAccessFile(tempPath, "rw");
@@ -134,7 +148,7 @@ public class KVSimpleStore implements KVStore{
 
     }
 
-    private void addKeyValue(String keyValue) throws IOException{
+    private void addKeyValue(String keyValue) throws IOException {
         try (RandomAccessFile storageFile = new RandomAccessFile(filePath, "rw");){
             storageFile.seek(storageFile.length());
             storageFile.write(keyValue.getBytes());
@@ -153,7 +167,7 @@ public class KVSimpleStore implements KVStore{
     }
 
     @Override
-    public boolean put(String key, String value) throws Exception{
+    public boolean put(String key, String value) throws Exception {
         boolean exists = find(key);
         KeyValue keyValue = new KeyValue(key, value);
 
@@ -168,7 +182,7 @@ public class KVSimpleStore implements KVStore{
     }
 
     @Override
-    public boolean exists(String key) throws Exception{
+    public boolean exists(String key) throws Exception {
         return find(key);
     }
 
@@ -190,7 +204,7 @@ public class KVSimpleStore implements KVStore{
     }
 
     @Override
-    public void mergeData(String newFileName) throws IOException{
+    public void mergeData(String newFileName) throws IOException {
         File temp = new File(newFileName);
 
         try(RandomAccessFile tempRAF = new RandomAccessFile(newFileName, "rw");
@@ -203,6 +217,33 @@ public class KVSimpleStore implements KVStore{
             fromChannel.transferTo(0L, fromChannel.size(), toChannel);
         }
         temp.delete();
+    }
+
+    @Override
+    public void replicateData(String tempFilePath, String controlServer) {
+        File temp = new File(tempFilePath);
+        String replicateFilePath = dataDir + File.separatorChar + "repl_" + controlServer + "_" + serverName + ".txt";
+
+        if (replicatedPaths.contains(replicateFilePath)) {
+            logger.info("Updating replicated data for " + controlServer);
+            updateReplicatedData(tempFilePath, replicateFilePath);
+        } else {
+            logger.info("Instantiating replicated data for "
+                    + controlServer
+                    + " at "
+                    + replicateFilePath
+            );
+            temp.renameTo(new File(replicateFilePath));
+            replicatedPaths.add(replicateFilePath);
+        }
+    }
+
+    private void updateReplicatedData(String tempFilePath, String replicateFilePath){
+        // TODO: Implement updating replicated data
+        // Search through replicated file, copy lines that are not relevant to new file
+        // Add updated values to the end of new file
+        File temp = new File(tempFilePath);
+        temp.renameTo(new File(replicateFilePath));
     }
 
 

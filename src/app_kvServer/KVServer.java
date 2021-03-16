@@ -14,6 +14,7 @@ import java.math.BigInteger;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -22,6 +23,7 @@ public class KVServer implements IKVServer, Runnable {
 
     private static final Logger logger = Logger.getLogger("KVServer");
     public static final Integer BUFFER_SIZE = 1024;
+    private static final int num_replicators = 2;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
 
@@ -53,7 +55,7 @@ public class KVServer implements IKVServer, Runnable {
      */
     public KVServer(int port, String serverName, String zkHost, int zkPort) throws IOException {
         this.port = port;
-        this.kvStore = new KVSimpleStore(serverName + "_store.txt");
+        this.kvStore = new KVSimpleStore(serverName);
         this.status = ServerStatus.STOPPED;
         this.serverName = serverName;
 
@@ -78,6 +80,10 @@ public class KVServer implements IKVServer, Runnable {
 
     public int getDataReceivePort() {
         return dataReceivePort;
+    }
+
+    public ReentrantReadWriteLock getLock() {
+        return lock;
     }
 
     @Override
@@ -138,9 +144,18 @@ public class KVServer implements IKVServer, Runnable {
         logger.info("ServerStatus set to: ACTIVE");
     }
 
+
+    public String getServerName() {
+        return serverName;
+    }
+
     @Override
     public String getStorageFile(){
         return kvStore.getFileName();
+    }
+
+    public String getStoragePath(){
+        return kvStore.getStoragePath();
     }
 
     @Override
@@ -185,6 +200,7 @@ public class KVServer implements IKVServer, Runnable {
         } finally {
             lock.writeLock().unlock();
         }
+        updateReplicators();
         return exists;
     }
 
@@ -246,15 +262,27 @@ public class KVServer implements IKVServer, Runnable {
             byte[] buffer = new byte[BUFFER_SIZE];
 
             Socket receiveSocket = new Socket(host, port);
-            BufferedOutputStream socketOutput = new BufferedOutputStream(receiveSocket.getOutputStream());
-            BufferedInputStream fileInput = new BufferedInputStream(new FileInputStream(sendFile));
 
-            int size;
-            while ((size = fileInput.read(buffer)) > 0) {
-                socketOutput.write(buffer, 0, size);
+            BufferedOutputStream socketOutput = new BufferedOutputStream(receiveSocket.getOutputStream());
+            BufferedWriter bufferedWriter = new BufferedWriter(
+                    new OutputStreamWriter(socketOutput, StandardCharsets.UTF_8));
+
+            BufferedInputStream fileInput = new BufferedInputStream(new FileInputStream(sendFile));
+            BufferedReader bufferedReader = new BufferedReader(
+                    new InputStreamReader(fileInput, StandardCharsets.UTF_8));
+
+//            int size;
+//            while ((size = fileInput.read(buffer)) > 0) {
+//                socketOutput.write(buffer, 0, size);
+//            }
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                bufferedWriter.write(line + System.lineSeparator());
             }
 
-            socketOutput.flush();
+            bufferedWriter.flush();
+            bufferedWriter.close();
+            bufferedReader.close();
 
             socketOutput.close();
             fileInput.close();
@@ -279,6 +307,24 @@ public class KVServer implements IKVServer, Runnable {
             logger.error("Failed to merge incoming data.");
         } finally {
             lock.writeLock().unlock();
+        }
+    }
+
+    public void replicateData(String tempFilePath, String controlServer){
+        kvStore.replicateData(tempFilePath, controlServer);
+    }
+
+    public void updateReplicators(){
+        //TODO: start kvdatasender threads for both successors
+        ServerNode serverNode = ecsConnection.getHashRing().getNode(serverName);
+
+        ServerNode replicator = serverNode.getSuccessor();
+        for (int i = 0; i < num_replicators; i++){
+            if (replicator.compareTo(serverNode)!=0){
+                KVDataSender kvDataSender = new KVDataSender(replicator, this);
+                new Thread(kvDataSender).start();
+            }
+            replicator = replicator.getSuccessor();
         }
     }
 

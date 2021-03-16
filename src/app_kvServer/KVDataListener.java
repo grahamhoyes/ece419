@@ -27,6 +27,7 @@ public class KVDataListener implements Runnable {
             try
             {
                 Socket client = receiveSocket.accept();
+                logger.info("Receiving data at " + client.getLocalPort());
                 KVDataReceiver dataReceiver = new KVDataReceiver(receiverID, kvServer, client, replicator);
                 new Thread(dataReceiver).start();
                 logger.info("Receiving data at "
