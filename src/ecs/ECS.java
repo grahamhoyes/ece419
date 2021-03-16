@@ -785,7 +785,17 @@ public class ECS implements IECS {
                 hashRing.removeNode(nodeName);
 
                 try {
-                    updateGlobalMetadata();
+//                    updateGlobalMetadata();
+                    for (ServerNode node : hashRing.getNodes()) {
+                        AdminMessage message = new AdminMessage(AdminMessage.Action.SET_METADATA);
+                        message.setMetadata(hashRing);
+
+                        AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 10000);
+
+                        if (response.getAction() != AdminMessage.Action.ACK) {
+                            logger.error("Failed to update metadata on node " + node.getNodeName());
+                        }
+                    }
                 } catch (KeeperException | InterruptedException | TimeoutException e) {
                     logger.error("Failed to update global metadata after node "
                             + nodeName + " death", e);

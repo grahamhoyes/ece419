@@ -1,6 +1,7 @@
 package ecs;
 
 import com.google.gson.Gson;
+import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -14,6 +15,7 @@ import java.util.Collections;
  * is to support serialization and deserialization.
  */
 public class HashRing {
+    private static final Logger logger = Logger.getLogger("HashRing");
     private ArrayList<ServerNode> serverNodes = new ArrayList<>();
 
     public HashRing() {
@@ -87,7 +89,9 @@ public class HashRing {
     }
 
     public void removeNode(int index) {
-        if (index < 0 || index >= serverNodes.size()) return;
+        if (index < 0 || index >= serverNodes.size()) {
+            logger.error("Cannot remove node at index " + index + ". Out of range.");
+        };
 
         ServerNode node = serverNodes.get(index);
         serverNodes.remove(index);
@@ -108,6 +112,10 @@ public class HashRing {
                 idx = i;
                 break;
             }
+        }
+
+        if (idx < 0) {
+            logger.error("Cannot remove node " + nodeName + ". Node not found.");
         }
 
         removeNode(idx);
