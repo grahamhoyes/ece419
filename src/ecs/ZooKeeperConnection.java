@@ -91,7 +91,7 @@ public class ZooKeeperConnection {
         final AdminMessage[] response = new AdminMessage[1];
 
         // Setup the response watcher first, just to prevent any race conditions
-        zk.getData(nodePath, event -> {
+        zk.exists(nodePath, event -> {
             try {
                 byte[] data = zk.getData(nodePath, false, null);
                 response[0] = new AdminMessage(new String(data));
@@ -99,8 +99,7 @@ public class ZooKeeperConnection {
             } catch (KeeperException | InterruptedException e) {
                 logger.error("Failed to receive admin message", e);
             }
-
-        }, null);
+        });
 
         // Send the message
         setData(adminPath, message.serialize());
@@ -109,7 +108,7 @@ public class ZooKeeperConnection {
             boolean success = sig.await(timeoutMillis, TimeUnit.MILLISECONDS);
 
             if (!success) {
-                throw new TimeoutException();
+                throw new TimeoutException("Timeout waiting on response to admin message to node " + nodeName);
             }
         } else {
             sig.await();
