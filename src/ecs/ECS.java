@@ -11,9 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 public class ECS implements IECS {
     private static final Logger logger = Logger.getLogger("ECS");
@@ -42,6 +40,11 @@ public class ECS implements IECS {
 
     // Set of active nodes, updated faster than the hash ring
     private Set<String> activeNodeSet = new HashSet<>();
+
+    // Queue used to update global metadata asynchronously. This is utterly disgusting,
+    // but we can't set the watcher used by updateGlobalMetadata() within another watcher,
+    // so it is somewhat necessary
+    private BlockingQueue<Boolean> doAsynchronousMetadataUpdate = new ArrayBlockingQueue<>(10);
 
     public ECS(String configFileName, String zkHost, int zkPort, String remotePath) {
         this.remotePath = remotePath;
@@ -117,6 +120,8 @@ public class ECS implements IECS {
             logger.fatal("Unable to create ZNode", e);
             System.exit(1);
         }
+
+        new Thread(new MetadataUpdater()).start();
     }
 
     @Override
@@ -770,6 +775,35 @@ public class ECS implements IECS {
     }
 
     /**
+     * Update the metadata for all nodes. This is an asynchronous approach,
+     * triggered by putting to the `doAsynchronousMetadataUpdate` queue.
+     *
+     * This is necessary because the watcher set by zkConnection.sendAdminMessage to
+     * wait for a response cannot be properly set within the HeartbeatDeathWatcher, below.
+     * This is the only place that  this should be used.
+     */
+    private class MetadataUpdater implements Runnable {
+
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    doAsynchronousMetadataUpdate.take();
+
+                    try {
+                        updateGlobalMetadata();
+                        logger.info("Global metadata updated");
+                    } catch (KeeperException | InterruptedException | TimeoutException e) {
+                        logger.error("Failed to update global metadata", e);
+                    }
+                } catch (InterruptedException e) {
+                    logger.error(e);
+                }
+            }
+        }
+    }
+
+    /**
      * Watcher to detect when a particular heartbeat node goes down
      */
     private class HeartbeatDeathWatcher implements Watcher {
@@ -783,26 +817,12 @@ public class ECS implements IECS {
                 logger.info("Node " + nodeName + " has died");
 
                 hashRing.removeNode(nodeName);
-
                 try {
-//                    updateGlobalMetadata();
-                    for (ServerNode node : hashRing.getNodes()) {
-                        AdminMessage message = new AdminMessage(AdminMessage.Action.SET_METADATA);
-                        message.setMetadata(hashRing);
-
-                        AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 10000);
-
-                        if (response.getAction() != AdminMessage.Action.ACK) {
-                            logger.error("Failed to update metadata on node " + node.getNodeName());
-                        }
-                    }
-                } catch (KeeperException | InterruptedException | TimeoutException e) {
-                    logger.error("Failed to update global metadata after node "
-                            + nodeName + " death", e);
+                    doAsynchronousMetadataUpdate.put(true);
+                } catch (InterruptedException e) {
+                    logger.error(e);
                 }
             }
         }
     }
-
-
 }

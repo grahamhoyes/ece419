@@ -129,6 +129,9 @@ public class ECSConnection {
 
                 switch (message.getAction()) {
                     case NOP:
+                        if (message.getMessage() != null) {
+                            logger.info("Received a NOP action with message " + message.getMessage());
+                        }
                         break;
                     case INIT:
                         kvServer.setStatus(IKVServer.ServerStatus.STOPPED);
@@ -180,6 +183,7 @@ public class ECSConnection {
                         hashRing = message.getMetadata();
                         nodeMetadata = hashRing.getNode(serverName);
                         response.setAction(AdminMessage.Action.ACK);
+                        response.setMessage("Got metadata update");
                         logger.info("Metadata updated");
                         logger.info("Server now responsible for " + Arrays.toString(nodeMetadata.getNodeHashRange()));
                         break;

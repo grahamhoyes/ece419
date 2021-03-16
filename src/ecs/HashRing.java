@@ -62,6 +62,8 @@ public class HashRing {
             }
         }
 
+        logger.error("Node " + nodeName + " not found");
+
         return null;
     }
 
