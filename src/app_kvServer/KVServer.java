@@ -10,10 +10,12 @@ import store.KVSimpleStore;
 import store.KVStore;
 
 import java.io.*;
+import java.math.BigInteger;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class KVServer implements IKVServer, Runnable {
@@ -216,15 +218,27 @@ public class KVServer implements IKVServer, Runnable {
         ServerNode receiveNode = message.getReceiver();
         String host = receiveNode.getNodeHost();
         int port = receiveNode.getDataReceivePort();
-        String[] hashRange = message.getSender().getNodeHashRange();
+
+        BigInteger startingHashValue = new BigInteger(receiveNode.getNodeHash(), 16)
+                .add(BigInteger.ONE)
+                .mod(ServerNode.HASH_MAX);
+        StringBuilder startingHash = new StringBuilder(startingHashValue.toString(16));
+        while (startingHash.length() < 32) {
+            startingHash.insert(0, "0");
+        }
+
+        String[] hashRange = new String[]{startingHash.toString(), message.getSender().getNodeHash()};
 
         try {
             logger.info("Starting data transfer to node "
                     + receiveNode.getNodeName()
-                    + "at "
+                    + " at "
                     + host
                     + ": "
                     + port
+                    + System.lineSeparator()
+                    + "Hash Range: "
+                    + Arrays.toString(hashRange)
             );
             String sendPath = kvStore.splitData(hashRange);
             File sendFile = new File(sendPath);
