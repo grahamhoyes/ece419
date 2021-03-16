@@ -23,7 +23,7 @@ public class KVStoreTest extends Assert {
 
     @BeforeClass
     public static void init() throws IOException {
-        kvStore = new KVSimpleStore(fileName);
+        kvStore = new KVSimpleStore("test");
     }
 
     @Before
@@ -94,7 +94,7 @@ public class KVStoreTest extends Assert {
 
     @Test (expected = FileNotFoundException.class)
     public void testFileDeletion() throws Exception{
-        File file = new File(kvStore.getDataDir() + File.separatorChar + fileName);
+        File file = new File(kvStore.getStoragePath());
         file.delete();
         try{
             String key = "foo";
@@ -109,14 +109,15 @@ public class KVStoreTest extends Assert {
     public void testInvalidDataFormat() throws Exception{
         String garbage = "garbage";
         Files.writeString(
-                Paths.get(kvStore.getDataDir() + File.separatorChar + fileName),
+                Paths.get(kvStore.getStoragePath()),
                 garbage,
                 StandardCharsets.ISO_8859_1,
                 StandardOpenOption.CREATE,
                 StandardOpenOption.APPEND);
 
         String key = "foo";
-        kvStore.exists(key);
+        boolean exists = kvStore.exists(key);
+        assert (!exists);
     }
 
 

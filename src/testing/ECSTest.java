@@ -169,6 +169,28 @@ public class ECSTest extends Assert {
     }
 
     @Test()
+    public void testMoveRelevantDataToNewServer() throws Exception{
+        addNodes(1);
+
+        KVStoreConnection kvClient0 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
+        kvClient0.connect();
+
+        // The first server is responsible for all keys
+        String key = "server" + (serverCounter);
+        KVMessage message = kvClient0.put(key, "bar");
+        JsonKVMessage res = getMessage(kvClient0, key);
+        assert(res.getStatus() != KVMessage.StatusType.SERVER_NOT_RESPONSIBLE);
+
+        // The second added server is called server1 so it should be responsible for its own key
+        addNodes(1);
+        KVStoreConnection kvClient1 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
+        kvClient1.connect();
+
+        res = getMessage(kvClient0, key);
+        assert(res.getValue().equals("bar"));
+    }
+
+    @Test()
     public void testMoveDataToNewServer() throws Exception{
         addNodes(1);
 
