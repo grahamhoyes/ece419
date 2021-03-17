@@ -192,6 +192,7 @@ public class ECS implements IECS {
     public boolean shutdown() {
         boolean success = true;
         for (ServerNode node : hashRing.copy().getNodes()) {
+            activeNodeSet.remove(node.getNodeName());
             hashRing.removeNode(node.getNodeName());
             success = success & shutdownNode(node);
         }
