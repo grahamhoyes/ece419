@@ -175,6 +175,21 @@ public class ServerNode implements IECSNode, Comparable<ServerNode> {
         return this.getNodeHash().compareTo(other.getNodeHash());
     }
 
+    @Override
+    public String toString() {
+        return this.name;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == null)
+            return false;
+
+        if (other.getClass() != this.getClass())
+            return false;
+        return this.getNodeHash().equals(((ServerNode) other).getNodeHash());
+    }
+
     /**
      * @return A copy of this ServerNode, without successors or predecessors
      */

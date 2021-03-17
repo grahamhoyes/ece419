@@ -16,6 +16,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class KVServer implements IKVServer, Runnable {
@@ -47,6 +48,8 @@ public class KVServer implements IKVServer, Runnable {
     private final ArrayList<ClientConnection> connections = new ArrayList<>();
 
     private ServerStatus status;
+    private ServerNode[] replicators = new ServerNode[NUM_REPLICATORS];
+    private ServerNode[] controllers = new ServerNode[NUM_REPLICATORS];
 
 
     /**
@@ -71,37 +74,6 @@ public class KVServer implements IKVServer, Runnable {
         this.acquireReceivingPorts();
 
         this.ecsConnection = new ECSConnection(zkHost, zkPort, serverName, this);
-    }
-
-    public static void main(String[] args) {
-        try {
-            if (args.length != 4) {
-                System.err.println("Error! Invalid number of arguments");
-                System.err.println("Usage: KVServer <port> <server name> <zkHost> <zkPort>");
-                System.exit(1);
-            }
-
-            int port = Integer.parseInt(args[0]);
-            String serverName = args[1];
-            String zkHost = args[2];
-            int zkPort = Integer.parseInt(args[3]);
-
-            try {
-                new LogSetup("logs/server_" + serverName + ".log", Level.ALL);
-            } catch (IOException e) {
-                System.err.println("Error! Unable to initialize logger.");
-                e.printStackTrace();
-                System.exit(1);
-            }
-
-            KVServer server = new KVServer(port, serverName, zkHost, zkPort);
-            new Thread(server).start();
-        } catch (IOException e) {
-            System.err.println("Error! Unable to initialize persistent storage file.");
-            e.printStackTrace();
-            System.exit(1);
-        }
-
     }
 
     @Override
@@ -358,9 +330,8 @@ public class KVServer implements IKVServer, Runnable {
 
         //TODO: check array of replicators instead of doing it through successors
         ServerNode replicator = serverNode.getSuccessor();
-        for (int i = 0; i < NUM_REPLICATORS; i++) {
-            if (replicator.compareTo(serverNode) != 0) {
-                //TODO: pass writelog of new put values
+        for (int i = 0; i < NUM_REPLICATORS; i++){
+            if (replicator.compareTo(serverNode)!=0){
                 KVDataSender kvDataSender = new KVDataSender(replicator, this);
                 new Thread(kvDataSender).start();
             }
@@ -458,6 +429,89 @@ public class KVServer implements IKVServer, Runnable {
         kill();
     }
 
+    public void processServerChange(AdminMessage.ServerChange change, ServerNode changedNode, HashRing newHashRing) {
+        switch (change) {
+            case ADDED:
+            case DELETED:
+
+                ServerNode[] newReplicators = newHashRing.getReplicators(serverName, NUM_REPLICATORS);
+                ServerNode[] newControllers  = newHashRing.getControllers(serverName, NUM_REPLICATORS);
+
+                if (!Arrays.equals(newReplicators, replicators)) {
+                    for (int i=0; i<NUM_REPLICATORS; i++) {
+                        ServerNode node = newReplicators[i];
+                        if (node.equals(changedNode)) {
+                            processNewReplicator(changedNode, i);
+                            break;
+                        }
+                    }
+                }
+
+                if (!Arrays.equals(newControllers, controllers)) {
+                    for (int i=0; i<NUM_REPLICATORS; i++) {
+                        ServerNode node = newControllers[i];
+                        if (node.equals(changedNode)) {
+                            processNewController(changedNode, controllers[NUM_REPLICATORS-1], i);
+                            break;
+                        }
+                    }
+                }
+
+                replicators = newReplicators;
+                controllers = newControllers;
+
+                break;
+            case DIED:
+                break;
+            case STARTED:
+            case STOPPED:
+            default:
+                break;
+        }
+    }
+
+    public void processNewReplicator(ServerNode newReplicator, int newReplicatorIndex) {
+        // TODO
+        // newReplicatorIndex is either 0 or 1 (given that NUM_REPLICATORS is 2).
+        // 0 means it's the immediate successor, 1 means there's one other replicator between
+    }
+
+    public void processNewController(ServerNode newController, ServerNode oldController, int newControllerIndex) {
+        // TODO
+        // newControllerIndex is either 0 or 1 (given that NUM_REPLICATORS is 2).
+        // 0 means it's the immediate predecessor, 1 means there's one other controller between
+    }
+
+    public static void main(String[] args) {
+        try{
+            if (args.length != 4) {
+                System.err.println("Error! Invalid number of arguments");
+                System.err.println("Usage: KVServer <port> <server name> <zkHost> <zkPort>");
+                System.exit(1);
+            }
+
+            int port = Integer.parseInt(args[0]);
+            String serverName = args[1];
+            String zkHost = args[2];
+            int zkPort = Integer.parseInt(args[3]);
+
+            try {
+                new LogSetup("logs/server_" + serverName + ".log", Level.ALL);
+            } catch (IOException e) {
+                System.err.println("Error! Unable to initialize logger.");
+                e.printStackTrace();
+                System.exit(1);
+            }
+
+            KVServer server = new KVServer(port, serverName, zkHost, zkPort);
+            new Thread(server).start();
+        } catch (IOException e){
+            System.err.println("Error! Unable to initialize persistent storage file.");
+            e.printStackTrace();
+            System.exit(1);
+        }
+
+    }
 
 }
 

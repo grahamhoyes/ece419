@@ -168,4 +168,32 @@ public class HashRing {
 
         return copyHashRing;
     }
+
+    public ServerNode[] getReplicators(String nodeName, int num_replicators) {
+        ServerNode[] replicators = new ServerNode[num_replicators];
+        ServerNode currentNode = this.getNode(nodeName);
+
+        for (int i=0; i<num_replicators; i++) {
+            ServerNode succ = currentNode.getSuccessor();
+            if (succ.compareTo(currentNode) == 0) {
+                break;
+            }
+            replicators[i] = succ;
+        }
+        return replicators;
+    }
+
+    public ServerNode[] getControllers(String nodeName, int num_controllers) {
+        ServerNode[] controllers = new ServerNode[num_controllers];
+        ServerNode currentNode = this.getNode(nodeName);
+
+        for (int i=0; i<num_controllers; i++) {
+            ServerNode pred = currentNode.getPredecessor();
+            if (pred.compareTo(currentNode) == 0) {
+                break;
+            }
+            controllers[i] = pred;
+        }
+        return controllers;
+    }
 }

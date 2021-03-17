@@ -127,5 +127,7 @@ public class AdminMessage implements Serializable {
         }
         this.sender = adminMessage.sender;
         this.receiver = adminMessage.receiver;
+        this.serverChange = adminMessage.serverChange;
+        this.changedServer = adminMessage.changedServer;
     }
 }
