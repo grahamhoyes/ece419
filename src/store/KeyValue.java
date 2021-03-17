@@ -10,6 +10,10 @@ public class KeyValue {
     private String jsonKV;
     private String keyHash;
 
+    public KeyValue(String key){
+        this(key, "");
+    }
+
     public KeyValue(String key, String value){
         this.key = key;
         this.value = value;
