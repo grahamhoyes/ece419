@@ -433,6 +433,7 @@ public class KVServer implements IKVServer, Runnable {
         switch (change) {
             case ADDED:
             case DELETED:
+            case DIED:
 
                 ServerNode[] newReplicators = newHashRing.getReplicators(serverName, NUM_REPLICATORS);
                 ServerNode[] newControllers  = newHashRing.getControllers(serverName, NUM_REPLICATORS);
@@ -441,7 +442,7 @@ public class KVServer implements IKVServer, Runnable {
                     for (int i=0; i<NUM_REPLICATORS; i++) {
                         ServerNode node = newReplicators[i];
                         if (node.equals(changedNode)) {
-                            processNewReplicator(changedNode, i);
+                            processNewReplicator(changedNode, i, change);
                             break;
                         }
                     }
@@ -451,7 +452,7 @@ public class KVServer implements IKVServer, Runnable {
                     for (int i=0; i<NUM_REPLICATORS; i++) {
                         ServerNode node = newControllers[i];
                         if (node.equals(changedNode)) {
-                            processNewController(changedNode, controllers[NUM_REPLICATORS-1], i);
+                            processNewController(changedNode, controllers[NUM_REPLICATORS-1], i, change);
                             break;
                         }
                     }
@@ -461,8 +462,6 @@ public class KVServer implements IKVServer, Runnable {
                 controllers = newControllers;
 
                 break;
-            case DIED:
-                break;
             case STARTED:
             case STOPPED:
             default:
@@ -470,13 +469,13 @@ public class KVServer implements IKVServer, Runnable {
         }
     }
 
-    public void processNewReplicator(ServerNode newReplicator, int newReplicatorIndex) {
+    public void processNewReplicator(ServerNode newReplicator, int newReplicatorIndex, AdminMessage.ServerChange change) {
         // TODO
         // newReplicatorIndex is either 0 or 1 (given that NUM_REPLICATORS is 2).
         // 0 means it's the immediate successor, 1 means there's one other replicator between
     }
 
-    public void processNewController(ServerNode newController, ServerNode oldController, int newControllerIndex) {
+    public void processNewController(ServerNode newController, ServerNode oldController, int newControllerIndex, AdminMessage.ServerChange change) {
         // TODO
         // newControllerIndex is either 0 or 1 (given that NUM_REPLICATORS is 2).
         // 0 means it's the immediate predecessor, 1 means there's one other controller between
