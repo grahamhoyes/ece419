@@ -27,23 +27,18 @@ public class KVSimpleStore implements KVStore{
     private String serverName;
 
     private String filePath;
-//    private String tempPath;
     private String sendPath;
     private String keepPath;
     private String writeLogPath;
 
     private Set<String> replicatedPaths = new HashSet<String>();
 
-//    private String value = null;
-//    private long startPosition = 0;
-//    private long endPosition = 0;
 
     public KVSimpleStore(String serverName) throws IOException{
         this.serverName = serverName;
         this.fileName = serverName + "_store.txt";
 
         this.filePath = dataDir + File.separatorChar + fileName;
-//        this.tempPath = dataDir + File.separatorChar + "~temp" + this.fileName;
         this.sendPath = dataDir + File.separatorChar + "~send" + this.fileName;
         this.keepPath = dataDir + File.separatorChar + "~keep" + this.fileName;
         this.writeLogPath = dataDir + File.separatorChar + "~writeLog" + this.fileName;
@@ -113,10 +108,6 @@ public class KVSimpleStore implements KVStore{
                             currPointer,
                             keyValue.getValue()
                     );
-//                    this.startPosition = prevPointer;
-//                    this.endPosition = currPointer;
-//                    this.value = keyValue.getValue();
-//                    exists = true;
                     break;
                 }
                 prevPointer = currPointer;
@@ -130,16 +121,15 @@ public class KVSimpleStore implements KVStore{
 
     private void deleteKeyValue(String filePath, KeyValueLocation keyValueLocation) throws IOException {
         Path tempPath = Files.createTempFile(serverName, ".txt");
-        File temp = new File(tempPath.toString());
 
         try(RandomAccessFile tempRAFile = new RandomAccessFile(tempPath.toString(), "rw");
             RandomAccessFile storageFile = new RandomAccessFile(filePath, "rw");){
             FileChannel fromChannel = storageFile.getChannel();
             FileChannel toChannel = tempRAFile.getChannel();
 
-            fromChannel.transferTo(keyValueLocation.endPosition, fromChannel.size(), toChannel);
-            storageFile.setLength(keyValueLocation.startPosition);
-            fromChannel.position(keyValueLocation.startPosition);
+            fromChannel.transferTo(keyValueLocation.getEndPosition(), fromChannel.size(), toChannel);
+            storageFile.setLength(keyValueLocation.getStartPosition());
+            fromChannel.position(keyValueLocation.getStartPosition());
             toChannel.transferTo(0, toChannel.size(), fromChannel);
 
             Files.deleteIfExists(tempPath);
@@ -148,7 +138,6 @@ public class KVSimpleStore implements KVStore{
 
     private void updateKeyValue(String filePath, KeyValueLocation keyValueLocation, String keyValue) throws  IOException {
         Path tempPath = Files.createTempFile(serverName, ".txt");
-        File temp = new File(tempPath.toString());
 
         try(RandomAccessFile tempRAFile = new RandomAccessFile(tempPath.toString(), "rw");
             RandomAccessFile storageFile = new RandomAccessFile(filePath, "rw");
@@ -156,10 +145,10 @@ public class KVSimpleStore implements KVStore{
             FileChannel fromChannel = storageFile.getChannel();
             FileChannel toChannel = tempRAFile.getChannel();
 
-            fromChannel.transferTo(keyValueLocation.endPosition, fromChannel.size(), toChannel);
-            storageFile.setLength(keyValueLocation.startPosition);
+            fromChannel.transferTo(keyValueLocation.getEndPosition(), fromChannel.size(), toChannel);
+            storageFile.setLength(keyValueLocation.getStartPosition());
 
-            storageFile.seek(keyValueLocation.startPosition);
+            storageFile.seek(keyValueLocation.getStartPosition());
             storageFile.write(keyValue.getBytes());
             fromChannel.position(storageFile.getFilePointer());
 
