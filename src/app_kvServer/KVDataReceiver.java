@@ -6,6 +6,8 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class KVDataReceiver implements Runnable {
     public static Logger logger = Logger.getLogger("KVDataReceiver");
@@ -28,25 +30,18 @@ public class KVDataReceiver implements Runnable {
             BufferedInputStream socketInput = new BufferedInputStream(client.getInputStream());
             BufferedReader bufferedReader = new BufferedReader(
                     new InputStreamReader(socketInput, StandardCharsets.UTF_8));
-            String tempFileName;
+            Path tempPath = Files.createTempFile(String.valueOf(id) + kvServer.getServerName(), ".txt");
+            String tempFileName = tempPath.toString();
             String controlServer = "";
 
             if (replicator) {
                 controlServer = bufferedReader.readLine();
-                tempFileName = kvServer.getDataDir()
-                        + File.separatorChar
-                        + "~" + id + controlServer
-                        + kvServer.getStorageFile();
                 logger.info("Receiving data to replicate from "
                         + controlServer
                         + " at file: "
                         + tempFileName
                 );
             } else {
-                tempFileName = kvServer.getDataDir()
-                        + File.separatorChar
-                        + "~" + id + "_merge"
-                        + kvServer.getStorageFile();
                 logger.info("Receiving data");
             }
 
