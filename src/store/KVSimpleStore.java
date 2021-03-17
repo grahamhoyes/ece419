@@ -8,6 +8,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.Key;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -17,28 +21,32 @@ public class KVSimpleStore implements KVStore{
     protected static final Logger logger = Logger.getLogger("KVSimpleStore");
     private static final String dataDir = "store_data";
 
+    private enum WRITE_ACTION {PUT, UPDATE, DELETE};
+
     private String fileName;
     private String serverName;
 
     private String filePath;
-    private String tempPath;
+//    private String tempPath;
     private String sendPath;
     private String keepPath;
+    private String writeLogPath;
 
     private Set<String> replicatedPaths = new HashSet<String>();
 
-    private String value = null;
-    private long startPosition = 0;
-    private long endPosition = 0;
+//    private String value = null;
+//    private long startPosition = 0;
+//    private long endPosition = 0;
 
     public KVSimpleStore(String serverName) throws IOException{
         this.serverName = serverName;
         this.fileName = serverName + "_store.txt";
 
         this.filePath = dataDir + File.separatorChar + fileName;
-        this.tempPath = dataDir + File.separatorChar + "~temp" + this.fileName;
+//        this.tempPath = dataDir + File.separatorChar + "~temp" + this.fileName;
         this.sendPath = dataDir + File.separatorChar + "~send" + this.fileName;
         this.keepPath = dataDir + File.separatorChar + "~keep" + this.fileName;
+        this.writeLogPath = dataDir + File.separatorChar + "~writeLog" + this.fileName;
 
         prepareFile();
     }
@@ -56,6 +64,11 @@ public class KVSimpleStore implements KVStore{
     @Override
     public String getDataDir(){
         return dataDir;
+    }
+
+    @Override
+    public String getWriteLogPath(){
+        return writeLogPath;
     }
 
     private void prepareFile() throws IOException {
@@ -80,8 +93,8 @@ public class KVSimpleStore implements KVStore{
         }
     }
 
-    private boolean find(String key) throws Exception {
-        boolean exists = false;
+    private KeyValueLocation find(String filePath, String key) throws Exception {
+        KeyValueLocation keyValueLocation = new KeyValueLocation();
         Gson gson = new Gson();
 
         try(RandomAccessFile storageFile = new RandomAccessFile(filePath, "r");) {
@@ -95,10 +108,15 @@ public class KVSimpleStore implements KVStore{
                 String currKey = keyValue.getKey();
 
                 if (currKey.equals(key)) {
-                    this.startPosition = prevPointer;
-                    this.endPosition = currPointer;
-                    this.value = keyValue.getValue();
-                    exists = true;
+                    keyValueLocation = new KeyValueLocation(
+                            prevPointer,
+                            currPointer,
+                            keyValue.getValue()
+                    );
+//                    this.startPosition = prevPointer;
+//                    this.endPosition = currPointer;
+//                    this.value = keyValue.getValue();
+//                    exists = true;
                     break;
                 }
                 prevPointer = currPointer;
@@ -107,60 +125,90 @@ public class KVSimpleStore implements KVStore{
             throw new DataFormatException();
         }
 
-        return exists;
+        return keyValueLocation;
     }
 
-    private void deleteKeyValue() throws IOException {
-        File temp = new File(tempPath);
+    private void deleteKeyValue(String filePath, KeyValueLocation keyValueLocation) throws IOException {
+        Path tempPath = Files.createTempFile(serverName, ".txt");
+        File temp = new File(tempPath.toString());
 
-        try(RandomAccessFile tempRAFile = new RandomAccessFile(tempPath, "rw");
-            RandomAccessFile storageFile = new RandomAccessFile(this.filePath, "rw");){
+        try(RandomAccessFile tempRAFile = new RandomAccessFile(tempPath.toString(), "rw");
+            RandomAccessFile storageFile = new RandomAccessFile(filePath, "rw");){
             FileChannel fromChannel = storageFile.getChannel();
             FileChannel toChannel = tempRAFile.getChannel();
 
-            fromChannel.transferTo(this.endPosition, fromChannel.size(), toChannel);
-            storageFile.setLength(startPosition);
-            fromChannel.position(startPosition);
+            fromChannel.transferTo(keyValueLocation.endPosition, fromChannel.size(), toChannel);
+            storageFile.setLength(keyValueLocation.startPosition);
+            fromChannel.position(keyValueLocation.startPosition);
             toChannel.transferTo(0, toChannel.size(), fromChannel);
 
-            temp.delete();
+            Files.deleteIfExists(tempPath);
         }
     }
 
-    private void updateKeyValue(String keyValue) throws  IOException {
-        File temp = new File(tempPath);
+    private void updateKeyValue(String filePath, KeyValueLocation keyValueLocation, String keyValue) throws  IOException {
+        Path tempPath = Files.createTempFile(serverName, ".txt");
+        File temp = new File(tempPath.toString());
 
-        try(RandomAccessFile tempRAFile = new RandomAccessFile(tempPath, "rw");
-            RandomAccessFile storageFile = new RandomAccessFile(this.filePath, "rw");){
+        try(RandomAccessFile tempRAFile = new RandomAccessFile(tempPath.toString(), "rw");
+            RandomAccessFile storageFile = new RandomAccessFile(filePath, "rw");
+        ) {
             FileChannel fromChannel = storageFile.getChannel();
             FileChannel toChannel = tempRAFile.getChannel();
 
-            fromChannel.transferTo(this.endPosition, fromChannel.size(), toChannel);
-            storageFile.setLength(startPosition);
+            fromChannel.transferTo(keyValueLocation.endPosition, fromChannel.size(), toChannel);
+            storageFile.setLength(keyValueLocation.startPosition);
 
-            storageFile.seek(startPosition);
+            storageFile.seek(keyValueLocation.startPosition);
             storageFile.write(keyValue.getBytes());
             fromChannel.position(storageFile.getFilePointer());
 
             toChannel.transferTo(0, toChannel.size(), fromChannel);
         }
-        temp.delete();
+        Files.deleteIfExists(tempPath);
 
     }
 
-    private void addKeyValue(String keyValue) throws IOException {
+    private void addKeyValue(String filePath, String keyValue) throws IOException {
         try (RandomAccessFile storageFile = new RandomAccessFile(filePath, "rw");){
             storageFile.seek(storageFile.length());
             storageFile.write(keyValue.getBytes());
         }
     }
 
+    private void writeLogAppend(KeyValue keyValue, WRITE_ACTION action) {
+        String prefix = "";
+        switch (action) {
+            case PUT:
+                prefix = "P";
+                break;
+            case UPDATE:
+                prefix = "U";
+                break;
+            case DELETE:
+                prefix = "D";
+                break;
+        };
+
+        String output = prefix + keyValue.getJsonKV();
+
+        try(
+            RandomAccessFile writer = new RandomAccessFile(this.writeLogPath, "rw");
+        ) {
+            writer.setLength(0);
+            writer.write(output.getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e){
+            logger.error("Could not append to replication write log.");
+        }
+
+    }
+
     @Override
     public String get(String key) throws Exception {
-        boolean exists = find(key);
+        KeyValueLocation keyValueLocation = find(this.filePath, key);
 
-        if (exists){
-            return this.value;
+        if (keyValueLocation.isExists()){
+            return keyValueLocation.value;
         } else{
             throw new KeyInvalidException(key);
         }
@@ -168,22 +216,29 @@ public class KVSimpleStore implements KVStore{
 
     @Override
     public boolean put(String key, String value) throws Exception {
-        boolean exists = find(key);
+        return put(this.filePath, key, value, false);
+    }
+
+    private boolean put(String filePath, String key, String value, boolean replicate) throws Exception {
+        KeyValueLocation keyValueLocation = find(filePath, key);
         KeyValue keyValue = new KeyValue(key, value);
 
-        if (!exists){
+        if (!keyValueLocation.isExists()){
             // Can add to end of file
-            addKeyValue(keyValue.getJsonKV());
+            addKeyValue(filePath, keyValue.getJsonKV());
+            if (!replicate) writeLogAppend(keyValue, WRITE_ACTION.PUT);
         } else{
             // Update existing key-value pair
-            updateKeyValue(keyValue.getJsonKV());
+            updateKeyValue(filePath, keyValueLocation, keyValue.getJsonKV());
+            if (!replicate) writeLogAppend(keyValue, WRITE_ACTION.UPDATE);
         }
-        return exists;
+        return keyValueLocation.isExists();
     }
 
     @Override
     public boolean exists(String key) throws Exception {
-        return find(key);
+        KeyValueLocation keyValueLocation = find(this.filePath, key);
+        return keyValueLocation.isExists();
     }
 
     @Override
@@ -194,10 +249,16 @@ public class KVSimpleStore implements KVStore{
     }
 
     @Override
-    public void delete(String key) throws Exception{
-        boolean exists = find(key);
-        if (exists){
-            deleteKeyValue();
+    public void delete(String key) throws Exception {
+        delete(this.filePath, key);
+    }
+
+    private void delete(String filePath, String key) throws Exception {
+        KeyValueLocation keyValueLocation = find(filePath, key);
+        KeyValue keyValue = new KeyValue(key);
+        if (keyValueLocation.isExists()){
+            deleteKeyValue(filePath, keyValueLocation);
+            writeLogAppend(keyValue, WRITE_ACTION.DELETE);
         }else{
             throw new KeyInvalidException(key);
         }
@@ -221,29 +282,49 @@ public class KVSimpleStore implements KVStore{
 
     @Override
     public void replicateData(String tempFilePath, String controlServer) {
-        File temp = new File(tempFilePath);
         String replicateFilePath = dataDir + File.separatorChar + "repl_" + controlServer + "_" + serverName + ".txt";
 
         if (replicatedPaths.contains(replicateFilePath)) {
             logger.info("Updating replicated data for " + controlServer);
+
             updateReplicatedData(tempFilePath, replicateFilePath);
         } else {
-            logger.info("Instantiating replicated data for "
-                    + controlServer
-                    + " at "
-                    + replicateFilePath
-            );
-            temp.renameTo(new File(replicateFilePath));
-            replicatedPaths.add(replicateFilePath);
+            logger.info("Instantiating replicated data for " + controlServer+ " at " + replicateFilePath);
+
+            File replicateFile = new File(replicateFilePath);
+            try {
+                if (!replicateFile.exists()) {
+                    replicateFile.createNewFile();
+                }
+            } catch (IOException e) {
+                logger.error("Failed to create replicated data file.", e);
+            }
+            updateReplicatedData(tempFilePath, replicateFilePath);
         }
     }
 
     private void updateReplicatedData(String tempFilePath, String replicateFilePath){
-        // TODO: Implement updating replicated data
-        // Search through replicated file, copy lines that are not relevant to new file
-        // Add updated values to the end of new file
-        File temp = new File(tempFilePath);
-        temp.renameTo(new File(replicateFilePath));
+        try (
+            RandomAccessFile reader = new RandomAccessFile(tempFilePath, "r");
+        ) {
+            Gson gson = new Gson();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                char action =  line.charAt(0);
+                String keyValueJson = line.substring(1);
+                KeyValue keyValue = gson.fromJson(keyValueJson, KeyValue.class);
+
+                if (action == 'P' || action == 'U') {
+                    logger.info("Replicate: put/update for key: " + keyValue.getKey());
+                    put(replicateFilePath, keyValue.getKey(), keyValue.getValue(), true);
+                } else if (action == 'D') {
+                    logger.info("Replicate: delete for key: " + keyValue.getKey());
+                    delete(replicateFilePath, keyValue.getKey());
+                }
+            }
+        } catch (Exception e){
+            logger.error("Could not update replicated data. ", e);
+        }
     }
 
 
@@ -286,6 +367,7 @@ public class KVSimpleStore implements KVStore{
         File sendFile = new File(this.sendPath);
         File keepFile = new File(this.keepPath);
 
+        // TODO: don't delete send file, turn it into replication file for the newly created server
         sendFile.delete();
         storageFile.delete();
         boolean renamed = keepFile.renameTo(new File(this.filePath));
@@ -298,5 +380,40 @@ public class KVSimpleStore implements KVStore{
 
     }
 
+    private class KeyValueLocation {
+        private String value = null;
+        private long startPosition = 0;
+        private long endPosition = 0;
+        private boolean exists;
+
+        public KeyValueLocation () {
+            exists = false;
+        }
+
+        public KeyValueLocation (long startPosition, long endPosition, String value) {
+            this.startPosition = startPosition;
+            this.endPosition = endPosition;
+            this.value = value;
+            this.exists = true;
+        }
+
+        public String getValue() {
+            return value;
+        }
+
+        public long getStartPosition() {
+            return startPosition;
+        }
+
+        public long getEndPosition() {
+            return endPosition;
+        }
+
+        public boolean isExists() {
+            return exists;
+        }
+
+
+    }
 }
 

@@ -16,31 +16,35 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class KVServer implements IKVServer, Runnable {
 
-    private static final Logger logger = Logger.getLogger("KVServer");
     public static final Integer BUFFER_SIZE = 1024;
-    private static final int num_replicators = 2;
+    private static final Logger logger = Logger.getLogger("KVServer");
+    private static final int NUM_REPLICATORS = 2;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
 
     private final int port;
-    private int dataReceivePort;
-    private int replicationReceivePort;
     private final int cacheSize;
+
     private final KVStore kvStore;
     private final CacheStrategy cacheStrategy;
+
+    private final String serverName;
+    private final ECSConnection ecsConnection;
+
+    private int dataReceivePort;
+    private int replicationReceivePort;
+
     private boolean running;
+
     private ServerSocket serverSocket;
     private ServerSocket dataReceiveSocket;
     private ServerSocket replicationReceiveSocket;
 
-    private final String serverName;
-    private final ECSConnection ecsConnection;
-    private ArrayList<ClientConnection> connections = new ArrayList<>();
+    private final ArrayList<ClientConnection> connections = new ArrayList<>();
 
     private ServerStatus status;
 
@@ -48,10 +52,10 @@ public class KVServer implements IKVServer, Runnable {
     /**
      * Start KV Server at given port
      *
-     * @param port    given port for storage server to operate
-     * @param zkHost  ZooKeeper host
+     * @param port       given port for storage server to operate
+     * @param zkHost     ZooKeeper host
      * @param serverName Server name
-     * @param zkPort  ZooKeeper port
+     * @param zkPort     ZooKeeper port
      */
     public KVServer(int port, String serverName, String zkHost, int zkPort) throws IOException {
         this.port = port;
@@ -67,6 +71,37 @@ public class KVServer implements IKVServer, Runnable {
         this.acquireReceivingPorts();
 
         this.ecsConnection = new ECSConnection(zkHost, zkPort, serverName, this);
+    }
+
+    public static void main(String[] args) {
+        try {
+            if (args.length != 4) {
+                System.err.println("Error! Invalid number of arguments");
+                System.err.println("Usage: KVServer <port> <server name> <zkHost> <zkPort>");
+                System.exit(1);
+            }
+
+            int port = Integer.parseInt(args[0]);
+            String serverName = args[1];
+            String zkHost = args[2];
+            int zkPort = Integer.parseInt(args[3]);
+
+            try {
+                new LogSetup("logs/server_" + serverName + ".log", Level.ALL);
+            } catch (IOException e) {
+                System.err.println("Error! Unable to initialize logger.");
+                e.printStackTrace();
+                System.exit(1);
+            }
+
+            KVServer server = new KVServer(port, serverName, zkHost, zkPort);
+            new Thread(server).start();
+        } catch (IOException e) {
+            System.err.println("Error! Unable to initialize persistent storage file.");
+            e.printStackTrace();
+            System.exit(1);
+        }
+
     }
 
     @Override
@@ -101,13 +136,13 @@ public class KVServer implements IKVServer, Runnable {
         return cacheSize;
     }
 
-    public void setStatus(ServerStatus status) {
-        this.status = status;
-    }
-
     @Override
     public ServerStatus getStatus() {
         return this.status;
+    }
+
+    public void setStatus(ServerStatus status) {
+        this.status = status;
     }
 
     @Override
@@ -144,22 +179,27 @@ public class KVServer implements IKVServer, Runnable {
         logger.info("ServerStatus set to: ACTIVE");
     }
 
-
     public String getServerName() {
         return serverName;
     }
 
     @Override
-    public String getStorageFile(){
+    public String getStorageFile() {
         return kvStore.getFileName();
     }
 
-    public String getStoragePath(){
+    public String getStoragePath() {
         return kvStore.getStoragePath();
     }
 
     @Override
-    public String getDataDir() { return kvStore.getDataDir();}
+    public String getDataDir() {
+        return kvStore.getDataDir();
+    }
+
+    public String getWriteLogPath(){
+        return kvStore.getWriteLogPath();
+    }
 
     @Override
     public boolean inStorage(String key) throws Exception {
@@ -207,11 +247,12 @@ public class KVServer implements IKVServer, Runnable {
     @Override
     public void deleteKV(String key) throws Exception {
         lock.writeLock().lock();
-        try{
+        try {
             this.kvStore.delete(key);
         } finally {
             lock.writeLock().unlock();
         }
+        updateReplicators();
     }
 
     @Override
@@ -230,7 +271,7 @@ public class KVServer implements IKVServer, Runnable {
 
     }
 
-    public void sendData(AdminMessage message){
+    public void sendData(AdminMessage message) {
         ServerNode receiveNode = message.getReceiver();
         String host = receiveNode.getNodeHost();
         int port = receiveNode.getDataReceivePort();
@@ -253,8 +294,6 @@ public class KVServer implements IKVServer, Runnable {
                     + ": "
                     + port
                     + System.lineSeparator()
-                    + "Hash Range: "
-                    + Arrays.toString(hashRange)
             );
             String sendPath = kvStore.splitData(hashRange);
             File sendFile = new File(sendPath);
@@ -295,32 +334,33 @@ public class KVServer implements IKVServer, Runnable {
         }
     }
 
-    public void cleanUpData(){
+    public void cleanUpData() {
         kvStore.sendDataCleanup();
     }
 
-    public void mergeNewData(String tempFilePath){
+    public void mergeNewData(String tempFilePath) {
         lock.writeLock().lock();
-        try{
+        try {
             this.kvStore.mergeData(tempFilePath);
-        } catch (IOException e){
+        } catch (IOException e) {
             logger.error("Failed to merge incoming data.");
         } finally {
             lock.writeLock().unlock();
         }
     }
 
-    public void replicateData(String tempFilePath, String controlServer){
+    public void replicateData(String tempFilePath, String controlServer) {
         kvStore.replicateData(tempFilePath, controlServer);
     }
 
-    public void updateReplicators(){
-        //TODO: start kvdatasender threads for both successors
+    public void updateReplicators() {
         ServerNode serverNode = ecsConnection.getHashRing().getNode(serverName);
 
+        //TODO: check array of replicators instead of doing it through successors
         ServerNode replicator = serverNode.getSuccessor();
-        for (int i = 0; i < num_replicators; i++){
-            if (replicator.compareTo(serverNode)!=0){
+        for (int i = 0; i < NUM_REPLICATORS; i++) {
+            if (replicator.compareTo(serverNode) != 0) {
+                //TODO: pass writelog of new put values
                 KVDataSender kvDataSender = new KVDataSender(replicator, this);
                 new Thread(kvDataSender).start();
             }
@@ -360,7 +400,7 @@ public class KVServer implements IKVServer, Runnable {
         return false;
     }
 
-    private void initializeDataListeners(){
+    private void initializeDataListeners() {
         new Thread(new KVDataListener(this, replicationReceiveSocket, true)).start();
         new Thread(new KVDataListener(this, dataReceiveSocket, false)).start();
     }
@@ -417,38 +457,6 @@ public class KVServer implements IKVServer, Runnable {
 
         kill();
     }
-
-    public static void main(String[] args) {
-        try{
-            if (args.length != 4) {
-                System.err.println("Error! Invalid number of arguments");
-                System.err.println("Usage: KVServer <port> <server name> <zkHost> <zkPort>");
-                System.exit(1);
-            }
-
-            int port = Integer.parseInt(args[0]);
-            String serverName = args[1];
-            String zkHost = args[2];
-            int zkPort = Integer.parseInt(args[3]);
-
-            try {
-                new LogSetup("logs/server_" + serverName + ".log", Level.ALL);
-            } catch (IOException e) {
-                System.err.println("Error! Unable to initialize logger.");
-                e.printStackTrace();
-                System.exit(1);
-            }
-
-            KVServer server = new KVServer(port, serverName, zkHost, zkPort);
-            new Thread(server).start();
-        } catch (IOException e){
-            System.err.println("Error! Unable to initialize persistent storage file.");
-            e.printStackTrace();
-            System.exit(1);
-        }
-
-    }
-
 
 
 }

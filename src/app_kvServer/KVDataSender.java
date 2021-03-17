@@ -26,8 +26,7 @@ public class KVDataSender implements Runnable{
         String host = replicator.getNodeHost();
         int port = replicator.getReplicationReceivePort();
 
-        ReentrantReadWriteLock lock = kvServer.getLock();
-        lock.readLock().lock();
+        //TODO: need the lock if we're sending over all the data, but not for write log
         try {
             logger.info("Starting data transfer for replication at node "
                     + replicator.getNodeName()
@@ -37,7 +36,7 @@ public class KVDataSender implements Runnable{
                     + port
             );
 
-            File sendFile = new File(kvServer.getStoragePath());
+            File sendFile = new File(kvServer.getWriteLogPath());
 
             Socket replicatorSocket = new Socket(host, port);
 
@@ -68,8 +67,6 @@ public class KVDataSender implements Runnable{
 
         } catch (IOException e) {
             logger.error("Unable to send data to receiving node", e);
-        } finally {
-            lock.readLock().unlock();
         }
     }
 }
