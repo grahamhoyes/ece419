@@ -23,15 +23,26 @@ public class AdminMessage implements Serializable {
         ERROR,            // Action failed
     }
 
-    private Action action;         // Required for all messages
-    private String message;        // Only required for errors
-    private HashRing hashRing;     // Used by UPDATE_METADATA
+    public enum ServerChange {
+        ADDED,
+        DELETED,
+        DIED,
+        STARTED,  // When this happens, changedServer will be null
+        STOPPED   // When this happens, changedServer will be null
+    }
+
+    private Action action;              // Required for all messages
+    private String message;             // Only required for errors
+    private HashRing hashRing;          // Used by SET_METADATA
+    private ServerChange serverChange;  // Used by SET_METADATA
+    private ServerNode changedServer;   // Used by SET_METADATA
 
     /* Required for move/receive messages
      * The sender and receiver nodes have no guarantee about having
      * their hash ranges correct, trust the range field */
     private ServerNode sender;
     private ServerNode receiver;
+
 
     public AdminMessage() {
 
@@ -83,6 +94,22 @@ public class AdminMessage implements Serializable {
 
     public void setReceiver(ServerNode receiver) {
         this.receiver = receiver;
+    }
+
+    public ServerChange getServerChange() {
+        return serverChange;
+    }
+
+    public void setServerChange(ServerChange serverChange) {
+        this.serverChange = serverChange;
+    }
+
+    public ServerNode getChangedServer() {
+        return changedServer;
+    }
+
+    public void setChangedServer(ServerNode changedServer) {
+        this.changedServer = changedServer;
     }
 
     public String serialize() {

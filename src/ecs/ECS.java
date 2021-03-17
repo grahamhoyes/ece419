@@ -44,7 +44,7 @@ public class ECS implements IECS {
     // Queue used to update global metadata asynchronously. This is utterly disgusting,
     // but we can't set the watcher used by updateGlobalMetadata() within another watcher,
     // so it is somewhat necessary
-    private BlockingQueue<Boolean> doAsynchronousMetadataUpdate = new ArrayBlockingQueue<>(10);
+    private BlockingQueue<ServerNode> doAsynchronousMetadataUpdate = new ArrayBlockingQueue<>(10);
 
     public ECS(String configFileName, String zkHost, int zkPort, String remotePath) {
         this.remotePath = remotePath;
@@ -148,7 +148,7 @@ public class ECS implements IECS {
         }
 
         try {
-            updateGlobalMetadata();
+            updateGlobalMetadata(null, AdminMessage.ServerChange.STARTED);
         } catch (KeeperException | InterruptedException | TimeoutException e) {
             logger.error("Failed to update global metadata stopping servers", e);
         }
@@ -180,7 +180,7 @@ public class ECS implements IECS {
         }
 
         try {
-            updateGlobalMetadata();
+            updateGlobalMetadata(null, AdminMessage.ServerChange.STOPPED);
         } catch (KeeperException | InterruptedException | TimeoutException e) {
             logger.error("Failed to update global metadata stopping servers", e);
         }
@@ -242,6 +242,8 @@ public class ECS implements IECS {
         // Set the metadata for the added server
         adminMessage.setAction(AdminMessage.Action.SET_METADATA);
         adminMessage.setMetadata(updatedHashRing);
+        adminMessage.setChangedServer(node);
+        adminMessage.setServerChange(AdminMessage.ServerChange.ADDED);
 
         try {
             AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), adminMessage, 20000);
@@ -301,7 +303,7 @@ public class ECS implements IECS {
         hashRing = updatedHashRing;
 
         try {
-            updateGlobalMetadata();
+            updateGlobalMetadata(node, AdminMessage.ServerChange.ADDED);
         } catch (KeeperException | InterruptedException | TimeoutException e) {
             logger.error("Failed to update global metadata", e);
             return null;
@@ -537,6 +539,8 @@ public class ECS implements IECS {
         // Send updated metadata to successor server
         AdminMessage adminMessage = new AdminMessage(AdminMessage.Action.SET_METADATA);
         adminMessage.setMetadata(updatedHashRing);
+        adminMessage.setChangedServer(node);
+        adminMessage.setServerChange(AdminMessage.ServerChange.DELETED);
 
         try {
             AdminMessage response = zkConnection.sendAdminMessage(successor.getNodeName(), adminMessage, 20000);
@@ -564,7 +568,7 @@ public class ECS implements IECS {
         hashRing = updatedHashRing;
 
         try {
-            updateGlobalMetadata();
+            updateGlobalMetadata(node, AdminMessage.ServerChange.DELETED);
         } catch (KeeperException | InterruptedException | TimeoutException e) {
             logger.error("Failed to update global metadata");
             return false;
@@ -759,10 +763,12 @@ public class ECS implements IECS {
      * Synchronously update the global metadata of the cluster
      *
      */
-    private void updateGlobalMetadata() throws KeeperException, InterruptedException, TimeoutException {
+    private void updateGlobalMetadata(ServerNode nodeChanged, AdminMessage.ServerChange changeAction) throws KeeperException, InterruptedException, TimeoutException {
         for (ServerNode node : hashRing.getNodes()) {
             AdminMessage message = new AdminMessage(AdminMessage.Action.SET_METADATA);
             message.setMetadata(hashRing);
+            message.setChangedServer(nodeChanged);
+            message.setServerChange(changeAction);
 
             AdminMessage response = zkConnection.sendAdminMessage(node.getNodeName(), message, 20000);
 
@@ -786,10 +792,10 @@ public class ECS implements IECS {
         public void run() {
             while (true) {
                 try {
-                    doAsynchronousMetadataUpdate.take();
+                    ServerNode node = doAsynchronousMetadataUpdate.take();
 
                     try {
-                        updateGlobalMetadata();
+                        updateGlobalMetadata(node, AdminMessage.ServerChange.DIED);
                         logger.info("Global metadata updated");
                     } catch (KeeperException | InterruptedException | TimeoutException e) {
                         logger.error("Failed to update global metadata", e);
@@ -814,9 +820,10 @@ public class ECS implements IECS {
 
                 logger.info("Node " + nodeName + " has died");
 
+                ServerNode diedNode = hashRing.getNode(nodeName);
                 hashRing.removeNode(nodeName);
                 try {
-                    doAsynchronousMetadataUpdate.put(true);
+                    doAsynchronousMetadataUpdate.put(diedNode);
                 } catch (InterruptedException e) {
                     logger.error(e);
                 }
