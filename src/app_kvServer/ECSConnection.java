@@ -104,6 +104,13 @@ public class ECSConnection {
         return this.hashRing;
     }
 
+    /*
+    * Get the current node
+    */
+    public ServerNode getCurrentNode() {
+        return nodeMetadata;
+    }
+
     /**
      * Watcher for admin messages coming over ZooKeeper
      *

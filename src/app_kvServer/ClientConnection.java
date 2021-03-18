@@ -17,10 +17,10 @@ import java.net.Socket;
  */
 public class ClientConnection extends Connection implements Runnable {
     public static Logger logger = Logger.getLogger("ClientConnection");
-    private final IKVServer server;
+    private final KVServer server;
     private boolean isOpen;
 
-    public ClientConnection(Socket socket, IKVServer server) {
+    public ClientConnection(Socket socket, KVServer server) {
         this.socket = socket;
         this.hostname = socket.getInetAddress().getHostName();
         this.port = socket.getPort();
@@ -39,28 +39,28 @@ public class ClientConnection extends Connection implements Runnable {
                 try {
                     JsonKVMessage req = receiveMessage();
 
-                    if (server.getStatus() == IKVServer.ServerStatus.STOPPED) {
+                    if (server.getStatus() == KVServer.ServerStatus.STOPPED) {
                         res.setStatus(StatusType.SERVER_STOPPED);
                         res.setMessage("Server is stopped");
                         sendMessage(res);
                         continue;
                     }
 
-
                     res.setKey(req.getKey());
                     res.setValue(req.getValue());
                     res.setMetadata(server.getMetadata());
 
-                    if (!server.isNodeResponsible(req.getKey())) {
-                        res.setStatus(StatusType.SERVER_NOT_RESPONSIBLE);
-                        res.setMessage("Server is not responsible for the given key");
-
-                        sendMessage(res);
-                        continue;
-                    }
 
                     switch (req.getStatus()) {
                         case GET:
+                            if (!server.isNodeResponsible(req.getKey()) && !server.doesNodeReplicateKey(req.getKey())) {
+                                res.setStatus(StatusType.SERVER_NOT_RESPONSIBLE);
+                                res.setMessage("Server is not responsible for the given key");
+
+                                sendMessage(res);
+                                continue;
+                            }
+
                             try {
                                 String value = server.getKV(req.getKey());
                                 res.setStatus(StatusType.GET_SUCCESS);
@@ -76,7 +76,15 @@ public class ClientConnection extends Connection implements Runnable {
                             }
                             break;
                         case PUT:
-                            if (server.getStatus() == IKVServer.ServerStatus.WRITE_LOCKED) {
+                            if (!server.isNodeResponsible(req.getKey())) {
+                                res.setStatus(StatusType.SERVER_NOT_RESPONSIBLE);
+                                res.setMessage("Server is not responsible for the given key");
+
+                                sendMessage(res);
+                                continue;
+                            }
+
+                            if (server.getStatus() == KVServer.ServerStatus.WRITE_LOCKED) {
                                 res.setStatus(StatusType.SERVER_WRITE_LOCK);
                                 res.setMessage("Server locked for write");
                                 logger.warn("Could not process PUT request, server write locked");

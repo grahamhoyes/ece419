@@ -8,6 +8,7 @@ import org.apache.log4j.Logger;
 import shared.messages.AdminMessage;
 import store.KVSimpleStore;
 import store.KVStore;
+import store.KeyInvalidException;
 
 import java.io.*;
 import java.math.BigInteger;
@@ -122,6 +123,10 @@ public class KVServer implements IKVServer, Runnable {
         return ecsConnection.isNodeResponsible(key);
     }
 
+    public boolean doesNodeReplicateKey(String key) {
+        return ecsConnection.getCurrentNode().doesNodeReplicateKey(key);
+    }
+
     @Override
     public HashRing getMetadata() {
         return ecsConnection.getHashRing();
@@ -193,6 +198,25 @@ public class KVServer implements IKVServer, Runnable {
 
     @Override
     public String getKV(String key) throws Exception {
+
+        // If ClientConnection did its job properly, key should be
+        // on either this node, or one of the nodes it replicates.
+        ServerNode responsibleNode = null;
+        if (isNodeResponsible(key)) {
+            responsibleNode = ecsConnection.getCurrentNode();
+        } else {
+            for (ServerNode node : controllers) {
+                if (node.isNodeResponsible(key)) {
+                    responsibleNode = node;
+                    break;
+                }
+            }
+        }
+
+        if (responsibleNode == null) {
+            throw new KeyInvalidException(key);
+        }
+
         String value;
         lock.readLock().lock();
         try {

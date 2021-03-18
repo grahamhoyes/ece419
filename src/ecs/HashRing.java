@@ -188,7 +188,7 @@ public class HashRing {
 
         for (int i=0; i<num_controllers; i++) {
             ServerNode pred = currentNode.getPredecessor();
-            if (pred.compareTo(currentNode) == 0) {
+            if (pred.equals(currentNode)) {
                 break;
             }
             controllers[i] = pred;
