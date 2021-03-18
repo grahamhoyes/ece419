@@ -1,5 +1,7 @@
 package store;
 
+import ecs.ServerNode;
+
 import java.io.IOException;
 
 public interface KVStore {
@@ -21,4 +23,6 @@ public interface KVStore {
     String getStoragePath();
 
     String getWriteLogPath();
+
+    void deleteReplicatedData(ServerNode oldController);
 }

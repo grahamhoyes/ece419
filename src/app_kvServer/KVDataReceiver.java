@@ -38,8 +38,6 @@ public class KVDataReceiver implements Runnable {
                 controlServer = bufferedReader.readLine();
                 logger.info("Receiving data to replicate from "
                         + controlServer
-                        + " at file: "
-                        + tempFileName
                 );
             } else {
                 logger.info("Receiving data");

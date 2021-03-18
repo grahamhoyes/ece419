@@ -2,6 +2,7 @@ package store;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import ecs.ServerNode;
 import org.apache.log4j.Logger;
 
 import java.io.File;
@@ -11,6 +12,8 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.security.Key;
 import java.util.HashSet;
 import java.util.Set;
@@ -269,6 +272,23 @@ public class KVSimpleStore implements KVStore{
         temp.delete();
     }
 
+
+    @Override
+    public void deleteReplicatedData(ServerNode serverNode) {
+        if (serverNode != null) {
+            String replicateFilePath = dataDir
+                    + File.separatorChar
+                    + "repl_"
+                    + serverNode.getNodeName()
+                    + "_" + serverName + ".txt";
+
+            replicatedPaths.remove(replicateFilePath);
+            File replicatedFile = new File(replicateFilePath);
+            replicatedFile.delete();
+        }
+
+    }
+
     @Override
     public void replicateData(String tempFilePath, String controlServer) {
         String replicateFilePath = dataDir + File.separatorChar + "repl_" + controlServer + "_" + serverName + ".txt";
@@ -279,16 +299,17 @@ public class KVSimpleStore implements KVStore{
             updateReplicatedData(tempFilePath, replicateFilePath);
         } else {
             logger.info("Instantiating replicated data for " + controlServer+ " at " + replicateFilePath);
-
-            File replicateFile = new File(replicateFilePath);
             try {
-                if (!replicateFile.exists()) {
-                    replicateFile.createNewFile();
-                }
+                Path movedPath = Files.move(
+                        Paths.get(tempFilePath),
+                        Paths.get(replicateFilePath),
+                        StandardCopyOption.REPLACE_EXISTING
+                );
+                logger.info("Instantiated replicated data for " + controlServer);
+                replicatedPaths.add(replicateFilePath);
             } catch (IOException e) {
-                logger.error("Failed to create replicated data file.", e);
+                logger.error("Failed to instantiate replicated data for " + controlServer, e);
             }
-            updateReplicatedData(tempFilePath, replicateFilePath);
         }
     }
 
