@@ -23,12 +23,12 @@ public class ECSTest extends Assert {
 
     private static int serverCounter = -1;
 
-    private void addNodes(int nodes){
+    private void addNodes(int nodes) {
         ecs.addNodes(nodes);
         serverCounter += nodes;
     }
 
-    private JsonKVMessage getMessage(KVStoreConnection kvClient, String key) throws Exception {
+    private JsonKVMessage getMessage(KVStoreConnection kvClient, String key) throws Exception  {
         JsonKVMessage req = new JsonKVMessage(KVMessage.StatusType.GET);
         req.setKey(key);
         JsonKVMessage res;
@@ -38,18 +38,18 @@ public class ECSTest extends Assert {
     }
 
     @BeforeClass
-    public static void setUp() {
+    public static void setUp()  {
         ecs = new ECS("ecs_test.config", zkHost, zkPort, System.getenv("KV_SERVER_JAR"));
     }
 
     @After
-    public void shutDownNodes() {
+    public void shutDownNodes()  {
         ecs.shutdown();
     }
 
 
     @Test()
-    public void testSingleServerStartup() throws Exception{
+    public void testSingleServerStartup() throws Exception {
         addNodes(1);
 
         KVStoreConnection kvClient = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
@@ -57,7 +57,7 @@ public class ECSTest extends Assert {
     }
 
     @Test()
-    public void testECSStop() throws Exception{
+    public void testECSStop() throws Exception {
         addNodes(1);
         KVStoreConnection kvClient = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
         kvClient.connect();
@@ -70,61 +70,7 @@ public class ECSTest extends Assert {
     }
 
     @Test()
-    public void testSingleNodeHashRing() throws Exception{
-        ServerNode node0 = new ServerNode("server0", "127.0.0.1", 9000);
-
-        HashRing hashRing = new HashRing();
-        hashRing.addNode(node0);
-
-        assert (node0.getPredecessor().getNodeHash().equals(node0.getNodeHash()));
-    }
-
-    @Test()
-    public void testUpdateHashRing(){
-        ServerNode node0 = new ServerNode("server0", "127.0.0.1", 9000);
-        ServerNode node1 = new ServerNode("server1", "127.0.0.1", 9001);
-
-        HashRing hashRing = new HashRing();
-        hashRing.addNode(node0);
-        hashRing.addNode(node1);
-
-        assert (node0.getPredecessor().getNodeHash().equals(node1.getNodeHash()));
-        assert (node1.getPredecessor().getNodeHash().equals(node0.getNodeHash()));
-    }
-
-    @Test()
-    public void testRemoveFromHashRing(){
-        ServerNode node0 = new ServerNode("server0", "127.0.0.1", 9000);
-        ServerNode node1 = new ServerNode("server1", "127.0.0.1", 9001);
-
-        HashRing hashRing = new HashRing();
-        hashRing.addNode(node0);
-        hashRing.addNode(node1);
-
-        hashRing.removeNode("server1");
-
-        assert (node0.getPredecessor().getNodeHash().equals(node0.getNodeHash()));
-    }
-
-    @Test()
-    public void testHashing(){
-        ServerNode node0 = new ServerNode("server0", "127.0.0.1", 9000);
-        ServerNode node1 = new ServerNode("server1", "127.0.0.1", 9001);
-
-        HashRing hashRing = new HashRing();
-        hashRing.addNode(node0);
-        hashRing.addNode(node1);
-
-        assert (node0.isNodeResponsible("server0"));
-        assert (!node0.isNodeResponsible("server1"));
-
-        assert (node1.isNodeResponsible("server1"));
-        assert (!node1.isNodeResponsible("server0"));
-
-    }
-
-    @Test()
-    public void testECSMetaDataUpdate() throws Exception{
+    public void testECSMetaDataUpdate() throws Exception {
         addNodes(1);
 
         KVStoreConnection kvClient0 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
@@ -144,7 +90,7 @@ public class ECSTest extends Assert {
     }
 
     @Test()
-    public void testNewServerWriteLockRelease() throws Exception{
+    public void testNewServerWriteLockRelease() throws Exception {
         addNodes(1);
 
         KVStoreConnection kvClient0 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
@@ -169,7 +115,7 @@ public class ECSTest extends Assert {
     }
 
     @Test()
-    public void testMoveRelevantDataToNewServer() throws Exception{
+    public void testMoveRelevantDataToNewServer() throws Exception {
         addNodes(1);
 
         KVStoreConnection kvClient0 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
@@ -191,7 +137,7 @@ public class ECSTest extends Assert {
     }
 
     @Test()
-    public void testMoveDataToNewServer() throws Exception{
+    public void testMoveDataToNewServer() throws Exception {
         addNodes(1);
 
         KVStoreConnection kvClient0 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
@@ -213,7 +159,7 @@ public class ECSTest extends Assert {
     }
 
     @Test()
-    public void testMoveDataAfterRemoveNode() throws Exception{
+    public void testMoveDataAfterRemoveNode() throws Exception {
         addNodes(1);
 
         KVStoreConnection kvClient0 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
@@ -234,14 +180,14 @@ public class ECSTest extends Assert {
     }
 
     @Test()
-    public void testAddMultipleNodes() throws Exception{
+    public void testAddMultipleNodes() throws Exception {
         addNodes(1);
 
         KVStoreConnection kvClient0 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
         kvClient0.connect();
 
         // The first server is responsible for all keys
-        for (int i = 0; i <= 2; i++){
+        for (int i = 0; i <= 2; i++) {
             String key = "server" + (serverCounter + i);
             KVMessage message = kvClient0.put(key, "bar");
             JsonKVMessage res = getMessage(kvClient0, key);
@@ -250,7 +196,7 @@ public class ECSTest extends Assert {
 
         addNodes(2);
 
-        for (int i = 2; i >= 0; i--){
+        for (int i = 2; i >= 0; i--) {
             // Current serverNumber has been incremented by 2 from first server added
             int port = baseKVServerPort + serverCounter - i;
             KVStoreConnection kvClient = new KVStoreConnection("localhost", port);
@@ -264,14 +210,14 @@ public class ECSTest extends Assert {
     }
 
     @Test()
-    public void testRemoveMultipleNodes () throws Exception{
+    public void testRemoveMultipleNodes () throws Exception {
         addNodes(1);
 
         KVStoreConnection kvClient0 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
         kvClient0.connect();
 
         // The first server is responsible for all keys
-        for (int i = 0; i <= 2; i++){
+        for (int i = 0; i <= 2; i++) {
             String key = "server" + (serverCounter + i);
             KVMessage message = kvClient0.put(key, "bar");
             JsonKVMessage res = getMessage(kvClient0, key);
@@ -287,7 +233,7 @@ public class ECSTest extends Assert {
 
         KVStoreConnection kvClient2 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
         kvClient2.connect();
-        for (int i = 2; i >= 0; i--){
+        for (int i = 2; i >= 0; i--) {
             String key = "server" + (serverCounter + i);
             JsonKVMessage res = getMessage(kvClient2, key);
             assert(res.getStatus() != KVMessage.StatusType.SERVER_NOT_RESPONSIBLE);

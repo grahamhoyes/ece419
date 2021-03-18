@@ -170,6 +170,16 @@ public class ServerNode implements IECSNode, Comparable<ServerNode> {
         }
     }
 
+    public boolean doesNodeReplicateKey(String key) {
+        // A node replicates keys for its two predecessors
+
+        if (predecessor == null || predecessor.getNodeHash().equals(this.getNodeHash())) {
+            return false;
+        }
+
+        return predecessor.isNodeResponsible(key) || predecessor.getPredecessor().isNodeResponsible(key);
+    }
+
     @Override
     public int compareTo(ServerNode other) {
         return this.getNodeHash().compareTo(other.getNodeHash());

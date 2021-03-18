@@ -50,16 +50,6 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 		switchServers(successor);
 	}
 
-	private void connectToCorrectServer(String key) throws Exception {
-		if (hashRing == null) return;
-
-		ServerNode responsibleNode = hashRing.getNodeForKey(key);
-		if (currentNode == null || !responsibleNode.getNodeName().equals(currentNode.getNodeName())) {
-			switchServers(responsibleNode);
-			this.currentNode = responsibleNode;
-		}
-	}
-
 	@Override
 	public KVMessage put(String key, String value) throws Exception {
 		JsonKVMessage req = new JsonKVMessage(KVMessage.StatusType.PUT);
@@ -68,7 +58,15 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 		JsonKVMessage res;
 
 		if (!retry) {
-			connectToCorrectServer(key);
+			if (hashRing != null) {
+
+				ServerNode responsibleNode = hashRing.getNodeForKey(key);
+				if (currentNode == null || !currentNode.isNodeResponsible(key)) {
+					switchServers(responsibleNode);
+					this.currentNode = responsibleNode;
+				}
+			}
+
 			retryAttempts = 0;
 		} else {
 			switchToSuccessor();
@@ -120,7 +118,15 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 		JsonKVMessage res;
 
 		if (!retry) {
-			connectToCorrectServer(key);
+			if (hashRing != null) {
+
+				ServerNode responsibleNode = hashRing.getNodeForKey(key);
+				if (currentNode == null || (/*!currentNode.doesNodeReplicateKey(key) &&*/ !currentNode.isNodeResponsible(key))) {
+					switchServers(responsibleNode);
+					this.currentNode = responsibleNode;
+				}
+			}
+
 			retryAttempts = 0;
 		} else {
 			switchToSuccessor();

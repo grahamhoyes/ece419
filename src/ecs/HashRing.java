@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import org.apache.log4j.Logger;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 
 /**
@@ -51,7 +50,7 @@ public class HashRing {
         }
     }
 
-    public Collection<ServerNode> getNodes() {
+    public ArrayList<ServerNode> getNodes() {
         return serverNodes;
     }
 
