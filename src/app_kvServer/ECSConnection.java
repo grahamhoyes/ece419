@@ -192,7 +192,7 @@ public class ECSConnection {
                         response.setAction(AdminMessage.Action.ACK);
                         response.setMessage("Got metadata update");
                         logger.info("Incoming Metadata: " + message.serialize());
-                        kvServer.processServerChange(message.getServerChange(), message.getChangedServer(), hashRing);
+                        kvServer.processServerChange(message.getServerChange(), hashRing);
                         logger.info("Metadata updated");
                         logger.info("Server now responsible for " + Arrays.toString(nodeMetadata.getNodeHashRange()));
                         break;

@@ -3,6 +3,7 @@ package store;
 import ecs.ServerNode;
 
 import java.io.IOException;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public interface KVStore {
     public boolean put(String key, String value) throws Exception;
@@ -30,4 +31,8 @@ public interface KVStore {
     String mergeReplicatedData(ServerNode controller) throws Exception;
 
     void deleteReplicatedData(ServerNode oldController);
+
+    ReentrantReadWriteLock getWriteLogLock();
+
+    ReentrantReadWriteLock getStorageLock();
 }

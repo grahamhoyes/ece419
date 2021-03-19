@@ -20,16 +20,22 @@ public class KVDataSender implements Runnable{
     private final String dataPath;
     private final boolean initialize;
     private final CyclicBarrier deleteBarrier;
+    private final ReentrantReadWriteLock lock;
 
-    public KVDataSender(ServerNode replicator, KVServer kvServer, String dataPath, CyclicBarrier deleteBarrier) {
-            this(replicator, kvServer, dataPath, deleteBarrier, false);
+    public KVDataSender(
+            ServerNode replicator, KVServer kvServer, String dataPath, CyclicBarrier deleteBarrier, ReentrantReadWriteLock lock
+    ) {
+            this(replicator, kvServer, dataPath, deleteBarrier, lock,false);
     }
 
-    public KVDataSender(ServerNode replicator, KVServer kvServer, String dataPath, CyclicBarrier deleteBarrier, boolean initialize){
+    public KVDataSender(
+            ServerNode replicator, KVServer kvServer, String dataPath, CyclicBarrier deleteBarrier, ReentrantReadWriteLock lock, boolean initialize
+    ) {
         this.replicator = replicator;
         this.kvServer = kvServer;
         this.dataPath = dataPath;
         this.deleteBarrier = deleteBarrier;
+        this.lock = lock;
         this.initialize = initialize;
     }
 
@@ -38,7 +44,6 @@ public class KVDataSender implements Runnable{
         String host = replicator.getNodeHost();
         int port = replicator.getReplicationReceivePort();
 
-        ReentrantReadWriteLock lock = null;
         if (initialize){
             try {
                 Object replicateSync = kvServer.getReplicateSync();
@@ -51,9 +56,9 @@ public class KVDataSender implements Runnable{
                 logger.error("Error while waiting for data cleanup on init.", e);
             }
 
-            lock = kvServer.getLock();
-            lock.readLock().lock();
         }
+
+        lock.readLock().lock();
         try {
             logger.info("Starting data transfer for replication at node "
                     + replicator.getNodeName()
@@ -90,8 +95,9 @@ public class KVDataSender implements Runnable{
             fileInput.close();
             replicatorSocket.close();
 
-            deleteBarrier.await();
+
             if (!initialize){
+                deleteBarrier.await();
                 Files.deleteIfExists(Paths.get(dataPath));
             }
 
@@ -102,9 +108,7 @@ public class KVDataSender implements Runnable{
         } catch (InterruptedException | BrokenBarrierException e) {
             logger.error("Failed to wait for other thread to replicate", e);
         } finally {
-            if (initialize) {
-                lock.readLock().unlock();
-            }
+            lock.readLock().unlock();
         }
     }
 }

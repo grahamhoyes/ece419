@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -35,9 +36,12 @@ public class KVSimpleStore implements KVStore{
     private String keepPath;
     private String writeLogPath;
 
-    private Set<String> replicatedPaths = new HashSet<String>();
+    //    private Set<String> replicatedPaths = new HashSet<String>();
+    private final ReentrantReadWriteLock storageLock = new ReentrantReadWriteLock(true);
+    private HashMap<String, ReentrantReadWriteLock> replicatedPaths = new HashMap<>();
 
     private final ReentrantReadWriteLock writeLogLock = new ReentrantReadWriteLock();
+
 
 
     public KVSimpleStore(String serverName) throws IOException{
@@ -70,6 +74,16 @@ public class KVSimpleStore implements KVStore{
     @Override
     public String getWriteLogPath(){
         return writeLogPath;
+    }
+
+    @Override
+    public ReentrantReadWriteLock getStorageLock() {
+        return storageLock;
+    }
+
+    @Override
+    public ReentrantReadWriteLock getWriteLogLock() {
+        return writeLogLock;
     }
 
     private void prepareFile() throws IOException {
@@ -240,24 +254,35 @@ public class KVSimpleStore implements KVStore{
 
     @Override
     public String get(String key) throws Exception {
-        KeyValueLocation keyValueLocation = find(this.filePath, key);
+        storageLock.readLock().lock();
+        try {
+            KeyValueLocation keyValueLocation = find(this.filePath, key);
 
-        if (keyValueLocation.isExists()){
-            return keyValueLocation.value;
-        } else{
-            throw new KeyInvalidException(key);
+            if (keyValueLocation.isExists()) {
+                return keyValueLocation.value;
+            } else {
+                throw new KeyInvalidException(key);
+            }
+        } finally {
+            storageLock.readLock().unlock();
         }
     }
 
     @Override
     public String get(String key, ServerNode responsibleNode) throws Exception {
         String replicateFilePath = dataDir + File.separatorChar + "repl_" + responsibleNode.getNodeName() + "_" + serverName + ".txt";
-        if (replicatedPaths.contains(replicateFilePath)) {
-            KeyValueLocation keyValueLocation = find(replicateFilePath, key);
-            if (keyValueLocation.isExists()){
-                return keyValueLocation.value;
-            } else{
-                throw new KeyInvalidException(key);
+        if (replicatedPaths.containsKey(replicateFilePath)) {
+            ReentrantReadWriteLock lock = replicatedPaths.get(replicateFilePath);
+            lock.readLock().lock();
+            try {
+                KeyValueLocation keyValueLocation = find(replicateFilePath, key);
+                if (keyValueLocation.isExists()) {
+                    return keyValueLocation.value;
+                } else {
+                    throw new KeyInvalidException(key);
+                }
+            } finally {
+                lock.readLock().unlock();
             }
         } else {
             throw new KeyInvalidException(key);
@@ -266,7 +291,12 @@ public class KVSimpleStore implements KVStore{
 
     @Override
     public boolean put(String key, String value) throws Exception {
-        return put(this.filePath, key, value, false);
+        storageLock.writeLock().lock();
+        try {
+            return put(this.filePath, key, value, false);
+        } finally {
+            storageLock.writeLock().unlock();
+        }
     }
 
     private boolean put(String filePath, String key, String value, boolean replicate) throws Exception {
@@ -287,20 +317,33 @@ public class KVSimpleStore implements KVStore{
 
     @Override
     public boolean exists(String key) throws Exception {
-        KeyValueLocation keyValueLocation = find(this.filePath, key);
-        return keyValueLocation.isExists();
+        storageLock.readLock().lock();
+        try {
+            KeyValueLocation keyValueLocation = find(this.filePath, key);
+            return keyValueLocation.isExists();
+        } finally {
+            storageLock.readLock().unlock();
+        }
     }
 
     @Override
     public void clear() throws IOException {
+        storageLock.writeLock().lock();
         try (RandomAccessFile storageFile = new RandomAccessFile(this.filePath, "rw")) {
             storageFile.setLength(0L);
+        } finally {
+            storageLock.writeLock().unlock();
         }
     }
 
     @Override
     public void delete(String key) throws Exception {
-        delete(this.filePath, key, false);
+        storageLock.writeLock().lock();
+        try {
+            delete(this.filePath, key, false);
+        } finally {
+            storageLock.writeLock().unlock();
+        }
     }
 
     private void delete(String filePath, String key) throws Exception {
@@ -321,7 +364,7 @@ public class KVSimpleStore implements KVStore{
     @Override
     public void mergeData(String newFileName, boolean deleteFile) throws IOException {
         File temp = new File(newFileName);
-
+        storageLock.writeLock().lock();
         try(RandomAccessFile tempRAF = new RandomAccessFile(newFileName, "rw");
             RandomAccessFile storageRAF = new RandomAccessFile(this.filePath, "rw");){
             FileChannel fromChannel = tempRAF.getChannel();
@@ -334,6 +377,8 @@ public class KVSimpleStore implements KVStore{
             toChannel.position(storageRAF.length());
             fromChannel.position(0L);
             fromChannel.transferTo(0L, fromChannel.size(), toChannel);
+        } finally {
+            storageLock.writeLock().unlock();
         }
         if (deleteFile) temp.delete();
     }
@@ -358,46 +403,49 @@ public class KVSimpleStore implements KVStore{
                     + serverNode.getNodeName()
                     + "_" + serverName + ".txt";
 
-            replicatedPaths.remove(replicateFilePath);
-            File replicatedFile = new File(replicateFilePath);
-            replicatedFile.delete();
+            ReentrantReadWriteLock lock = replicatedPaths.get(replicateFilePath);
+            lock.writeLock().lock();
+            try {
+                File replicatedFile = new File(replicateFilePath);
+                replicatedFile.delete();
+
+            } finally {
+                lock.writeLock().unlock();
+                replicatedPaths.remove(replicateFilePath);
+            }
+
+
         }
 
     }
 
     @Override
     public void replicateData(String tempFilePath, String controlServer) {
-        writeLogLock.writeLock().lock();
-        try {
-            String replicateFilePath = dataDir + File.separatorChar + "repl_" + controlServer + "_" + serverName + ".txt";
+        String replicateFilePath = dataDir + File.separatorChar + "repl_" + controlServer + "_" + serverName + ".txt";
+        ReentrantReadWriteLock lock;
 
-            if (replicatedPaths.contains(replicateFilePath)) {
-                logger.info("Updating replicated data for " + controlServer);
-
-                updateReplicatedData(tempFilePath, replicateFilePath);
-            } else {
-                logger.info("Instantiating replicated data for " + controlServer + " at " + replicateFilePath);
-                try {
-                    // TODO: change this because the first send from server0 to server1 is the write log??
-                    // or change the write log sending hmm??
-                    if (!Files.exists(Paths.get(replicateFilePath))) Files.createFile(Paths.get(replicateFilePath));
-                    updateReplicatedData(tempFilePath, replicateFilePath);
-                    logger.info("Instantiated replicated data for " + controlServer);
-                    replicatedPaths.add(replicateFilePath);
-                } catch (IOException e) {
-                    logger.error("Failed to instantiate replicated data for " + controlServer, e);
-                }
+        if (replicatedPaths.containsKey(replicateFilePath)) {
+            logger.info("Updating replicated data for " + controlServer);
+            lock = replicatedPaths.get(replicateFilePath);
+        } else {
+            logger.info("Instantiating replicated data for " + controlServer + " at " + replicateFilePath);
+            try {
+                if (!Files.exists(Paths.get(replicateFilePath))) Files.createFile(Paths.get(replicateFilePath));
+                lock = new ReentrantReadWriteLock();
+                replicatedPaths.put(replicateFilePath, lock);
+            } catch (IOException e) {
+                logger.info("File already exists, updating.");
+                lock = replicatedPaths.get(replicateFilePath);
             }
-        } finally {
-            writeLogLock.writeLock().unlock();
+        }
+        boolean success = updateReplicatedData(tempFilePath, replicateFilePath, lock);
+        if (success) {
+            logger.info("Instantiated replicated data for " + controlServer);
+
         }
     }
 
-    private void updateReplicatedData(String tempFilePath, String replicateFilePath){
-        //TODO: Check that replication covers the basic cases
-        // 1. when bringing on new nodes, data is sent to new server as per M2, but also has to send it to replicators
-        // 2. when deleting a node, data is sent to successor ndoe as per M2, but data at replicators of successors is updated too
-        // 3. node death?? hasn't been tested at all rn
+    private boolean updateReplicatedData(String tempFilePath, String replicateFilePath){
         try (
             RandomAccessFile reader = new RandomAccessFile(tempFilePath, "r");
         ) {
@@ -424,8 +472,19 @@ public class KVSimpleStore implements KVStore{
                     put(replicateFilePath, keyValue.getKey(), keyValue.getValue(), true);
                 }
             }
+            return true;
         } catch (Exception e){
             logger.error("Could not update replicated data. ", e);
+            return false;
+        }
+    }
+
+    private boolean updateReplicatedData(String tempFilePath, String replicateFilePath, ReentrantReadWriteLock lock) {
+        lock.writeLock().lock();
+        try {
+            return updateReplicatedData(tempFilePath, replicateFilePath);
+        } finally {
+            lock.writeLock().unlock();
         }
     }
 

@@ -11,19 +11,12 @@ import store.KVStore;
 import store.KeyInvalidException;
 
 import java.io.*;
-import java.lang.reflect.Array;
-import java.math.BigInteger;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -33,7 +26,7 @@ public class KVServer implements IKVServer, Runnable {
     private static final Logger logger = Logger.getLogger("KVServer");
     private static final int NUM_REPLICATORS = 2;
 
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
+//    private final ReentrantReadWriteLock storageLock = new ReentrantReadWriteLock(true);
 
     private boolean hasBeenInitialized = false;
 
@@ -102,10 +95,6 @@ public class KVServer implements IKVServer, Runnable {
         return dataReceivePort;
     }
 
-    public ReentrantReadWriteLock getLock() {
-        return lock;
-    }
-
     public Object getReplicateSync() {
         return replicateSync;
     }
@@ -136,6 +125,16 @@ public class KVServer implements IKVServer, Runnable {
 
     public void setStatus(ServerStatus status) {
         this.status = status;
+    }
+
+    private static int getNonNullLength(ServerNode[] arr) {
+        int length = 0;
+        for (ServerNode node : arr) {
+            if (node != null) {
+                length++;
+            }
+        }
+        return length;
     }
 
     @Override
@@ -185,10 +184,6 @@ public class KVServer implements IKVServer, Runnable {
         return kvStore.getFileName();
     }
 
-    public String getStoragePath() {
-        return kvStore.getStoragePath();
-    }
-
     @Override
     public String getDataDir() {
         return kvStore.getDataDir();
@@ -198,16 +193,13 @@ public class KVServer implements IKVServer, Runnable {
         return kvStore.getWriteLogPath();
     }
 
+    private ReentrantReadWriteLock getWriteLogLock() {
+        return kvStore.getWriteLogLock();
+    }
+
     @Override
     public boolean inStorage(String key) throws Exception {
-        boolean exists;
-        lock.readLock().lock();
-        try {
-            exists = this.kvStore.exists(key);
-        } finally {
-            lock.readLock().unlock();
-        }
-        return exists;
+        return this.kvStore.exists(key);
     }
 
     @Override
@@ -222,14 +214,7 @@ public class KVServer implements IKVServer, Runnable {
         // If ClientConnection did its job properly, key should be
         // on either this node, or one of the nodes it replicates.
         if (isNodeResponsible(key)) {
-            String value;
-            lock.readLock().lock();
-            try {
-                value = this.kvStore.get(key);
-            } finally {
-                lock.readLock().unlock();
-            }
-            return value;
+            return this.kvStore.get(key);
         } else {
             for (ServerNode node : controllers) {
                 if (node.isNodeResponsible(key)) {
@@ -243,25 +228,14 @@ public class KVServer implements IKVServer, Runnable {
 
     @Override
     public boolean putKV(String key, String value) throws Exception {
-        boolean exists;
-        lock.writeLock().lock();
-        try {
-            exists = this.kvStore.put(key, value);
-        } finally {
-            lock.writeLock().unlock();
-        }
+        boolean exists = this.kvStore.put(key, value);
         updateReplicators();
         return exists;
     }
 
     @Override
     public void deleteKV(String key) throws Exception {
-        lock.writeLock().lock();
-        try {
-            this.kvStore.delete(key);
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.kvStore.delete(key);
         updateReplicators();
     }
 
@@ -272,13 +246,7 @@ public class KVServer implements IKVServer, Runnable {
 
     @Override
     public void clearStorage() throws IOException {
-        lock.writeLock().lock();
-        try {
-            this.kvStore.clear();
-        } finally {
-            lock.writeLock().unlock();
-        }
-
+        this.kvStore.clear();
     }
 
     public void sendData(AdminMessage message) {
@@ -354,7 +322,6 @@ public class KVServer implements IKVServer, Runnable {
     }
 
     public void mergeNewData(String tempFilePath) {
-        lock.writeLock().lock();
         try {
             // This will delete the tempFile if the node is not initialized
             // will not delete if node is initialized, so the tempFile can be sent to the replicator
@@ -362,13 +329,11 @@ public class KVServer implements IKVServer, Runnable {
             if (!this.hasBeenInitialized) {
                 initializeReplicators();
             } else {
-                updateReplicators(tempFilePath);
+                updateReplicators(tempFilePath, new ReentrantReadWriteLock());
             }
             this.hasBeenInitialized = true;
         } catch (IOException e) {
             logger.error("Failed to merge incoming data.");
-        } finally {
-            lock.writeLock().unlock();
         }
     }
 
@@ -383,6 +348,7 @@ public class KVServer implements IKVServer, Runnable {
                 this,
                 kvStore.getStoragePath(),
                 deleteBarrier,
+                kvStore.getStorageLock(),
                 true);
         new Thread(kvDataSender).start();
     }
@@ -396,14 +362,21 @@ public class KVServer implements IKVServer, Runnable {
         }
     }
 
-    private void updateReplicators(String filePath) {
+    private void updateReplicators(String filePath, ReentrantReadWriteLock lock) {
         ServerNode serverNode = ecsConnection.getHashRing().getNode(serverName);
-        CyclicBarrier deleteBarrier = new CyclicBarrier(NUM_REPLICATORS);
-        for (int i = 0; i < NUM_REPLICATORS; i++) {
+        int num_replicators = getNonNullLength(replicators);
+        CyclicBarrier deleteBarrier = new CyclicBarrier(num_replicators);
+        for (int i = 0; i < num_replicators; i++) {
             ServerNode replicator = replicators[i];
             if (replicator != null && replicator.compareTo(serverNode)!=0) {
                 logger.info(i + " replicating to " + replicator.getNodeName());
-                KVDataSender kvDataSender = new KVDataSender(replicator, this, filePath, deleteBarrier);
+                KVDataSender kvDataSender = new KVDataSender(
+                        replicator,
+                        this,
+                        filePath,
+                        deleteBarrier,
+                        lock
+                );
                 new Thread(kvDataSender).start();
             }
         }
@@ -411,7 +384,7 @@ public class KVServer implements IKVServer, Runnable {
     }
 
     private void updateReplicators() {
-        updateReplicators(getWriteLogPath());
+        updateReplicators(getWriteLogPath(), getWriteLogLock());
     }
 
     private void acquireReceivingPorts() {
@@ -505,7 +478,7 @@ public class KVServer implements IKVServer, Runnable {
         kill();
     }
 
-    public void processServerChange(AdminMessage.ServerChange change, ServerNode changedNode, HashRing newHashRing) {
+    public void processServerChange(AdminMessage.ServerChange change, HashRing newHashRing) {
         logger.info("Metadata update: " + change.toString());
         ServerNode[] newReplicators = newHashRing.getReplicators(serverName, NUM_REPLICATORS);
         ServerNode[] newControllers  = newHashRing.getControllers(serverName, NUM_REPLICATORS);
@@ -586,7 +559,8 @@ public class KVServer implements IKVServer, Runnable {
             logger.info("Merging replicated data into server data");
             try {
                 String replicateFilePath = kvStore.mergeReplicatedData(oldController);
-                updateReplicators(replicateFilePath);
+                //TODO: this lock should be specific to this file
+                updateReplicators(replicateFilePath, new ReentrantReadWriteLock());
             } catch (Exception e) {
                 logger.error("Failed to merge data after node death", e);
             }
