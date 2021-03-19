@@ -4,8 +4,6 @@ import ecs.ServerNode;
 import ecs.HashRing;
 import org.junit.*;
 
-import java.util.Arrays;
-
 public class HashRingTest extends Assert {
 
     @Test()
