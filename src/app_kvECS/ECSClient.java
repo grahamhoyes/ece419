@@ -130,5 +130,7 @@ public class ECSClient implements IECSClient, Runnable {
                 logger.error("CLI terminated");
             }
         }
+
+        System.exit(0);
     }
 }
