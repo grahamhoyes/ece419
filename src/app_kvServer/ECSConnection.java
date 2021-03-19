@@ -124,6 +124,7 @@ public class ECSConnection {
                 AdminMessage message = new AdminMessage(new String(data));
 
                 AdminMessage response = new AdminMessage();
+                response.setUuid(message.getUuid());
 
                 logger.info("Got a " + message.getAction() + " admin message");
 

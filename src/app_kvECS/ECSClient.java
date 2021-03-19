@@ -103,6 +103,7 @@ public class ECSClient implements IECSClient, Runnable {
         try {
             command.run(this, tokens);
         } catch (Exception e) {
+            logger.error(e.getMessage(), e);
             this.printError(e.getMessage());
         }
 

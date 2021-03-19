@@ -230,13 +230,16 @@ public class ECS implements IECS {
             } else {
                 logger.error("Server " + node.getNodeName() + " failed to initialize");
                 logger.debug(response.getMessage());
+                shutdownNode(node);
                 return null;
             }
         } catch (KeeperException | InterruptedException e) {
             logger.error("Failed to send admin message to initialize " + node.getNodeName(), e);
+            shutdownNode(node);
             return null;
         } catch (TimeoutException e) {
             logger.error("Timeout while trying to send admin message to initialize " + node.getNodeName());
+            shutdownNode(node);
             return null;
         }
 
@@ -253,14 +256,17 @@ public class ECS implements IECS {
                 logger.info("Set metadata for server " + node.getNodeName());
             } else {
                 logger.error("Could not set metadata for server " + node.getNodeName());
+                shutdownNode(node);
                 return null;
             }
 
         } catch (KeeperException | InterruptedException e) {
             logger.error("Failed to send admin message to set metadata for " + node.getNodeName(), e);
+            shutdownNode(node);
             return null;
         } catch (TimeoutException e) {
             logger.error("Timeout while trying to send admin message to set metadata for " + node.getNodeName());
+            shutdownNode(node);
             return null;
         }
 
@@ -276,14 +282,17 @@ public class ECS implements IECS {
                 logger.info("Started server " + node.getNodeName());
             } else {
                 logger.error("Could not start server " + node.getNodeName());
+                shutdownNode(node);
                 return null;
             }
 
         } catch (KeeperException | InterruptedException e) {
             logger.error("Failed to send admin message to start server " + node.getNodeName(), e);
+            shutdownNode(node);
             return null;
         } catch (TimeoutException e) {
             logger.error("Timeout while trying to send admin message to start server " + node.getNodeName());
+            shutdownNode(node);
             return null;
         }
 
@@ -708,7 +717,7 @@ public class ECS implements IECS {
         message.setReceiver(toNode);
 
         try {
-            AdminMessage response = zkConnection.sendAdminMessage(fromNode.getNodeName(), message, -1);
+            AdminMessage response = zkConnection.sendAdminMessage(fromNode.getNodeName(), message, 20000);
 
             if (response.getAction() == AdminMessage.Action.ACK) {
                 logger.info("Sending data from server " + fromNode.getNodeName());
@@ -799,8 +808,7 @@ public class ECS implements IECS {
                     try {
                         updateGlobalMetadata(node, AdminMessage.ServerChange.DIED);
                         logger.info("Global metadata updated");
-                        //TODO: uncomment
-//                        addNode();
+                        addNode();
                     } catch (KeeperException | InterruptedException | TimeoutException e) {
                         logger.error("Failed to update global metadata", e);
                     }
