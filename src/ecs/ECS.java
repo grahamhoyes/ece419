@@ -673,7 +673,7 @@ public class ECS implements IECS {
     }
 
     @Override
-    public Collection<ServerNode> getNodes() {
+    public ArrayList<ServerNode> getNodes() {
         return hashRing.getNodes();
     }
 

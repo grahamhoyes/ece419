@@ -81,10 +81,21 @@ public class ECSConnection {
             // disconnects, and to indicate that the node is up
             String heartbeatPath = ZooKeeperConnection.ZK_HEARTBEAT_ROOT + "/" + this.serverName;
             zkConnection.create(heartbeatPath, "heartbeat", CreateMode.EPHEMERAL, 7);
+
+            // Set the watcher for when the node dies
+            try {
+                zk.exists(heartbeatPath, new HeartbeatDeathWatcher());
+            } catch (InterruptedException | KeeperException e) {
+                logger.fatal("Failed to set heartbeat watcher for server " + this.serverName);
+                System.exit(1);
+            }
+
         } catch (KeeperException | InterruptedException e) {
             logger.fatal("Unable to create heartbeat ZNode", e);
             System.exit(1);
         }
+
+
 
         logger.info("ECS connection initialized");
 
@@ -219,6 +230,26 @@ public class ECSConnection {
 
             } catch (KeeperException | InterruptedException e) {
                 logger.warn("Unable to process Admin watch event", e);
+            }
+        }
+    }
+
+    /**
+     * Watcher to detect when a particular heartbeat node goes down
+     */
+    private class HeartbeatDeathWatcher implements Watcher {
+        @Override
+        public void process(WatchedEvent event) {
+            if (event.getType() == Event.EventType.NodeDeleted) {
+                // Kill the node
+                kvServer.close();
+            }
+
+            try {
+                zk.exists(event.getPath(), this);
+            } catch (InterruptedException | KeeperException e) {
+                logger.fatal("Failed to reset heartbeat watcher for server " + serverName);
+                System.exit(1);
             }
         }
     }
