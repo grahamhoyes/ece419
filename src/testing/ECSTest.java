@@ -1,20 +1,18 @@
 package testing;
 
-import app_kvServer.KVServer;
 import client.KVStoreConnection;
 import ecs.ECS;
 import ecs.ServerNode;
-import ecs.HashRing;
+import ecs.ZooKeeperConnection;
 import org.apache.log4j.Logger;
 import org.junit.*;
 import shared.messages.JsonKVMessage;
 import shared.messages.KVMessage;
-import store.KVStore;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
-import static shared.messages.KVMessage.StatusType.SERVER_STOPPED;
-import static shared.messages.KVMessage.StatusType.valueOf;
+import static shared.messages.KVMessage.StatusType.*;
 
 public class ECSTest extends Assert {
     private static final Logger logger = Logger.getLogger("ECSTest");
@@ -57,7 +55,6 @@ public class ECSTest extends Assert {
     public void shutDownNodes()  {
         ecs.shutdown();
     }
-
 
     @Test()
     public void testSingleServerStartup() throws Exception {
@@ -215,7 +212,9 @@ public class ECSTest extends Assert {
     public void testAddMultipleNodes() throws Exception {
         addNodes(1);
 
-        KVStoreConnection kvClient0 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
+        ServerNode node = ecs.getNodes().get(0);
+
+        KVStoreConnection kvClient0 = new KVStoreConnection("localhost", node.getNodePort());
         kvClient0.connect();
 
         // The first server is responsible for all keys
@@ -230,10 +229,11 @@ public class ECSTest extends Assert {
 
         for (int i = 2; i >= 0; i--) {
             // Current serverNumber has been incremented by 2 from first server added
-            int port = baseKVServerPort + serverCounter - i;
+            node = ecs.getNodes().get(i);
+            int port = node.getNodePort();
             KVStoreConnection kvClient = new KVStoreConnection("localhost", port);
             kvClient.connect();
-            String key = "server" + (serverCounter - i);
+            String key = node.getNodeName();
             System.out.println("PORT: " + port + " | KEY: " + key);
             JsonKVMessage res = getMessage(kvClient, key);
             assert(res.getStatus() != KVMessage.StatusType.SERVER_NOT_RESPONSIBLE);
@@ -242,10 +242,12 @@ public class ECSTest extends Assert {
     }
 
     @Test()
-    public void testRemoveMultipleNodes () throws Exception {
+    public void testRemoveMultipleNodes() throws Exception {
         addNodes(1);
 
-        KVStoreConnection kvClient0 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
+        ServerNode node = ecs.getNodes().get(0);
+
+        KVStoreConnection kvClient0 = new KVStoreConnection("localhost", node.getNodePort());
         kvClient0.connect();
 
         // The first server is responsible for all keys
@@ -272,5 +274,39 @@ public class ECSTest extends Assert {
         }
 
     }
+
+//    @Test()
+//    public void testKillingServerPreservesData() throws Exception {
+//        addNodes(1);
+//        ServerNode node1 = ecs.getNodes().get(0);
+//
+//        KVStoreConnection kvClient0 = new KVStoreConnection("localhost", node1.getNodePort());
+//        kvClient0.connect();
+//
+//
+//        addNodes(1);
+//        ServerNode node2 = node1.getPredecessor();
+//
+//        kvClient0.put(node2.getNodeName(), "foo");
+//
+//        // Kill the first node via zookeeper
+//        ZooKeeperConnection zkConnection = new ZooKeeperConnection();
+//
+//        try {
+//            zkConnection.connect(zkHost, zkPort);
+//        } catch (InterruptedException | IOException e) {
+//            logger.fatal("Failed to establish a connection to ZooKeeper", e);
+//            throw e;
+//        }
+//        zkConnection.delete(ZooKeeperConnection.ZK_HEARTBEAT_ROOT + "/" + node1.getNodeName());
+//
+//        // Wait a few seconds for it to finish
+//        Thread.sleep(5000);
+//
+//        KVMessage res = kvClient0.get(node2.getNodeName());
+//
+//        assert(res.getStatus() == GET_SUCCESS);
+//        assert(res.getValue().equals("foo"));
+//    }
 
 }

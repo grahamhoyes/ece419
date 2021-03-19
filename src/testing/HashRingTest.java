@@ -4,6 +4,8 @@ import ecs.ServerNode;
 import ecs.HashRing;
 import org.junit.*;
 
+import java.util.Arrays;
+
 public class HashRingTest extends Assert {
 
     @Test()
@@ -128,5 +130,59 @@ public class HashRingTest extends Assert {
         assert (node1Deserialized.equals(node1));
 
         assert (node1Deserialized.getSuccessor().equals(node0Deserialized));
+    }
+
+    @Test
+    public void testGetReplicators() {
+        // A node's replicators are it's two successors
+
+        /*
+         * [('server3', '0ddacf356d025a8e6068b42ac537127e'),
+         * ('server2', '194f9987498c1cf5a795d83caa147814'),
+         * ('server1', 'a8438da78e679f44a5cff9e44ebacfbd'),
+         * ('server0', 'c8e88753b97c508edf4dd3eb4892d275')]
+         * */
+        ServerNode node0 = new ServerNode("server0", "127.0.0.1", 9000);
+        ServerNode node1 = new ServerNode("server1", "127.0.0.1", 9001);
+        ServerNode node2 = new ServerNode("server2", "127.0.0.1", 9002);
+        ServerNode node3 = new ServerNode("server3", "127.0.0.1", 9003);
+
+        HashRing hashRing = new HashRing();
+        hashRing.addNode(node0);
+        hashRing.addNode(node1);
+        hashRing.addNode(node2);
+        hashRing.addNode(node3);
+
+        ServerNode[] node0Replicators = hashRing.getReplicators(node0.getNodeName(), 2);
+        ServerNode[] expectedReplicators = new ServerNode[] {node3, node2};
+
+        assertArrayEquals(node0Replicators, expectedReplicators);
+    }
+
+    @Test
+    public void testGetControllers() {
+        // A node's replicators are it's two predecessors
+
+        /*
+         * [('server3', '0ddacf356d025a8e6068b42ac537127e'),
+         * ('server2', '194f9987498c1cf5a795d83caa147814'),
+         * ('server1', 'a8438da78e679f44a5cff9e44ebacfbd'),
+         * ('server0', 'c8e88753b97c508edf4dd3eb4892d275')]
+         * */
+        ServerNode node0 = new ServerNode("server0", "127.0.0.1", 9000);
+        ServerNode node1 = new ServerNode("server1", "127.0.0.1", 9001);
+        ServerNode node2 = new ServerNode("server2", "127.0.0.1", 9002);
+        ServerNode node3 = new ServerNode("server3", "127.0.0.1", 9003);
+
+        HashRing hashRing = new HashRing();
+        hashRing.addNode(node0);
+        hashRing.addNode(node1);
+        hashRing.addNode(node2);
+        hashRing.addNode(node3);
+
+        ServerNode[] node0Controllers = hashRing.getControllers(node0.getNodeName(), 2);
+        ServerNode[] expectedControllers = new ServerNode[] {node1, node2};
+
+        assertArrayEquals(node0Controllers, expectedControllers);
     }
 }
