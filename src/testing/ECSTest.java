@@ -11,6 +11,7 @@ import shared.messages.KVMessage;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 import static shared.messages.KVMessage.StatusType.*;
 
@@ -119,6 +120,83 @@ public class ECSTest extends Assert {
     }
 
     @Test()
+    public void testReplicatorPut() throws Exception {
+        addNodes(1);
+
+        KVStoreConnection kvClient0 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
+        kvClient0.connect();
+
+        // The first server is responsible for all keys
+        String key = "server" + (serverCounter);
+        addNodes(1);
+
+        KVMessage message = kvClient0.put(key, "bar");
+        JsonKVMessage res = getMessage(kvClient0, key);
+        assert(res.getStatus() != KVMessage.StatusType.SERVER_NOT_RESPONSIBLE);
+
+        TimeUnit.SECONDS.sleep(1);
+
+        // Connect to new server and try to get value as it should replicate original server
+        KVStoreConnection kvClient1 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
+        kvClient1.connect();
+        res = getMessage(kvClient1, key);
+        assert(res.getStatus() == KVMessage.StatusType.GET_SUCCESS);
+    }
+
+    @Test()
+    public void testReplicatorPutUpdate() throws Exception {
+        addNodes(1);
+
+        KVStoreConnection kvClient0 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
+        kvClient0.connect();
+
+        // The first server is responsible for all keys
+        String key = "server" + (serverCounter);
+        KVMessage message = kvClient0.put(key, "bar");
+        JsonKVMessage res = getMessage(kvClient0, key);
+        assert (res.getStatus() != KVMessage.StatusType.SERVER_NOT_RESPONSIBLE);
+
+        addNodes(1);
+
+        TimeUnit.SECONDS.sleep(1);
+        message = kvClient0.put(key, "new");
+        TimeUnit.SECONDS.sleep(1);
+
+        // Connect to new server and try to get value as it should replicate original server
+        KVStoreConnection kvClient1 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
+        kvClient1.connect();
+        res = getMessage(kvClient1, key);
+        assert (res.getStatus() == KVMessage.StatusType.GET_SUCCESS && res.getValue().equals("new"));
+    }
+
+    @Test()
+    public void testReplicatorPutDelete() throws Exception {
+        addNodes(1);
+
+        KVStoreConnection kvClient0 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
+        kvClient0.connect();
+
+        // The first server is responsible for all keys
+        String key = "server" + (serverCounter);
+        KVMessage message = kvClient0.put(key, "bar");
+        JsonKVMessage res = getMessage(kvClient0, key);
+        assert (res.getStatus() != KVMessage.StatusType.SERVER_NOT_RESPONSIBLE);
+
+        addNodes(1);
+
+        TimeUnit.SECONDS.sleep(1);
+        message = kvClient0.put(key, "null");
+        TimeUnit.SECONDS.sleep(1);
+
+        // Connect to new server and try to get value as it should replicate original server
+        KVStoreConnection kvClient1 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
+        kvClient1.connect();
+        res = getMessage(kvClient1, key);
+
+        assert(res.getStatus() == KVMessage.StatusType.GET_ERROR);
+    }
+
+    @Test()
     public void testNewServerWriteLockRelease() throws Exception {
         addNodes(1);
 
@@ -183,8 +261,8 @@ public class ECSTest extends Assert {
         KVStoreConnection kvClient1 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
         kvClient1.connect();
 
-        res = getMessage(kvClient1, key);
-        assert(res.getValue().equals("bar"));
+        res = putMessage(kvClient1, key, "new");
+        assert(res.getStatus() == PUT_UPDATE);
     }
 
     @Test()
