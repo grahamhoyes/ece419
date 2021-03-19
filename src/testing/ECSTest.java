@@ -353,38 +353,4 @@ public class ECSTest extends Assert {
 
     }
 
-//    @Test()
-//    public void testKillingServerPreservesData() throws Exception {
-//        addNodes(1);
-//        ServerNode node1 = ecs.getNodes().get(0);
-//
-//        KVStoreConnection kvClient0 = new KVStoreConnection("localhost", node1.getNodePort());
-//        kvClient0.connect();
-//
-//
-//        addNodes(1);
-//        ServerNode node2 = node1.getPredecessor();
-//
-//        kvClient0.put(node2.getNodeName(), "foo");
-//
-//        // Kill the first node via zookeeper
-//        ZooKeeperConnection zkConnection = new ZooKeeperConnection();
-//
-//        try {
-//            zkConnection.connect(zkHost, zkPort);
-//        } catch (InterruptedException | IOException e) {
-//            logger.fatal("Failed to establish a connection to ZooKeeper", e);
-//            throw e;
-//        }
-//        zkConnection.delete(ZooKeeperConnection.ZK_HEARTBEAT_ROOT + "/" + node1.getNodeName());
-//
-//        // Wait a few seconds for it to finish
-//        Thread.sleep(5000);
-//
-//        KVMessage res = kvClient0.get(node2.getNodeName());
-//
-//        assert(res.getStatus() == GET_SUCCESS);
-//        assert(res.getValue().equals("foo"));
-//    }
-
 }
