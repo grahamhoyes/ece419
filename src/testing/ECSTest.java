@@ -1,5 +1,6 @@
 package testing;
 
+import app_kvServer.KVServer;
 import client.KVStoreConnection;
 import ecs.ECS;
 import ecs.ServerNode;
@@ -8,10 +9,12 @@ import org.apache.log4j.Logger;
 import org.junit.*;
 import shared.messages.JsonKVMessage;
 import shared.messages.KVMessage;
+import store.KVStore;
 
 import java.util.ArrayList;
 
 import static shared.messages.KVMessage.StatusType.SERVER_STOPPED;
+import static shared.messages.KVMessage.StatusType.valueOf;
 
 public class ECSTest extends Assert {
     private static final Logger logger = Logger.getLogger("ECSTest");
@@ -28,10 +31,18 @@ public class ECSTest extends Assert {
         serverCounter += nodes;
     }
 
-    private JsonKVMessage getMessage(KVStoreConnection kvClient, String key) throws Exception  {
+    private JsonKVMessage getMessage(KVStoreConnection kvClient, String key) throws Exception {
         JsonKVMessage req = new JsonKVMessage(KVMessage.StatusType.GET);
         req.setKey(key);
-        JsonKVMessage res;
+
+        kvClient.sendMessage(req);
+        return kvClient.receiveMessage();
+    }
+
+    private JsonKVMessage putMessage(KVStoreConnection kvClient, String key, String value) throws Exception {
+        JsonKVMessage req = new JsonKVMessage(KVMessage.StatusType.PUT);
+        req.setKey(key);
+        req.setValue(value);
 
         kvClient.sendMessage(req);
         return kvClient.receiveMessage();
@@ -85,8 +96,29 @@ public class ECSTest extends Assert {
         // The second added server is called server4 so it should be responsible for its own key
         addNodes(1);
 
-        res = getMessage(kvClient0, key);
+//        res = getMessage(kvClient0, key);
+        res = putMessage(kvClient0, key, "bar1");
         assert(res.getStatus() == KVMessage.StatusType.SERVER_NOT_RESPONSIBLE);
+    }
+
+    @Test()
+    public void testReplicatorGet() throws Exception {
+        addNodes(1);
+
+        KVStoreConnection kvClient0 = new KVStoreConnection("localhost", baseKVServerPort + serverCounter);
+        kvClient0.connect();
+
+        // The first server is responsible for all keys
+        String key = "server" + (serverCounter + 1);
+        KVMessage message = kvClient0.put(key, "bar");
+        JsonKVMessage res = getMessage(kvClient0, key);
+        assert(res.getStatus() != KVMessage.StatusType.SERVER_NOT_RESPONSIBLE);
+
+        // The second added server is called server4 so it should be responsible for its own key
+        addNodes(1);
+
+        res = getMessage(kvClient0, key);
+        assert(res.getStatus() == KVMessage.StatusType.GET_SUCCESS);
     }
 
     @Test()
