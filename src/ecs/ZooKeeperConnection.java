@@ -82,14 +82,21 @@ public class ZooKeeperConnection {
      * @return AdminMessage response
      */
     public AdminMessage sendAdminMessage(String nodeName, AdminMessage message, int timeoutMillis) throws KeeperException, InterruptedException, TimeoutException {
-        // TODO: Include a message ID in every admin message. If the response watcher times out,
-        //  get the node and check if the ID matches anyway.
 
         String uuid = UUID.randomUUID().toString();
         message.setUuid(uuid);
 
         String nodePath = ZK_SERVER_ROOT + "/" + nodeName;
         String adminPath = nodePath + "/admin";
+        String responsePath = nodePath + "/" + uuid;
+
+        // Create a node for the response
+        try {
+            create(responsePath, "", CreateMode.EPHEMERAL, 5);
+        } catch (KeeperException | InterruptedException e) {
+            logger.error("Failed to create response ZNode", e);
+            throw e;
+        }
 
         // Server will respond by setting an ack or error status on its ZNode
         CountDownLatch sig = new CountDownLatch(1);
@@ -98,9 +105,9 @@ public class ZooKeeperConnection {
         final AdminMessage[] response = new AdminMessage[1];
 
         // Setup the response watcher first, just to prevent any race conditions
-        zk.exists(nodePath, event -> {
+        zk.exists(responsePath, event -> {
             try {
-                byte[] data = zk.getData(nodePath, false, null);
+                byte[] data = zk.getData(responsePath, false, null);
                 response[0] = new AdminMessage(new String(data));
                 sig.countDown();
             } catch (KeeperException | InterruptedException e) {
@@ -119,11 +126,19 @@ public class ZooKeeperConnection {
                 // message. This tries to retrieved it anyway
 
                 try {
-                    byte[] data = zk.getData(nodePath, false, null);
+                    byte[] data = zk.getData(responsePath, false, null);
+                    String responseText = new String(data);
+
+                    if (responseText.equals("")) {
+                        logger.error("Node " + nodeName + " did not properly respond to the admin message");
+                        throw new TimeoutException("Timeout waiting on response to admin message to node " + nodeName);
+                    }
                     response[0] = new AdminMessage(new String(data));
 
                     if (response[0].getUuid().equals(uuid)) {
                         return response[0];
+                    } else {
+                        logger.warn("Retrieved UUID " + response[0].getUuid() + " does not match expected UUID " + uuid);
                     }
 
                 } catch (KeeperException | InterruptedException e) {
