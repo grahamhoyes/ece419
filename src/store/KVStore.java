@@ -11,6 +11,9 @@ public interface KVStore {
     public String get(String key, ServerNode responsibleNode) throws Exception;
     public void clear() throws IOException;
     public boolean exists(String key) throws Exception;
+
+    void initClearReplicatedData() throws IOException;
+
     public void delete(String key) throws Exception;
 
     void mergeData(String newFileName, boolean deleteFile) throws IOException;

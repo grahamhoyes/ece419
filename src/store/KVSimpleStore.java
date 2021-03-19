@@ -337,6 +337,17 @@ public class KVSimpleStore implements KVStore{
     }
 
     @Override
+    public void initClearReplicatedData() throws IOException {
+        File[] files = new File(dataDir).listFiles();
+        for (File file : files) {
+            String fileName = file.getName();
+            if (fileName.startsWith("repl") && fileName.endsWith(serverName + ".txt")) {
+                file.delete();
+            }
+        }
+    }
+
+    @Override
     public void delete(String key) throws Exception {
         storageLock.writeLock().lock();
         try {

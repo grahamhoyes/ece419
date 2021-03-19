@@ -76,6 +76,7 @@ public class KVServer implements IKVServer, Runnable {
         this.cacheStrategy = CacheStrategy.None;
 
         this.clearStorage();
+        this.clearReplicatedData();
 
         this.acquireReceivingPorts();
 
@@ -247,6 +248,14 @@ public class KVServer implements IKVServer, Runnable {
     @Override
     public void clearStorage() throws IOException {
         this.kvStore.clear();
+    }
+
+    private void clearReplicatedData() {
+        try {
+            this.kvStore.initClearReplicatedData();
+        } catch (IOException e) {
+            logger.error("Failed to clear replicated data", e);
+        }
     }
 
     public void sendData(AdminMessage message) {
