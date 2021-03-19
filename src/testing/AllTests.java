@@ -2,7 +2,6 @@ package testing;
 
 import org.apache.log4j.Level;
 
-import app_kvServer.KVServer;
 import logger.LogSetup;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
@@ -16,18 +15,15 @@ import org.junit.runners.Suite;
 		JsonMessageTest.class,
 		KVStoreTest.class,
 		CommunicationProtocolTest.class,
+		HashRingTest.class,
 		ECSTest.class
 })
 public class AllTests {
-	// TODO: Tests for ZooKeeper
 
 	@BeforeClass
 	public static void setUp() {
 		try {
 			new LogSetup("logs/testing/test.log", Level.ALL);
-//			KVServer server = new KVServer(50000, "127.0.0.1:50000", "127.0.0.1", 2181);
-//			server.clearStorage();
-//			new Thread(server).start();
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(1);

@@ -373,7 +373,7 @@ public class KVServer implements IKVServer, Runnable {
 
     private void updateReplicators(String filePath, ReentrantReadWriteLock lock) {
         ServerNode serverNode = ecsConnection.getHashRing().getNode(serverName);
-        int num_replicators = getNonNullLength(replicators);
+        int num_replicators = Math.max(getNonNullLength(replicators), 1);
         CyclicBarrier deleteBarrier = new CyclicBarrier(num_replicators);
         for (int i = 0; i < num_replicators; i++) {
             ServerNode replicator = replicators[i];

@@ -46,19 +46,13 @@ public class InteractionTest extends Assert {
 	
 	
 	@Test
-	public void testPut() {
+	public void testPut() throws Exception {
 		String key = "foo2";
 		String value = "bar2";
-		KVMessage response = null;
-		Exception ex = null;
 
-		try {
-			response = kvClient.put(key, value);
-		} catch (Exception e) {
-			ex = e;
-		}
+		KVMessage response = kvClient.put(key, value);
 
-		assertTrue(ex == null && response.getStatus() == StatusType.PUT_SUCCESS);
+		assertTrue(response.getStatus() == StatusType.PUT_SUCCESS);
 	}
 	
 	@Test

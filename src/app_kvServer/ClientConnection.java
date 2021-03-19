@@ -126,7 +126,7 @@ public class ClientConnection extends Connection implements Runnable {
                                     res.setStatus(StatusType.PUT_ERROR);
                                     res.setMessage(e.getMessage());
                                     logger.warn("PUT " + req.getKey() + "="
-                                            + req.getValue() + " error: " + e.getMessage());
+                                            + req.getValue() + " error: " + e.getMessage(), e);
                                 }
                             }
                             break;
