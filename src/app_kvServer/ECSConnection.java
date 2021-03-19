@@ -201,9 +201,11 @@ public class ECSConnection {
                         response.setMessage("Invalid action");
                 }
 
-                // Send the response back at the node's ZNode, which the ECS
+                // Send the response back at the node's response ZNode, which the ECS
                 // has a watcher for
-                zkConnection.setData(nodePath, response.serialize());
+                String responsePath = nodePath + "/" + message.getUuid();
+
+                zkConnection.setData(responsePath, response.serialize());
                 logger.info("Responded to admin message");
 
                 if (shutdown) {
