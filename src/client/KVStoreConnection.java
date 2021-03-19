@@ -121,7 +121,7 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 			if (hashRing != null) {
 
 				ServerNode responsibleNode = hashRing.getNodeForKey(key);
-				if (currentNode == null || (/*!currentNode.doesNodeReplicateKey(key) &&*/ !currentNode.isNodeResponsible(key))) {
+				if (currentNode == null || (!currentNode.doesNodeReplicateKey(key) && !currentNode.isNodeResponsible(key))) {
 					switchServers(responsibleNode);
 					this.currentNode = responsibleNode;
 				}

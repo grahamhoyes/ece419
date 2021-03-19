@@ -250,6 +250,21 @@ public class KVSimpleStore implements KVStore{
     }
 
     @Override
+    public String get(String key, ServerNode responsibleNode) throws Exception {
+        String replicateFilePath = dataDir + File.separatorChar + "repl_" + responsibleNode.getNodeName() + "_" + serverName + ".txt";
+        if (replicatedPaths.contains(replicateFilePath)) {
+            KeyValueLocation keyValueLocation = find(replicateFilePath, key);
+            if (keyValueLocation.isExists()){
+                return keyValueLocation.value;
+            } else{
+                throw new KeyInvalidException(key);
+            }
+        } else {
+            throw new KeyInvalidException(key);
+        }
+    }
+
+    @Override
     public boolean put(String key, String value) throws Exception {
         return put(this.filePath, key, value, false);
     }

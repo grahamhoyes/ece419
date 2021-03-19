@@ -221,30 +221,24 @@ public class KVServer implements IKVServer, Runnable {
 
         // If ClientConnection did its job properly, key should be
         // on either this node, or one of the nodes it replicates.
-        ServerNode responsibleNode = null;
         if (isNodeResponsible(key)) {
-            responsibleNode = ecsConnection.getCurrentNode();
+            String value;
+            lock.readLock().lock();
+            try {
+                value = this.kvStore.get(key);
+            } finally {
+                lock.readLock().unlock();
+            }
+            return value;
         } else {
             for (ServerNode node : controllers) {
                 if (node.isNodeResponsible(key)) {
-                    responsibleNode = node;
-                    break;
+                    return this.kvStore.get(key, node);
                 }
             }
         }
 
-        if (responsibleNode == null) {
-            throw new KeyInvalidException(key);
-        }
-
-        String value;
-        lock.readLock().lock();
-        try {
-            value = this.kvStore.get(key);
-        } finally {
-            lock.readLock().unlock();
-        }
-        return value;
+        throw new KeyInvalidException(key);
     }
 
     @Override
