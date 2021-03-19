@@ -175,7 +175,6 @@ public class HashRing {
         ServerNode successorNode = currentNode.getSuccessor();
 
         for (int i=0; i<num_replicators; i++) {
-            logger.info("Getting Replicators " + String.valueOf(i) + " | Node: " + successorNode.getNodeName());
             if (successorNode.equals(currentNode)) {
                 logger.info("The nodes are equal");
                 break;

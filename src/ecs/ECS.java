@@ -297,7 +297,7 @@ public class ECS implements IECS {
             if (!setWriteLock(successor, true)) return null;
 
             // Invoke data transfer
-            if (!moveDataBetweenNodes(successor, node)) return null;
+            if (!moveDataBetweenNodes(successor, node, updatedHashRing)) return null;
         }
 
         // Once all data has been transferred, send global metadata updates
@@ -563,7 +563,7 @@ public class ECS implements IECS {
 
         // Transfer data from the node to be removed to its successor
         node.setPredecessor(null);  // Also sets the hash range to null
-        if (!moveDataBetweenNodes(node, successor)) return false;
+        if (!moveDataBetweenNodes(node, successor, updatedHashRing)) return false;
 
         // Once all data has been transferred, send global metadata updates
         hashRing = updatedHashRing;
@@ -674,7 +674,7 @@ public class ECS implements IECS {
         return null;
     }
 
-    private boolean moveDataBetweenNodes(ServerNode fromNode, ServerNode toNode) {
+    private boolean moveDataBetweenNodes(ServerNode fromNode, ServerNode toNode, HashRing updatedHashRing) {
         boolean success;
 
         try {
@@ -683,7 +683,7 @@ public class ECS implements IECS {
 
             if (response.getAction() == AdminMessage.Action.ACK) {
                 logger.info("Ready to receive data at server " + toNode.getNodeName());
-                success = nodeMoveData(fromNode, toNode);
+                success = nodeMoveData(fromNode, toNode, updatedHashRing);
             } else {
                 logger.error("Could not receive data at server " + toNode.getNodeName());
                 success = false;
@@ -699,10 +699,11 @@ public class ECS implements IECS {
         return success;
     }
 
-    private boolean nodeMoveData(ServerNode fromNode, ServerNode toNode){
+    private boolean nodeMoveData(ServerNode fromNode, ServerNode toNode, HashRing updatedHashRing) {
         boolean success = true;
 
         AdminMessage message = new AdminMessage(AdminMessage.Action.MOVE_DATA);
+        message.setMetadata(updatedHashRing);
         message.setSender(fromNode);
         message.setReceiver(toNode);
 
@@ -798,6 +799,8 @@ public class ECS implements IECS {
                     try {
                         updateGlobalMetadata(node, AdminMessage.ServerChange.DIED);
                         logger.info("Global metadata updated");
+                        //TODO: uncomment
+//                        addNode();
                     } catch (KeeperException | InterruptedException | TimeoutException e) {
                         logger.error("Failed to update global metadata", e);
                     }

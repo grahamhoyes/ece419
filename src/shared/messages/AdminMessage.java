@@ -33,7 +33,7 @@ public class AdminMessage implements Serializable {
 
     private Action action;              // Required for all messages
     private String message;             // Only required for errors
-    private HashRing hashRing;          // Used by SET_METADATA
+    private HashRing hashRing;          // Used by SET_METADATA, MOVE_DATA
     private ServerChange serverChange;  // Used by SET_METADATA
     private ServerNode changedServer;   // Used by SET_METADATA
 

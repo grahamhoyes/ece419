@@ -196,6 +196,7 @@ public class ECSConnection {
                 // Send the response back at the node's ZNode, which the ECS
                 // has a watcher for
                 zkConnection.setData(nodePath, response.serialize());
+                logger.info("Responded to admin message");
 
                 if (shutdown) {
                     kvServer.close();

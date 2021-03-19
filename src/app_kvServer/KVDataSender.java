@@ -6,6 +6,10 @@ import org.apache.log4j.Logger;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class KVDataSender implements Runnable{
@@ -15,16 +19,17 @@ public class KVDataSender implements Runnable{
     private final KVServer kvServer;
     private final String dataPath;
     private final boolean initialize;
+    private final CyclicBarrier deleteBarrier;
 
-
-    public KVDataSender(ServerNode replicator, KVServer kvServer){
-            this(replicator, kvServer, kvServer.getWriteLogPath(), false);
+    public KVDataSender(ServerNode replicator, KVServer kvServer, String dataPath, CyclicBarrier deleteBarrier) {
+            this(replicator, kvServer, dataPath, deleteBarrier, false);
     }
 
-    public KVDataSender(ServerNode replicator, KVServer kvServer, String dataPath, boolean initialize){
+    public KVDataSender(ServerNode replicator, KVServer kvServer, String dataPath, CyclicBarrier deleteBarrier, boolean initialize){
         this.replicator = replicator;
         this.kvServer = kvServer;
         this.dataPath = dataPath;
+        this.deleteBarrier = deleteBarrier;
         this.initialize = initialize;
     }
 
@@ -32,8 +37,6 @@ public class KVDataSender implements Runnable{
     public void run(){
         String host = replicator.getNodeHost();
         int port = replicator.getReplicationReceivePort();
-
-
 
         ReentrantReadWriteLock lock = null;
         if (initialize){
@@ -87,10 +90,17 @@ public class KVDataSender implements Runnable{
             fileInput.close();
             replicatorSocket.close();
 
+            deleteBarrier.await();
+            if (!initialize){
+                Files.deleteIfExists(Paths.get(dataPath));
+            }
+
             logger.info("Finished data transfer for replication at node " + replicator.getNodeName());
 
         } catch (IOException e) {
             logger.error("Unable to send data to receiving node", e);
+        } catch (InterruptedException | BrokenBarrierException e) {
+            logger.error("Failed to wait for other thread to replicate", e);
         } finally {
             if (initialize) {
                 lock.readLock().unlock();

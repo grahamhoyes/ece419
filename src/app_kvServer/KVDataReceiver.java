@@ -62,7 +62,9 @@ public class KVDataReceiver implements Runnable {
             if (replicator) {
                 kvServer.replicateData(tempFileName, controlServer);
             } else {
+                logger.info("Attempting to merge data after receiving");
                 kvServer.mergeNewData(tempFileName);
+                logger.info("Merged data after receiving.");
             }
         } catch (IOException e) {
             logger.error("Receiving data failed: unable to connect with sender", e);
