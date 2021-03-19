@@ -7,6 +7,7 @@ import shared.messages.AdminMessage;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -81,6 +82,12 @@ public class ZooKeeperConnection {
      * @return AdminMessage response
      */
     public AdminMessage sendAdminMessage(String nodeName, AdminMessage message, int timeoutMillis) throws KeeperException, InterruptedException, TimeoutException {
+        // TODO: Include a message ID in every admin message. If the response watcher times out,
+        //  get the node and check if the ID matches anyway.
+
+        String uuid = UUID.randomUUID().toString();
+        message.setUuid(uuid);
+
         String nodePath = ZK_SERVER_ROOT + "/" + nodeName;
         String adminPath = nodePath + "/admin";
 
@@ -108,6 +115,21 @@ public class ZooKeeperConnection {
             boolean success = sig.await(timeoutMillis, TimeUnit.MILLISECONDS);
 
             if (!success) {
+                // Most of the time, if we timed out it was because the watcher above missed the
+                // message. This tries to retrieved it anyway
+
+                try {
+                    byte[] data = zk.getData(nodePath, false, null);
+                    response[0] = new AdminMessage(new String(data));
+
+                    if (response[0].getUuid().equals(uuid)) {
+                        return response[0];
+                    }
+
+                } catch (KeeperException | InterruptedException e) {
+                    logger.error("Failed to receive admin message", e);
+                }
+
                 throw new TimeoutException("Timeout waiting on response to admin message to node " + nodeName);
             }
         } else {

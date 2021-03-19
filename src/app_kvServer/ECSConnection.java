@@ -131,6 +131,7 @@ public class ECSConnection {
                 AdminMessage message = new AdminMessage(new String(data));
 
                 AdminMessage response = new AdminMessage();
+                response.setUuid(message.getUuid());
 
                 logger.info("Got a " + message.getAction() + " admin message");
 
@@ -190,6 +191,7 @@ public class ECSConnection {
                         nodeMetadata = hashRing.getNode(serverName);
                         response.setAction(AdminMessage.Action.ACK);
                         response.setMessage("Got metadata update");
+                        logger.info("Incoming Metadata: " + message.serialize());
                         kvServer.processServerChange(message.getServerChange(), message.getChangedServer(), hashRing);
                         logger.info("Metadata updated");
                         logger.info("Server now responsible for " + Arrays.toString(nodeMetadata.getNodeHashRange()));
@@ -202,6 +204,7 @@ public class ECSConnection {
                 // Send the response back at the node's ZNode, which the ECS
                 // has a watcher for
                 zkConnection.setData(nodePath, response.serialize());
+                logger.info("Responded to admin message");
 
                 if (shutdown) {
                     kvServer.close();

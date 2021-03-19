@@ -32,8 +32,9 @@ public class AdminMessage implements Serializable {
     }
 
     private Action action;              // Required for all messages
+    private String uuid;                // Required for all messages
     private String message;             // Only required for errors
-    private HashRing hashRing;          // Used by SET_METADATA
+    private HashRing hashRing;          // Used by SET_METADATA, MOVE_DATA
     private ServerChange serverChange;  // Used by SET_METADATA
     private ServerNode changedServer;   // Used by SET_METADATA
 
@@ -112,6 +113,14 @@ public class AdminMessage implements Serializable {
         this.changedServer = changedServer;
     }
 
+    public String getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
+    }
+
     public String serialize() {
         return new Gson().toJson(this);
     }
@@ -120,6 +129,7 @@ public class AdminMessage implements Serializable {
         AdminMessage adminMessage = new Gson().fromJson(json, AdminMessage.class);
 
         this.action = adminMessage.action;
+        this.uuid = adminMessage.uuid;
         this.message = adminMessage.message;
         this.hashRing = adminMessage.hashRing;
         if (this.hashRing != null) {

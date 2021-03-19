@@ -171,13 +171,15 @@ public class HashRing {
     public ServerNode[] getReplicators(String nodeName, int num_replicators) {
         ServerNode[] replicators = new ServerNode[num_replicators];
         ServerNode currentNode = this.getNode(nodeName);
+        ServerNode successorNode = currentNode.getSuccessor();
 
         for (int i=0; i<num_replicators; i++) {
-            ServerNode succ = currentNode.getSuccessor();
-            if (succ.compareTo(currentNode) == 0) {
+            if (successorNode.equals(currentNode)) {
+                logger.info("The nodes are equal");
                 break;
             }
-            replicators[i] = succ;
+            replicators[i] = successorNode;
+            successorNode = successorNode.getSuccessor();
         }
         return replicators;
     }
@@ -185,13 +187,14 @@ public class HashRing {
     public ServerNode[] getControllers(String nodeName, int num_controllers) {
         ServerNode[] controllers = new ServerNode[num_controllers];
         ServerNode currentNode = this.getNode(nodeName);
+        ServerNode predNode = currentNode.getPredecessor();
 
         for (int i=0; i<num_controllers; i++) {
-            ServerNode pred = currentNode.getPredecessor();
-            if (pred.equals(currentNode)) {
+            if (predNode.equals(currentNode)) {
                 break;
             }
-            controllers[i] = pred;
+            controllers[i] = predNode;
+            predNode = predNode.getPredecessor();
         }
         return controllers;
     }

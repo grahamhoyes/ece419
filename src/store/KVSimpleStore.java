@@ -2,6 +2,7 @@ package store;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import ecs.ServerNode;
 import org.apache.log4j.Logger;
 
 import java.io.File;
@@ -11,11 +12,14 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.Key;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static ecs.ServerNode.hashInRange;
+
+//TODO: Remove replicated data on death and clear it on startup
 
 public class KVSimpleStore implements KVStore{
     protected static final Logger logger = Logger.getLogger("KVSimpleStore");
@@ -32,6 +36,8 @@ public class KVSimpleStore implements KVStore{
     private String writeLogPath;
 
     private Set<String> replicatedPaths = new HashSet<String>();
+
+    private final ReentrantReadWriteLock writeLogLock = new ReentrantReadWriteLock();
 
 
     public KVSimpleStore(String serverName) throws IOException{
@@ -166,30 +172,70 @@ public class KVSimpleStore implements KVStore{
     }
 
     private void writeLogAppend(KeyValue keyValue, WRITE_ACTION action) {
-        String prefix = "";
-        switch (action) {
-            case PUT:
-                prefix = "P";
-                break;
-            case UPDATE:
-                prefix = "U";
-                break;
-            case DELETE:
-                prefix = "D";
-                break;
-        };
+        writeLogLock.writeLock().lock();
+        try {
+            String prefix = "";
+            switch (action) {
+                case PUT:
+                    prefix = "P";
+                    break;
+                case UPDATE:
+                    prefix = "U";
+                    break;
+                case DELETE:
+                    prefix = "D";
+                    break;
+            }
+            ;
 
-        String output = prefix + keyValue.getJsonKV();
+            String output = prefix + keyValue.getJsonKV();
 
-        try(
-            RandomAccessFile writer = new RandomAccessFile(this.writeLogPath, "rw");
-        ) {
-            writer.setLength(0);
-            writer.write(output.getBytes(StandardCharsets.UTF_8));
-        } catch (IOException e){
-            logger.error("Could not append to replication write log.");
+            try (
+                RandomAccessFile writer = new RandomAccessFile(this.writeLogPath, "rw");
+            ) {
+                writer.setLength(0);
+                writer.write(output.getBytes(StandardCharsets.UTF_8));
+            } catch (IOException e) {
+                logger.error("Could not append to replication write log.");
+            }
+        } finally {
+            writeLogLock.writeLock().unlock();
         }
+    }
 
+    private void writeLogAppend(String filePath, WRITE_ACTION action) {
+        writeLogLock.writeLock().lock();
+        try {
+            String prefix = "";
+            switch (action) {
+                case PUT:
+                    prefix = "P";
+                    break;
+                case UPDATE:
+                    prefix = "U";
+                    break;
+                case DELETE:
+                    prefix = "D";
+                    break;
+            }
+
+
+            try (
+                RandomAccessFile writer = new RandomAccessFile(this.writeLogPath, "rw");
+                RandomAccessFile reader = new RandomAccessFile(filePath, "r");
+            ) {
+                writer.setLength(0);
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    String output = prefix + line + System.lineSeparator();
+                    writer.write(output.getBytes(StandardCharsets.UTF_8));
+                }
+            } catch (IOException e) {
+                logger.error("Could not append to replication write log.");
+            }
+        } finally {
+            writeLogLock.writeLock().unlock();
+        }
     }
 
     @Override
@@ -232,29 +278,33 @@ public class KVSimpleStore implements KVStore{
 
     @Override
     public void clear() throws IOException {
-        try(RandomAccessFile storageFile = new RandomAccessFile(this.filePath, "rw")){
+        try (RandomAccessFile storageFile = new RandomAccessFile(this.filePath, "rw")) {
             storageFile.setLength(0L);
         }
     }
 
     @Override
     public void delete(String key) throws Exception {
-        delete(this.filePath, key);
+        delete(this.filePath, key, false);
     }
 
     private void delete(String filePath, String key) throws Exception {
+        delete(filePath, key, true);
+    }
+
+    private void delete(String filePath, String key, boolean replicator) throws Exception {
         KeyValueLocation keyValueLocation = find(filePath, key);
         KeyValue keyValue = new KeyValue(key);
         if (keyValueLocation.isExists()){
             deleteKeyValue(filePath, keyValueLocation);
             writeLogAppend(keyValue, WRITE_ACTION.DELETE);
         }else{
-            throw new KeyInvalidException(key);
+            if (!replicator) throw new KeyInvalidException(key);
         }
     }
 
     @Override
-    public void mergeData(String newFileName) throws IOException {
+    public void mergeData(String newFileName, boolean deleteFile) throws IOException {
         File temp = new File(newFileName);
 
         try(RandomAccessFile tempRAF = new RandomAccessFile(newFileName, "rw");
@@ -262,37 +312,77 @@ public class KVSimpleStore implements KVStore{
             FileChannel fromChannel = tempRAF.getChannel();
             FileChannel toChannel = storageRAF.getChannel();
 
+            String line;
+            while((line = tempRAF.readLine())!= null) {
+                logger.info("data received and merging: " + tempRAF.readLine());
+            }
             toChannel.position(storageRAF.length());
             fromChannel.position(0L);
             fromChannel.transferTo(0L, fromChannel.size(), toChannel);
         }
-        temp.delete();
+        if (deleteFile) temp.delete();
+    }
+
+    public void mergeData(String newFileName) throws IOException {
+        mergeData(newFileName, true);
+    }
+
+    @Override
+    public String mergeReplicatedData(ServerNode controller) throws Exception {
+        String controlServer = controller.getNodeName();
+        String replicateFilePath = dataDir + File.separatorChar + "repl_" + controlServer + "_" + serverName + ".txt";
+        mergeData(replicateFilePath, false);
+        return replicateFilePath;
+    }
+    @Override
+    public void deleteReplicatedData(ServerNode serverNode) {
+        if (serverNode != null) {
+            String replicateFilePath = dataDir
+                    + File.separatorChar
+                    + "repl_"
+                    + serverNode.getNodeName()
+                    + "_" + serverName + ".txt";
+
+            replicatedPaths.remove(replicateFilePath);
+            File replicatedFile = new File(replicateFilePath);
+            replicatedFile.delete();
+        }
+
     }
 
     @Override
     public void replicateData(String tempFilePath, String controlServer) {
-        String replicateFilePath = dataDir + File.separatorChar + "repl_" + controlServer + "_" + serverName + ".txt";
+        writeLogLock.writeLock().lock();
+        try {
+            String replicateFilePath = dataDir + File.separatorChar + "repl_" + controlServer + "_" + serverName + ".txt";
 
-        if (replicatedPaths.contains(replicateFilePath)) {
-            logger.info("Updating replicated data for " + controlServer);
+            if (replicatedPaths.contains(replicateFilePath)) {
+                logger.info("Updating replicated data for " + controlServer);
 
-            updateReplicatedData(tempFilePath, replicateFilePath);
-        } else {
-            logger.info("Instantiating replicated data for " + controlServer+ " at " + replicateFilePath);
-
-            File replicateFile = new File(replicateFilePath);
-            try {
-                if (!replicateFile.exists()) {
-                    replicateFile.createNewFile();
+                updateReplicatedData(tempFilePath, replicateFilePath);
+            } else {
+                logger.info("Instantiating replicated data for " + controlServer + " at " + replicateFilePath);
+                try {
+                    // TODO: change this because the first send from server0 to server1 is the write log??
+                    // or change the write log sending hmm??
+                    if (!Files.exists(Paths.get(replicateFilePath))) Files.createFile(Paths.get(replicateFilePath));
+                    updateReplicatedData(tempFilePath, replicateFilePath);
+                    logger.info("Instantiated replicated data for " + controlServer);
+                    replicatedPaths.add(replicateFilePath);
+                } catch (IOException e) {
+                    logger.error("Failed to instantiate replicated data for " + controlServer, e);
                 }
-            } catch (IOException e) {
-                logger.error("Failed to create replicated data file.", e);
             }
-            updateReplicatedData(tempFilePath, replicateFilePath);
+        } finally {
+            writeLogLock.writeLock().unlock();
         }
     }
 
     private void updateReplicatedData(String tempFilePath, String replicateFilePath){
+        //TODO: Check that replication covers the basic cases
+        // 1. when bringing on new nodes, data is sent to new server as per M2, but also has to send it to replicators
+        // 2. when deleting a node, data is sent to successor ndoe as per M2, but data at replicators of successors is updated too
+        // 3. node death?? hasn't been tested at all rn
         try (
             RandomAccessFile reader = new RandomAccessFile(tempFilePath, "r");
         ) {
@@ -301,14 +391,22 @@ public class KVSimpleStore implements KVStore{
             while ((line = reader.readLine()) != null) {
                 char action =  line.charAt(0);
                 String keyValueJson = line.substring(1);
-                KeyValue keyValue = gson.fromJson(keyValueJson, KeyValue.class);
 
-                if (action == 'P' || action == 'U') {
-                    logger.info("Replicate: put/update for key: " + keyValue.getKey());
+                if (action == 'P') {
+                    KeyValue keyValue = gson.fromJson(keyValueJson, KeyValue.class);
+                    logger.info("Replicate: put for key: " + keyValue.getKey());
+                    addKeyValue(replicateFilePath, keyValueJson + System.lineSeparator());
+                } else if (action == 'U') {
+                    KeyValue keyValue = gson.fromJson(keyValueJson, KeyValue.class);
                     put(replicateFilePath, keyValue.getKey(), keyValue.getValue(), true);
+                    logger.info("Replicate: update for key: " + keyValue.getKey());
                 } else if (action == 'D') {
+                    KeyValue keyValue = gson.fromJson(keyValueJson, KeyValue.class);
                     logger.info("Replicate: delete for key: " + keyValue.getKey());
                     delete(replicateFilePath, keyValue.getKey());
+                } else {
+                    KeyValue keyValue = gson.fromJson(line, KeyValue.class);
+                    put(replicateFilePath, keyValue.getKey(), keyValue.getValue(), true);
                 }
             }
         } catch (Exception e){
@@ -317,7 +415,7 @@ public class KVSimpleStore implements KVStore{
     }
 
 
-    public String splitData(String[] keyHashRange) throws IOException {
+    public String splitData(String[] keepHashRange) throws IOException {
         File sendFile = new File(this.sendPath);
         boolean ignored = sendFile.createNewFile();
         File keepFile = new File(this.keepPath);
@@ -336,14 +434,14 @@ public class KVSimpleStore implements KVStore{
                 String keyHash = keyValue.getKeyHash();
                 String keyValueJSON = keyValue.getJsonKV();
 
-                if (hashInRange(keyHash, keyHashRange)) {
-                    // If key in keyHashRange, key-value is kept
-                    keepRAF.seek(keepRAF.length());
-                    keepRAF.write(keyValueJSON.getBytes());
-                } else {
+                if (hashInRange(keyHash, keepHashRange)) {
                     // Key-value is sent
                     sendRAF.seek(sendRAF.length());
                     sendRAF.write(keyValueJSON.getBytes());
+                } else {
+                    // If key in keyHashRange, key-value is kept
+                    keepRAF.seek(keepRAF.length());
+                    keepRAF.write(keyValueJSON.getBytes());
                 }
             }
         }
@@ -357,6 +455,7 @@ public class KVSimpleStore implements KVStore{
         File keepFile = new File(this.keepPath);
 
         // TODO: don't delete send file, turn it into replication file for the newly created server
+        writeLogAppend(this.sendPath, WRITE_ACTION.DELETE);
         sendFile.delete();
         storageFile.delete();
         boolean renamed = keepFile.renameTo(new File(this.filePath));

@@ -11,13 +11,20 @@ import store.KVStore;
 import store.KeyInvalidException;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.net.BindException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class KVServer implements IKVServer, Runnable {
@@ -27,6 +34,11 @@ public class KVServer implements IKVServer, Runnable {
     private static final int NUM_REPLICATORS = 2;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(true);
+
+    private boolean hasBeenInitialized = false;
+
+    private boolean readyToReplicate = true;
+    private final Object replicateSync = new Object();
 
     private final int port;
     private final int cacheSize;
@@ -92,6 +104,14 @@ public class KVServer implements IKVServer, Runnable {
 
     public ReentrantReadWriteLock getLock() {
         return lock;
+    }
+
+    public Object getReplicateSync() {
+        return replicateSync;
+    }
+
+    public boolean getReadyToReplicate() {
+        return readyToReplicate;
     }
 
     @Override
@@ -272,17 +292,19 @@ public class KVServer implements IKVServer, Runnable {
         String host = receiveNode.getNodeHost();
         int port = receiveNode.getDataReceivePort();
 
-        BigInteger startingHashValue = new BigInteger(receiveNode.getNodeHash(), 16)
-                .add(BigInteger.ONE)
-                .mod(ServerNode.HASH_MAX);
-        StringBuilder startingHash = new StringBuilder(startingHashValue.toString(16));
-        while (startingHash.length() < 32) {
-            startingHash.insert(0, "0");
-        }
-
-        String[] hashRange = new String[]{startingHash.toString(), message.getSender().getNodeHash()};
+        HashRing updatedHashRing = message.getMetadata();
+        receiveNode = updatedHashRing.getNode(receiveNode.getNodeName());
+        String[] sendHashRange = receiveNode.getNodeHashRange();
 
         try {
+
+            synchronized (replicateSync) {
+                // This enforces synchronizing a node sending data to a new node
+                // and cleaning up after before sending replicated data to a new node.
+                // For cases where there is 1 node, and a new node needs to be sent data
+                // but also becomes a replicator.
+                readyToReplicate = false;
+            }
             logger.info("Starting data transfer to node "
                     + receiveNode.getNodeName()
                     + " at "
@@ -290,8 +312,10 @@ public class KVServer implements IKVServer, Runnable {
                     + ": "
                     + port
                     + System.lineSeparator()
+                    + "Send Hash Range: "
+                    + Arrays.toString(sendHashRange)
             );
-            String sendPath = kvStore.splitData(hashRange);
+            String sendPath = kvStore.splitData(sendHashRange);
             File sendFile = new File(sendPath);
 
             byte[] buffer = new byte[BUFFER_SIZE];
@@ -306,10 +330,6 @@ public class KVServer implements IKVServer, Runnable {
             BufferedReader bufferedReader = new BufferedReader(
                     new InputStreamReader(fileInput, StandardCharsets.UTF_8));
 
-//            int size;
-//            while ((size = fileInput.read(buffer)) > 0) {
-//                socketOutput.write(buffer, 0, size);
-//            }
             String line;
             while ((line = bufferedReader.readLine()) != null) {
                 bufferedWriter.write(line + System.lineSeparator());
@@ -332,12 +352,25 @@ public class KVServer implements IKVServer, Runnable {
 
     public void cleanUpData() {
         kvStore.sendDataCleanup();
+        synchronized (replicateSync){
+            readyToReplicate = true;
+            replicateSync.notifyAll();
+        }
+        updateReplicators();
     }
 
     public void mergeNewData(String tempFilePath) {
         lock.writeLock().lock();
         try {
-            this.kvStore.mergeData(tempFilePath);
+            // This will delete the tempFile if the node is not initialized
+            // will not delete if node is initialized, so the tempFile can be sent to the replicator
+            this.kvStore.mergeData(tempFilePath, !this.hasBeenInitialized);
+            if (!this.hasBeenInitialized) {
+                initializeReplicators();
+            } else {
+                updateReplicators(tempFilePath);
+            }
+            this.hasBeenInitialized = true;
         } catch (IOException e) {
             logger.error("Failed to merge incoming data.");
         } finally {
@@ -349,18 +382,42 @@ public class KVServer implements IKVServer, Runnable {
         kvStore.replicateData(tempFilePath, controlServer);
     }
 
-    public void updateReplicators() {
-        ServerNode serverNode = ecsConnection.getHashRing().getNode(serverName);
+    private void initializeReplicator(ServerNode replicator) {
+        CyclicBarrier deleteBarrier = new CyclicBarrier(1);
+        KVDataSender kvDataSender = new KVDataSender(
+                replicator,
+                this,
+                kvStore.getStoragePath(),
+                deleteBarrier,
+                true);
+        new Thread(kvDataSender).start();
+    }
 
-        //TODO: check array of replicators instead of doing it through successors
-        ServerNode replicator = serverNode.getSuccessor();
+    private void initializeReplicators() {
         for (int i = 0; i < NUM_REPLICATORS; i++){
-            if (replicator.compareTo(serverNode)!=0){
-                KVDataSender kvDataSender = new KVDataSender(replicator, this);
+            ServerNode replicator = replicators[i];
+            if (replicator != null) {
+                initializeReplicator(replicator);
+            }
+        }
+    }
+
+    private void updateReplicators(String filePath) {
+        ServerNode serverNode = ecsConnection.getHashRing().getNode(serverName);
+        CyclicBarrier deleteBarrier = new CyclicBarrier(NUM_REPLICATORS);
+        for (int i = 0; i < NUM_REPLICATORS; i++) {
+            ServerNode replicator = replicators[i];
+            if (replicator != null && replicator.compareTo(serverNode)!=0) {
+                logger.info(i + " replicating to " + replicator.getNodeName());
+                KVDataSender kvDataSender = new KVDataSender(replicator, this, filePath, deleteBarrier);
                 new Thread(kvDataSender).start();
             }
-            replicator = replicator.getSuccessor();
         }
+
+    }
+
+    private void updateReplicators() {
+        updateReplicators(getWriteLogPath());
     }
 
     private void acquireReceivingPorts() {
@@ -454,36 +511,61 @@ public class KVServer implements IKVServer, Runnable {
     }
 
     public void processServerChange(AdminMessage.ServerChange change, ServerNode changedNode, HashRing newHashRing) {
+        logger.info("Metadata update: " + change.toString());
+        ServerNode[] newReplicators = newHashRing.getReplicators(serverName, NUM_REPLICATORS);
+        ServerNode[] newControllers  = newHashRing.getControllers(serverName, NUM_REPLICATORS);
+
+        logger.info("New replicators: " + Arrays.toString(newReplicators));
+        logger.info("New controllers: " + Arrays.toString(newControllers));
+
         switch (change) {
             case ADDED:
-            case DELETED:
-            case DIED:
-
-                ServerNode[] newReplicators = newHashRing.getReplicators(serverName, NUM_REPLICATORS);
-                ServerNode[] newControllers  = newHashRing.getControllers(serverName, NUM_REPLICATORS);
-
                 if (!Arrays.equals(newReplicators, replicators)) {
-                    for (int i=0; i<NUM_REPLICATORS; i++) {
-                        ServerNode node = newReplicators[i];
-                        if (node.equals(changedNode)) {
-                            processNewReplicator(changedNode, i, change);
+                    for (int i = 0; i < NUM_REPLICATORS; i++) {
+                        if (replicators[i] == null || !replicators[i].equals(newReplicators[i])){
+                            logger.info("Replicator added: " + newReplicators[i].getNodeName());
+                            processNewReplicator(newReplicators[i]);
                             break;
                         }
                     }
                 }
 
                 if (!Arrays.equals(newControllers, controllers)) {
-                    for (int i=0; i<NUM_REPLICATORS; i++) {
-                        ServerNode node = newControllers[i];
-                        if (node.equals(changedNode)) {
-                            processNewController(changedNode, controllers[NUM_REPLICATORS-1], i, change);
+                    for (int i = NUM_REPLICATORS-1; i >= 0; i--) {
+                        if (controllers [i] == null) {
+                            break;
+                        } else if (!controllers[i].equals(newControllers[i])) {
+                            logger.info("Controller removed: " + controllers[i].getNodeName());
+                            processOldController(controllers[i], i, change);
                             break;
                         }
                     }
                 }
 
-                replicators = newReplicators;
-                controllers = newControllers;
+                break;
+            case DELETED:
+            case DIED:
+                if (!Arrays.equals(newReplicators, replicators)) {
+                    for (int i = NUM_REPLICATORS-1; i >= 0; i--) {
+                        if (newReplicators[i] == null){
+                            break;
+                        } else if (replicators[i] == null || !replicators[i].equals(newReplicators[i])){
+                            logger.info("Replicator added: " + newReplicators[i].getNodeName());
+                            processNewReplicator(newReplicators[i]);
+                            break;
+                        }
+                    }
+                }
+
+                if (!Arrays.equals(newControllers, controllers)) {
+                    for (int i = 0; i < NUM_REPLICATORS; i++) {
+                        if (controllers[i] != null && !controllers[i].equals(newControllers[i])) {
+                            logger.info("Controller removed: " + controllers[i].getNodeName());
+                            processOldController(controllers[i], i, change);
+                            break;
+                        }
+                    }
+                }
 
                 break;
             case STARTED:
@@ -491,22 +573,36 @@ public class KVServer implements IKVServer, Runnable {
             default:
                 break;
         }
+        replicators = newReplicators;
+        controllers = newControllers;
     }
 
-    public void processNewReplicator(ServerNode newReplicator, int newReplicatorIndex, AdminMessage.ServerChange change) {
-        // TODO
+    public void processNewReplicator(ServerNode newReplicator) {
         // newReplicatorIndex is either 0 or 1 (given that NUM_REPLICATORS is 2).
         // 0 means it's the immediate successor, 1 means there's one other replicator between
+//        if (newReplicator.compareTo())
+        initializeReplicator(newReplicator);
     }
 
-    public void processNewController(ServerNode newController, ServerNode oldController, int newControllerIndex, AdminMessage.ServerChange change) {
-        // TODO
+    public void processOldController(ServerNode oldController, int oldControllerIndex, AdminMessage.ServerChange change) {
         // newControllerIndex is either 0 or 1 (given that NUM_REPLICATORS is 2).
         // 0 means it's the immediate predecessor, 1 means there's one other controller between
+        if (oldControllerIndex == 0 && change == AdminMessage.ServerChange.DIED) {
+            logger.info("Merging replicated data into server data");
+            try {
+                String replicateFilePath = kvStore.mergeReplicatedData(oldController);
+                updateReplicators(replicateFilePath);
+            } catch (Exception e) {
+                logger.error("Failed to merge data after node death", e);
+            }
+        } else {
+            logger.info("Deleting replicated data for node: " + oldController.getNodeName());
+            kvStore.deleteReplicatedData(oldController);
+        }
     }
 
     public static void main(String[] args) {
-        try{
+        try {
             if (args.length != 4) {
                 System.err.println("Error! Invalid number of arguments");
                 System.err.println("Usage: KVServer <port> <server name> <zkHost> <zkPort>");

@@ -6,6 +6,10 @@ import org.apache.log4j.Logger;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class KVDataSender implements Runnable{
@@ -13,12 +17,20 @@ public class KVDataSender implements Runnable{
 
     private final ServerNode replicator;
     private final KVServer kvServer;
-    public static final Integer BUFFER_SIZE = 1024;
+    private final String dataPath;
+    private final boolean initialize;
+    private final CyclicBarrier deleteBarrier;
 
+    public KVDataSender(ServerNode replicator, KVServer kvServer, String dataPath, CyclicBarrier deleteBarrier) {
+            this(replicator, kvServer, dataPath, deleteBarrier, false);
+    }
 
-    public KVDataSender(ServerNode replicator, KVServer kvServer){
-            this.replicator = replicator;
-            this.kvServer = kvServer;
+    public KVDataSender(ServerNode replicator, KVServer kvServer, String dataPath, CyclicBarrier deleteBarrier, boolean initialize){
+        this.replicator = replicator;
+        this.kvServer = kvServer;
+        this.dataPath = dataPath;
+        this.deleteBarrier = deleteBarrier;
+        this.initialize = initialize;
     }
 
     @Override
@@ -26,7 +38,22 @@ public class KVDataSender implements Runnable{
         String host = replicator.getNodeHost();
         int port = replicator.getReplicationReceivePort();
 
-        //TODO: need the lock if we're sending over all the data, but not for write log
+        ReentrantReadWriteLock lock = null;
+        if (initialize){
+            try {
+                Object replicateSync = kvServer.getReplicateSync();
+                synchronized (kvServer.getReplicateSync()) {
+                    while (!kvServer.getReadyToReplicate()){
+                        replicateSync.wait(5000);
+                    }
+                }
+            } catch (InterruptedException e) {
+                logger.error("Error while waiting for data cleanup on init.", e);
+            }
+
+            lock = kvServer.getLock();
+            lock.readLock().lock();
+        }
         try {
             logger.info("Starting data transfer for replication at node "
                     + replicator.getNodeName()
@@ -36,7 +63,7 @@ public class KVDataSender implements Runnable{
                     + port
             );
 
-            File sendFile = new File(kvServer.getWriteLogPath());
+            File sendFile = new File(this.dataPath);
 
             Socket replicatorSocket = new Socket(host, port);
 
@@ -63,10 +90,21 @@ public class KVDataSender implements Runnable{
             fileInput.close();
             replicatorSocket.close();
 
+            deleteBarrier.await();
+            if (!initialize){
+                Files.deleteIfExists(Paths.get(dataPath));
+            }
+
             logger.info("Finished data transfer for replication at node " + replicator.getNodeName());
 
         } catch (IOException e) {
             logger.error("Unable to send data to receiving node", e);
+        } catch (InterruptedException | BrokenBarrierException e) {
+            logger.error("Failed to wait for other thread to replicate", e);
+        } finally {
+            if (initialize) {
+                lock.readLock().unlock();
+            }
         }
     }
 }
