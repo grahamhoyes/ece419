@@ -477,6 +477,7 @@ public class KVServer implements IKVServer, Runnable {
         }
 
         logger.info("Server stopped");
+        System.exit(0);
     }
 
     public boolean isRunning() {
