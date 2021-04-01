@@ -36,8 +36,18 @@ public class PutTTLCommand extends AbstractCommand {
         }
 
          if (tokens.length >= expectedArgNum) {
+             long ttl;
+             try {
+                 ttl = Long.parseLong(tokens[1]);
+                 if (ttl <= 0)
+                     throw new Exception("TTL must be a positive integer.");
+             } catch (Exception e) {
+                 throw new Exception("TTL must be a positive integer.");
+             }
+
+
             String v = String.join(" ", Arrays.copyOfRange(tokens, 3, tokens.length));
-            KVMessage message = store.putTTL(tokens[2], v, Long.valueOf(tokens[1]));
+            KVMessage message = store.putTTL(tokens[2], v, ttl);
 
              Date date = new Date ();
             switch (message.getStatus()) {
