@@ -51,10 +51,11 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 	}
 
 	@Override
-	public KVMessage put(String key, String value) throws Exception {
+	public KVMessage putTTL(String key, String value, Long ttl) throws Exception {
 		JsonKVMessage req = new JsonKVMessage(KVMessage.StatusType.PUT);
 		req.setKey(key);
 		req.setValue(value);
+		req.setTTL(ttl);
 		JsonKVMessage res;
 
 		if (!retry) {
@@ -84,14 +85,16 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 			retry = false;
 			if (res.getStatus() == KVMessage.StatusType.SERVER_NOT_RESPONSIBLE) {
 				// Metadata updated above, retry with new metadata
-				return put(key, value);
+				return putTTL(key, value, ttl);
 			}
 		} catch (DeserializationException e) {
 			logger.error(e.getMessage());
 			res = new JsonKVMessage(KVMessage.StatusType.PUT_ERROR);
 			req.setKey(key);
 			req.setValue(value);
+			req.setTTL(ttl);
 			req.setMessage(e.getMessage());
+
 		} catch (IOException e) {
 			if (!e.getMessage().equals("Connection terminated"))
 				throw e;
@@ -104,11 +107,16 @@ public class KVStoreConnection extends Connection implements KVCommInterface {
 				throw e;
 			} else {
 				retry = true;
-				return put(key, value);
+				return putTTL(key, value, ttl);
 			}
 		}
 
 		return res;
+	}
+
+	@Override
+	public KVMessage put(String key, String value) throws Exception {
+		return this.putTTL(key, value, null);
 	}
 
 	@Override

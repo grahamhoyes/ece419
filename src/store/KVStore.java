@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public interface KVStore {
-    public boolean put(String key, String value) throws Exception;
+    public boolean put(String key, String value, Long expiryTime) throws Exception;
     public String get(String key) throws Exception;
     public String get(String key, ServerNode responsibleNode) throws Exception;
     public void clear() throws IOException;
@@ -38,4 +38,6 @@ public interface KVStore {
     ReentrantReadWriteLock getWriteLogLock();
 
     ReentrantReadWriteLock getStorageLock();
+
+    void checkKeyExpiry();
 }

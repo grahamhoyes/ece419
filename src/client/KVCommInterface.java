@@ -30,6 +30,7 @@ public interface KVCommInterface {
 	 *             KV server).
 	 */
 	public KVMessage put(String key, String value) throws Exception;
+	public KVMessage putTTL(String key, String value, Long ttl) throws Exception;
 
 	/**
 	 * Retrieves the value for a given key from the KVServer.

@@ -18,6 +18,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class KVServer implements IKVServer, Runnable {
@@ -228,10 +231,15 @@ public class KVServer implements IKVServer, Runnable {
     }
 
     @Override
-    public boolean putKV(String key, String value) throws Exception {
-        boolean exists = this.kvStore.put(key, value);
+    public boolean putKV(String key, String value, Long expiryTime) throws Exception {
+        boolean exists = this.kvStore.put(key, value, expiryTime);
         updateReplicators();
         return exists;
+    }
+
+    public void checkKeyExpiry() throws Exception {
+        this.kvStore.checkKeyExpiry();
+        updateReplicators();
     }
 
     @Override
@@ -438,6 +446,10 @@ public class KVServer implements IKVServer, Runnable {
         running = initializeServer();
 
         initializeDataListeners();
+
+        ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor();
+        exec.scheduleAtFixedRate(new KVKeyExpiryChecker(this), 0, 30, TimeUnit.SECONDS);
+
 
         if (serverSocket != null) {
             while (isRunning()) {

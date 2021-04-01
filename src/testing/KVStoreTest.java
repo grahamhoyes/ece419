@@ -47,7 +47,7 @@ public class KVStoreTest extends Assert {
     public void testPutGet() throws Exception{
         String key = "foo";
         String value = "bar";
-        kvStore.put(key, value);
+        kvStore.put(key, value, null);
         String getValue = kvStore.get(key);
 
         assertEquals(value, getValue);
@@ -59,9 +59,9 @@ public class KVStoreTest extends Assert {
         String value = "bar";
         String updateValue = "fizz";
 
-        kvStore.put(key, value);
+        kvStore.put(key, value, null);
         String oldValue = kvStore.get(key);
-        kvStore.put(key, updateValue);
+        kvStore.put(key, updateValue, null);
         String newValue = kvStore.get(key);
 
         assertEquals(updateValue, newValue);
@@ -74,7 +74,7 @@ public class KVStoreTest extends Assert {
         String key = "foo";
         String value = "bar";
 
-        kvStore.put(key, value);
+        kvStore.put(key, value, null);
         boolean exists = kvStore.exists(key);
 
         assertTrue(exists);
@@ -85,7 +85,7 @@ public class KVStoreTest extends Assert {
         String key = "foo";
         String value = "bar";
 
-        kvStore.put(key, value);
+        kvStore.put(key, value, null);
         kvStore.delete(key);
         boolean exists = kvStore.exists(key);
 
@@ -99,7 +99,7 @@ public class KVStoreTest extends Assert {
         try{
             String key = "foo";
             String value = "bar";
-            kvStore.put(key, value);
+            kvStore.put(key, value, null);
         }finally {
             file.createNewFile();
         }

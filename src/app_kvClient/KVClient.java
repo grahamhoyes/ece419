@@ -97,6 +97,9 @@ public class KVClient implements IKVClient, Runnable {
             case "put":
                 command = new PutCommand();
                 break;
+            case "putttl":
+                command = new PutTTLCommand();
+                break;
             case "get":
                 command = new GetCommand();
                 break;

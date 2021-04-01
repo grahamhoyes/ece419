@@ -22,7 +22,7 @@ import static ecs.ServerNode.hashInRange;
 
 //TODO: Remove replicated data on death and clear it on startup
 
-public class KVSimpleStore implements KVStore{
+public class KVSimpleStore implements KVStore {
     protected static final Logger logger = Logger.getLogger("KVSimpleStore");
     private static final String dataDir = "store_data";
 
@@ -79,6 +79,12 @@ public class KVSimpleStore implements KVStore{
     @Override
     public ReentrantReadWriteLock getStorageLock() {
         return storageLock;
+    }
+
+    @Override
+    public void checkKeyExpiry() {
+
+        //TODO implement
     }
 
     @Override
@@ -290,18 +296,18 @@ public class KVSimpleStore implements KVStore{
     }
 
     @Override
-    public boolean put(String key, String value) throws Exception {
+    public boolean put(String key, String value, Long expiryTime) throws Exception {
         storageLock.writeLock().lock();
         try {
-            return put(this.filePath, key, value, false);
+            return put(this.filePath, key, value, expiryTime, false);
         } finally {
             storageLock.writeLock().unlock();
         }
     }
 
-    private boolean put(String filePath, String key, String value, boolean replicate) throws Exception {
+    private boolean put(String filePath, String key, String value, Long expiryTime, boolean replicate) throws Exception {
         KeyValueLocation keyValueLocation = find(filePath, key);
-        KeyValue keyValue = new KeyValue(key, value);
+        KeyValue keyValue = new KeyValue(key, value, expiryTime);
 
         if (!keyValueLocation.isExists()){
             // Can add to end of file
@@ -472,7 +478,7 @@ public class KVSimpleStore implements KVStore{
                     addKeyValue(replicateFilePath, keyValueJson + System.lineSeparator());
                 } else if (action == 'U') {
                     KeyValue keyValue = gson.fromJson(keyValueJson, KeyValue.class);
-                    put(replicateFilePath, keyValue.getKey(), keyValue.getValue(), true);
+                    put(replicateFilePath, keyValue.getKey(), keyValue.getValue(), keyValue.getExpiryTime(), true);
                     logger.info("Replicate: update for key: " + keyValue.getKey());
                 } else if (action == 'D') {
                     KeyValue keyValue = gson.fromJson(keyValueJson, KeyValue.class);
@@ -480,7 +486,7 @@ public class KVSimpleStore implements KVStore{
                     delete(replicateFilePath, keyValue.getKey());
                 } else {
                     KeyValue keyValue = gson.fromJson(line, KeyValue.class);
-                    put(replicateFilePath, keyValue.getKey(), keyValue.getValue(), true);
+                    put(replicateFilePath, keyValue.getKey(), keyValue.getValue(), keyValue.getExpiryTime(), true);
                 }
             }
             return true;

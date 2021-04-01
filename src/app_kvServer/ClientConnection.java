@@ -46,8 +46,15 @@ public class ClientConnection extends Connection implements Runnable {
                         continue;
                     }
 
+                    Long currentTime = System.currentTimeMillis();
+                    Long expiryTime = null;
+                    if (req.getTTL() != null) {
+                        expiryTime = currentTime + (req.getTTL()*1000);
+                    }
+
                     res.setKey(req.getKey());
                     res.setValue(req.getValue());
+                    res.setTTL(expiryTime);
                     res.setMetadata(server.getMetadata());
 
 
@@ -100,8 +107,8 @@ public class ClientConnection extends Connection implements Runnable {
                                     res.setStatus(StatusType.DELETE_SUCCESS);
                                     logger.info("DELETE " + req.getKey() + " successful");
                                 } catch (Exception e) {
-                                    if (e instanceof FileNotFoundException){
-                                        throw (FileNotFoundException)e;
+                                    if (e instanceof FileNotFoundException) {
+                                        throw (FileNotFoundException) e;
                                     }
                                     res.setStatus(StatusType.DELETE_ERROR);
                                     res.setMessage(e.getMessage());
@@ -109,7 +116,7 @@ public class ClientConnection extends Connection implements Runnable {
                                 }
                             } else {
                                 try {
-                                    boolean exists = server.putKV(req.getKey(), req.getValue());
+                                    boolean exists = server.putKV(req.getKey(), req.getValue(), expiryTime);
                                     if (exists) {
                                         res.setStatus(StatusType.PUT_UPDATE);
                                         logger.info("PUT update " + req.getKey() + "="

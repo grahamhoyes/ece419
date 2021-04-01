@@ -31,6 +31,8 @@ public interface KVMessage {
 
 	public void setMetadata(HashRing hashRing);
 
+	public void setTTL(Long ttl);
+
 	/**
 	 * @return the text message associated with this message,
 	 * 		or null.
@@ -59,6 +61,8 @@ public interface KVMessage {
 	 * @return the hash ring associated with this message, or null
 	 */
 	public HashRing getMetadata();
+
+	public Long getTTL();
 
 	/**
 	* @return a string representing the entire message object

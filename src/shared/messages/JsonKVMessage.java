@@ -8,6 +8,7 @@ public class JsonKVMessage implements KVMessage, Serializable {
     private StatusType status;
     private String key;
     private String value;
+    private Long ttl;
     private String message;
     private HashRing metadata;
 
@@ -58,6 +59,10 @@ public class JsonKVMessage implements KVMessage, Serializable {
         return metadata;
     }
 
+    public Long getTTL() {
+        return ttl;
+    }
+
     public void setStatus(StatusType status) {
         this.status = status;
     }
@@ -78,6 +83,10 @@ public class JsonKVMessage implements KVMessage, Serializable {
         this.metadata = hashRing;
     }
 
+    public void setTTL(Long ttl) {
+        this.ttl = ttl;
+    }
+
     public String serialize() {
         return new Gson().toJson(this);
     }
@@ -92,6 +101,7 @@ public class JsonKVMessage implements KVMessage, Serializable {
 
             this.key = kvMessage.key;
             this.value = kvMessage.value;
+            this.ttl = kvMessage.ttl;
             this.message = kvMessage.message;
             this.metadata = kvMessage.metadata;
             if (this.metadata != null) {

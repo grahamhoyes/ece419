@@ -31,7 +31,7 @@ public class PerformanceTest {
         long start = System.nanoTime();
         boolean updated = false;
         try {
-            updated = server.putKV(key, "value");
+            updated = server.putKV(key, "value", null);
         } catch (Exception ignored) {
         }
         long end = System.nanoTime();

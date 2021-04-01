@@ -79,7 +79,7 @@ public interface IKVServer {
      * @throws Exception
      *      when key not in the key range of the server
      */
-    public boolean putKV(String key, String value) throws Exception;
+    public boolean putKV(String key, String value, Long ttl) throws Exception;
 
     /**
      * Delete the key-value pair in storage
