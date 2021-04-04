@@ -82,9 +82,42 @@ public class KVSimpleStore implements KVStore {
     }
 
     @Override
-    public void checkKeyExpiry() {
+    public boolean checkKeyExpiry() throws Exception {
+        storageLock.writeLock().lock();
+        Long currentTime = System.currentTimeMillis();
 
-        //TODO implement
+        Path tempPath = Files.createTempFile(serverName, ".txt");
+        Gson gson = new Gson();
+
+        boolean keysExpired = false;
+
+        try(RandomAccessFile tempRAFile = new RandomAccessFile(tempPath.toString(), "rw");
+            RandomAccessFile storageFile = new RandomAccessFile(filePath, "rw");){
+            FileChannel fromChannel = storageFile.getChannel();
+            FileChannel toChannel = tempRAFile.getChannel();
+
+            String str;
+            while((str = storageFile.readLine()) != null) {
+                KeyValue keyValue = gson.fromJson(str, KeyValue.class);
+                Long expiry = keyValue.getExpiryTime();
+                if (expiry != null && currentTime > expiry) {
+                    logger.info("Expiring key " + keyValue.getKey());
+                    writeLogAppend(keyValue, WRITE_ACTION.DELETE);
+                    keysExpired = true;
+                } else {
+                    tempRAFile.write((str + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
+                }
+            }
+            // Copy the file contents back to the storage file. Could be improved but meh
+            storageFile.setLength(0L);
+            fromChannel.position(0L);
+            toChannel.transferTo(0, toChannel.size(), fromChannel);
+
+            Files.deleteIfExists(tempPath);
+        } finally {
+            storageLock.writeLock().unlock();
+        }
+        return keysExpired;
     }
 
     @Override

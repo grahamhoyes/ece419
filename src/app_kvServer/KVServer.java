@@ -238,8 +238,10 @@ public class KVServer implements IKVServer, Runnable {
     }
 
     public void checkKeyExpiry() throws Exception {
-        this.kvStore.checkKeyExpiry();
-        updateReplicators();
+        boolean keysExpired = this.kvStore.checkKeyExpiry();
+        if (keysExpired) {
+            updateReplicators();
+        }
     }
 
     @Override

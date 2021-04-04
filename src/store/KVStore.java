@@ -39,5 +39,5 @@ public interface KVStore {
 
     ReentrantReadWriteLock getStorageLock();
 
-    void checkKeyExpiry();
+    boolean checkKeyExpiry() throws Exception;
 }
