@@ -14,8 +14,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static ecs.ServerNode.hashInRange;
@@ -84,7 +82,7 @@ public class KVSimpleStore implements KVStore {
     @Override
     public boolean checkKeyExpiry() throws Exception {
         storageLock.writeLock().lock();
-        Long currentTime = System.currentTimeMillis();
+        long currentTime = System.currentTimeMillis();
 
         Path tempPath = Files.createTempFile(serverName, ".txt");
         Gson gson = new Gson();
@@ -165,8 +163,9 @@ public class KVSimpleStore implements KVStore {
                     keyValueLocation = new KeyValueLocation(
                             prevPointer,
                             currPointer,
-                            keyValue.getValue()
+                            keyValue
                     );
+
                     break;
                 }
                 prevPointer = currPointer;
@@ -291,22 +290,55 @@ public class KVSimpleStore implements KVStore {
         }
     }
 
+    /**
+     * Get a key stored on this KV server (as a controller)
+     *
+     * @param key Key to get
+     * @return The associated value
+     * @throws Exception If something goes wrong
+     */
     @Override
     public String get(String key) throws Exception {
         storageLock.readLock().lock();
+        boolean readLocked = true;  // There's no .isLocked() method on ReadLock
+
         try {
             KeyValueLocation keyValueLocation = find(this.filePath, key);
 
             if (keyValueLocation.isExists()) {
-                return keyValueLocation.value;
+
+                long currentTime = System.currentTimeMillis();
+
+                if (keyValueLocation.getKeyValue().getExpiryTime() < currentTime) {
+                    // Release the read lock, since delete acquires the write lock
+                    storageLock.readLock().unlock();
+                    readLocked = false;
+
+                    this.delete(key);
+
+                    throw new KeyInvalidException(key);
+                } else {
+                    return keyValueLocation.getKeyValue().getValue();
+                }
             } else {
                 throw new KeyInvalidException(key);
             }
         } finally {
-            storageLock.readLock().unlock();
+            if (readLocked) {
+                storageLock.readLock().unlock();
+            }
         }
     }
 
+    /**
+     * Get a key controlled by a node which this server replicates
+     *
+     * @param key Key to get
+     * @param responsibleNode Node which is the controller for the key. The node must
+     *                        be replicated by this KV server.
+     * @return The associated value
+     * @throws Exception If something goes wrong
+     */
     @Override
     public String get(String key, ServerNode responsibleNode) throws Exception {
         String replicateFilePath = dataDir + File.separatorChar + "repl_" + responsibleNode.getNodeName() + "_" + serverName + ".txt";
@@ -316,7 +348,7 @@ public class KVSimpleStore implements KVStore {
             try {
                 KeyValueLocation keyValueLocation = find(replicateFilePath, key);
                 if (keyValueLocation.isExists()) {
-                    return keyValueLocation.value;
+                    return keyValueLocation.getKeyValue().getValue();
                 } else {
                     throw new KeyInvalidException(key);
                 }
@@ -592,25 +624,21 @@ public class KVSimpleStore implements KVStore {
 
     }
 
-    private class KeyValueLocation {
-        private String value = null;
+    private static class KeyValueLocation {
+        private KeyValue keyValue = null;
         private long startPosition = 0;
         private long endPosition = 0;
-        private boolean exists;
+        private final boolean exists;
 
         public KeyValueLocation () {
             exists = false;
         }
 
-        public KeyValueLocation (long startPosition, long endPosition, String value) {
+        public KeyValueLocation (long startPosition, long endPosition, KeyValue keyValue) {
             this.startPosition = startPosition;
             this.endPosition = endPosition;
-            this.value = value;
+            this.keyValue = keyValue;
             this.exists = true;
-        }
-
-        public String getValue() {
-            return value;
         }
 
         public long getStartPosition() {
@@ -626,6 +654,13 @@ public class KVSimpleStore implements KVStore {
         }
 
 
+        public KeyValue getKeyValue() {
+            return keyValue;
+        }
+
+        public void setKeyValue(KeyValue kv) {
+            this.keyValue = kv;
+        }
     }
 }
 
