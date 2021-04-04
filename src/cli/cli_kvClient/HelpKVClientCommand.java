@@ -22,6 +22,7 @@ public class HelpKVClientCommand extends AbstractCommand {
         System.out.println(new ConnectCommand().getCommandHelpDescription());
         System.out.println(new DisconnectCommand().getCommandHelpDescription());
         System.out.println(new PutCommand().getCommandHelpDescription());
+        System.out.println(new PutTTLCommand().getCommandHelpDescription());
         System.out.println(new GetCommand().getCommandHelpDescription());
         System.out.println(new LogLevelCommand().getCommandHelpDescription());
         System.out.println(new HelpKVClientCommand().getCommandHelpDescription());
