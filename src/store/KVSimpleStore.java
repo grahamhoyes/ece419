@@ -307,9 +307,10 @@ public class KVSimpleStore implements KVStore {
 
             if (keyValueLocation.isExists()) {
 
+                Long keyExpiryTime = keyValueLocation.getKeyValue().getExpiryTime();
                 long currentTime = System.currentTimeMillis();
 
-                if (keyValueLocation.getKeyValue().getExpiryTime() < currentTime) {
+                if (keyExpiryTime != null && keyExpiryTime < currentTime) {
                     // Release the read lock, since delete acquires the write lock
                     storageLock.readLock().unlock();
                     readLocked = false;
@@ -345,15 +346,40 @@ public class KVSimpleStore implements KVStore {
         if (replicatedPaths.containsKey(replicateFilePath)) {
             ReentrantReadWriteLock lock = replicatedPaths.get(replicateFilePath);
             lock.readLock().lock();
+            boolean readLocked = true;  // There's no readLock.isLocked() method
             try {
                 KeyValueLocation keyValueLocation = find(replicateFilePath, key);
+
                 if (keyValueLocation.isExists()) {
-                    return keyValueLocation.getKeyValue().getValue();
+
+                    Long keyExpiryTime = keyValueLocation.getKeyValue().getExpiryTime();
+                    long currentTime = System.currentTimeMillis();
+
+                    if (keyExpiryTime != null && keyExpiryTime < currentTime) {
+                        // Delete expired key from replica file
+                        lock.readLock().unlock();
+                        readLocked = false;
+                        lock.writeLock().lock();
+
+                        try {
+                            this.delete(replicateFilePath, key, true);
+                        } finally {
+                            lock.writeLock().unlock();
+                        }
+
+                        throw new KeyInvalidException(key);
+
+                    } else {
+                        return keyValueLocation.getKeyValue().getValue();
+                    }
+
                 } else {
                     throw new KeyInvalidException(key);
                 }
             } finally {
-                lock.readLock().unlock();
+                if (readLocked) {
+                    lock.readLock().unlock();
+                }
             }
         } else {
             throw new KeyInvalidException(key);
@@ -438,7 +464,7 @@ public class KVSimpleStore implements KVStore {
         if (keyValueLocation.isExists()){
             deleteKeyValue(filePath, keyValueLocation);
             writeLogAppend(keyValue, WRITE_ACTION.DELETE);
-        }else{
+        } else {
             if (!replicator) throw new KeyInvalidException(key);
         }
     }
