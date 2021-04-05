@@ -4,7 +4,6 @@ import cli.AbstractCommand;
 import cli.UnrecognizedCommand;
 import cli.cli_ecsClient.*;
 import ecs.ECS;
-import ecs.IECS;
 import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -18,7 +17,7 @@ public class ECSClient implements IECSClient, Runnable {
     private static final Logger logger = Logger.getLogger("ECSClient");
     private static final String PROMPT = "> ";
 
-    private IECS ecs;
+    private final ECS ecs;
 
     private boolean running;
 
@@ -52,7 +51,7 @@ public class ECSClient implements IECSClient, Runnable {
     }
 
     @Override
-    public IECS getECS() {
+    public ECS getECS() {
         return this.ecs;
     }
 
@@ -89,6 +88,9 @@ public class ECSClient implements IECSClient, Runnable {
                 break;
             case "shutDown":
                 command = new ShutDownCommand();
+                break;
+            case "set":
+                command = new SettingsCommand();
                 break;
             case "q":
             case "exit":

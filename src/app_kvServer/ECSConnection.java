@@ -2,6 +2,7 @@ package app_kvServer;
 
 import ecs.ServerNode;
 import ecs.HashRing;
+import ecs.ServerSettings;
 import ecs.ZooKeeperConnection;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.*;
@@ -200,6 +201,7 @@ public class ECSConnection {
                     case SET_METADATA:
                         hashRing = message.getMetadata();
                         nodeMetadata = hashRing.getNode(serverName);
+                        kvServer.updateServerSettings(nodeMetadata.getServerSettings());
                         response.setAction(AdminMessage.Action.ACK);
                         response.setMessage("Got metadata update");
                         logger.info("Incoming Metadata: " + message.serialize());

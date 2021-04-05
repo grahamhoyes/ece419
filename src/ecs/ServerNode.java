@@ -14,6 +14,7 @@ public class ServerNode implements IECSNode, Comparable<ServerNode> {
     private final String hostname;
     private final int port;
     private final String nodeHash;
+    private ServerSettings serverSettings;
     IKVServer.ServerStatus status;
 
     private int dataReceivePort;
@@ -29,6 +30,7 @@ public class ServerNode implements IECSNode, Comparable<ServerNode> {
         this.status = IKVServer.ServerStatus.OFFLINE;
 
         this.nodeHash = md5Hash(getNodeName());
+        this.serverSettings = new ServerSettings();
     }
 
     public static String md5Hash(String data) {
@@ -124,6 +126,14 @@ public class ServerNode implements IECSNode, Comparable<ServerNode> {
 
     public void setReplicationReceivePort(int replicationReceivePort) {
         this.replicationReceivePort = replicationReceivePort;
+    }
+
+    public ServerSettings getServerSettings() {
+        return serverSettings;
+    }
+
+    public void setServerSettings(ServerSettings serverSettings) {
+        this.serverSettings = serverSettings;
     }
 
     /**

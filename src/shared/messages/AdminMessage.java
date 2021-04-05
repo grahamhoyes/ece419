@@ -28,7 +28,8 @@ public class AdminMessage implements Serializable {
         DELETED,
         DIED,
         STARTED,  // When this happens, changedServer will be null
-        STOPPED   // When this happens, changedServer will be null
+        STOPPED,  // When this happens, changedServer will be null
+        SETTINGS, // When this happens, changedServer will be null
     }
 
     private Action action;              // Required for all messages

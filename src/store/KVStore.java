@@ -40,4 +40,6 @@ public interface KVStore {
     ReentrantReadWriteLock getStorageLock();
 
     boolean checkKeyExpiry() throws Exception;
+
+    public void setReplicatorsExpireKeys(boolean replicatorsExpireKeys);
 }

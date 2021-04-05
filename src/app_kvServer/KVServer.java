@@ -2,6 +2,7 @@ package app_kvServer;
 
 import ecs.HashRing;
 import ecs.ServerNode;
+import ecs.ServerSettings;
 import logger.LogSetup;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -28,8 +29,6 @@ public class KVServer implements IKVServer, Runnable {
     public static final Integer BUFFER_SIZE = 1024;
     private static final Logger logger = Logger.getLogger("KVServer");
     private static final int NUM_REPLICATORS = 2;
-
-//    private final ReentrantReadWriteLock storageLock = new ReentrantReadWriteLock(true);
 
     private boolean hasBeenInitialized = false;
 
@@ -60,6 +59,8 @@ public class KVServer implements IKVServer, Runnable {
     private ServerNode[] replicators = new ServerNode[NUM_REPLICATORS];
     private ServerNode[] controllers = new ServerNode[NUM_REPLICATORS];
 
+    private ServerSettings serverSettings;
+
 
     /**
      * Start KV Server at given port
@@ -84,6 +85,9 @@ public class KVServer implements IKVServer, Runnable {
         this.acquireReceivingPorts();
 
         this.ecsConnection = new ECSConnection(zkHost, zkPort, serverName, this);
+
+        // Initialize with default settings, to be updated by the ECS
+        this.serverSettings = new ServerSettings();
     }
 
     @Override
@@ -153,6 +157,12 @@ public class KVServer implements IKVServer, Runnable {
     @Override
     public HashRing getMetadata() {
         return ecsConnection.getHashRing();
+    }
+
+    public void updateServerSettings(ServerSettings serverSettings) {
+        this.serverSettings = serverSettings;
+
+        kvStore.setReplicatorsExpireKeys(serverSettings.getReplicatorsExpireKeys());
     }
 
     @Override
@@ -563,6 +573,7 @@ public class KVServer implements IKVServer, Runnable {
                 break;
             case STARTED:
             case STOPPED:
+            case SETTINGS:
             default:
                 break;
         }

@@ -34,7 +34,8 @@ public class KVSimpleStore implements KVStore {
     private String keepPath;
     private String writeLogPath;
 
-    //    private Set<String> replicatedPaths = new HashSet<String>();
+    private boolean replicatorsExpireKeys;
+
     private final ReentrantReadWriteLock storageLock = new ReentrantReadWriteLock(true);
     private HashMap<String, ReentrantReadWriteLock> replicatedPaths = new HashMap<>();
 
@@ -50,6 +51,8 @@ public class KVSimpleStore implements KVStore {
         this.sendPath = dataDir + File.separatorChar + "~send" + this.fileName;
         this.keepPath = dataDir + File.separatorChar + "~keep" + this.fileName;
         this.writeLogPath = dataDir + File.separatorChar + "~writeLog" + this.fileName;
+
+        this.replicatorsExpireKeys = false;
 
         prepareFile();
     }
@@ -77,6 +80,11 @@ public class KVSimpleStore implements KVStore {
     @Override
     public ReentrantReadWriteLock getStorageLock() {
         return storageLock;
+    }
+
+    @Override
+    public void setReplicatorsExpireKeys(boolean replicatorsExpireKeys) {
+        this.replicatorsExpireKeys = replicatorsExpireKeys;
     }
 
     @Override
@@ -355,7 +363,7 @@ public class KVSimpleStore implements KVStore {
                     Long keyExpiryTime = keyValueLocation.getKeyValue().getExpiryTime();
                     long currentTime = System.currentTimeMillis();
 
-                    if (keyExpiryTime != null && keyExpiryTime < currentTime) {
+                    if (replicatorsExpireKeys && keyExpiryTime != null && keyExpiryTime < currentTime) {
                         // Delete expired key from replica file
                         lock.readLock().unlock();
                         readLocked = false;

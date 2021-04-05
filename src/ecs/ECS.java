@@ -204,6 +204,23 @@ public class ECS implements IECS {
         return addNode(cacheStrategy, cacheSize);
     }
 
+    public boolean setReplicatorsExpireKeys(boolean value) {
+        boolean success = true;
+
+        for (ServerNode node : hashRing.getNodes()) {
+            node.getServerSettings().setReplicatorsExpireKeys(value);
+        }
+
+        try {
+            updateGlobalMetadata(null, AdminMessage.ServerChange.SETTINGS);
+        } catch (KeeperException | InterruptedException | TimeoutException e) {
+            logger.error("Failed to update global metadata change server setting", e);
+            success = false;
+        }
+
+        return success;
+    }
+
     @Override
     public ServerNode addNode(String cacheStrategy, int cacheSize) {
         List<ServerNode> nodes = (List<ServerNode>) setupNodes(1, cacheStrategy, cacheSize);
