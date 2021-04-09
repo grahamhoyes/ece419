@@ -18,8 +18,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static ecs.ServerNode.hashInRange;
 
-//TODO: Remove replicated data on death and clear it on startup
-
 public class KVSimpleStore implements KVStore {
     protected static final Logger logger = Logger.getLogger("KVSimpleStore");
     private static final String dataDir = "store_data";
@@ -325,7 +323,7 @@ public class KVSimpleStore implements KVStore {
 
                     this.delete(key);
 
-                    throw new KeyInvalidException(key);
+                    throw new KeyExpiredException(key);
                 } else {
                     return keyValueLocation.getKeyValue().getValue();
                 }

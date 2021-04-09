@@ -16,7 +16,8 @@ import org.junit.runners.Suite;
 		KVStoreTest.class,
 		CommunicationProtocolTest.class,
 		HashRingTest.class,
-		ECSTest.class
+		ECSTest.class,
+		KeyExpiryTest.class
 })
 public class AllTests {
 

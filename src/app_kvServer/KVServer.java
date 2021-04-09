@@ -9,6 +9,7 @@ import org.apache.log4j.Logger;
 import shared.messages.AdminMessage;
 import store.KVSimpleStore;
 import store.KVStore;
+import store.KeyExpiredException;
 import store.KeyInvalidException;
 
 import java.io.*;
@@ -228,7 +229,13 @@ public class KVServer implements IKVServer, Runnable {
         // If ClientConnection did its job properly, key should be
         // on either this node, or one of the nodes it replicates.
         if (isNodeResponsible(key)) {
-            return this.kvStore.get(key);
+            try {
+                return this.kvStore.get(key);
+            } catch (KeyExpiredException e) {
+                updateReplicators();
+                throw e;
+            }
+
         } else {
             for (ServerNode node : controllers) {
                 if (node.isNodeResponsible(key)) {
